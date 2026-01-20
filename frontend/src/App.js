@@ -1050,6 +1050,7 @@ function App() {
           settings={settings}
           setSettings={setSettings}
           onClearAllChats={clearAllChats}
+          setAutoSpeak={setAutoSpeak}
         />
       )}
 
