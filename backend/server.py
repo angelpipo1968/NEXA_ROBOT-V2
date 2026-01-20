@@ -79,6 +79,10 @@ class ChatRequest(BaseModel):
     session_id: str
     include_history: bool = True
     creative_mode: bool = False
+    search_mode: bool = False
+    custom_instructions: str = ""
+    user_name: str = ""
+    assistant_name: str = "NEXA"
 
 class ChatResponse(BaseModel):
     response: str
