@@ -1116,36 +1116,116 @@ function App() {
 
         {/* Input Area */}
         <div className="input-area">
-          {messages.length > 0 && (
-            <div className="quick-features">
-              <button className={`quick-feature ${activeFeature === 'thinking' ? 'active' : ''}`} onClick={() => handleFeatureClick('thinking')}><BrainIcon /> Pensamiento</button>
-              <button className={`quick-feature ${activeFeature === 'image' ? 'active' : ''}`} onClick={() => handleFeatureClick('image')}><ImageGenIcon /> Imagen</button>
-              <button className={`quick-feature ${activeFeature === 'web' ? 'active' : ''}`} onClick={() => handleFeatureClick('web')}><WebDevIcon /> Web</button>
-              <button className={`quick-feature ${activeFeature === 'video' ? 'active' : ''}`} onClick={() => handleFeatureClick('video')}><VideoIcon /> Video</button>
+          {/* Active Mode Indicator */}
+          {(isThinkingMode || isSearchMode || activeFeature) && (
+            <div className="active-mode-indicator">
+              {isThinkingMode && <><SparklesIcon /> Modo Pensamiento Activo</>}
+              {isSearchMode && <><GlobeIcon /> Modo Busqueda Activo</>}
+              {activeFeature === 'image' && <><ImageGenIcon /> Generando Imagen</>}
+              {activeFeature === 'web' && <><WebDevIcon /> Creando Web</>}
+              {activeFeature === 'video' && <><VideoIcon /> Creando Video</>}
+              <button className="clear-mode-btn" onClick={() => { setIsThinkingMode(false); setIsSearchMode(false); setActiveFeature(null); }}>
+                <XIcon />
+              </button>
+            </div>
+          )}
+          
+          {/* Uploaded Files Preview */}
+          {uploadedFiles.length > 0 && (
+            <div className="uploaded-files-preview">
+              {uploadedFiles.map((file, index) => (
+                <div key={file.id} className="uploaded-file-item">
+                  <FileIcon />
+                  <span className="file-name">{file.name}</span>
+                  <button className="remove-file-btn" onClick={() => removeUploadedFile(index)}>
+                    <XIcon />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
           
           <form className="input-form" onSubmit={sendMessage}>
-            <button type="button" className="input-action-btn" onClick={() => fileInputRef.current?.click()}>
-              <AttachIcon />
+            {/* Feature Menu Button (Plus) */}
+            <div className="feature-menu-container" ref={featureMenuRef}>
+              <button 
+                type="button" 
+                className={`input-action-btn feature-menu-btn ${showFeatureMenu ? 'active' : ''}`} 
+                onClick={() => setShowFeatureMenu(!showFeatureMenu)}
+                data-testid="feature-menu-btn"
+              >
+                <PlusIcon />
+              </button>
+              
+              {showFeatureMenu && (
+                <div className="feature-dropdown-menu" data-testid="feature-dropdown">
+                  <button type="button" onClick={() => { fileInputRef.current?.click(); setShowFeatureMenu(false); }}>
+                    <AttachIcon /> Adjuntar archivo
+                  </button>
+                  <button type="button" onClick={() => handleFeatureClick('image')}>
+                    <ImageGenIcon /> Generar imagen
+                  </button>
+                  <button type="button" onClick={() => handleFeatureClick('web')}>
+                    <WebDevIcon /> Crear pagina web
+                  </button>
+                  <button type="button" onClick={() => handleFeatureClick('video')}>
+                    <VideoIcon /> Crear guion de video
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" multiple accept="image/*,.pdf,.doc,.docx,.txt" />
+            
+            {/* Thinking Mode Button */}
+            <button 
+              type="button" 
+              className={`input-action-btn mode-btn ${isThinkingMode ? 'active' : ''}`}
+              onClick={() => { setIsThinkingMode(!isThinkingMode); setIsSearchMode(false); }}
+              title="Modo Pensamiento Profundo"
+              data-testid="thinking-mode-btn"
+            >
+              <SparklesIcon />
             </button>
-            <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+            
+            {/* Search Mode Button */}
+            <button 
+              type="button" 
+              className={`input-action-btn mode-btn ${isSearchMode ? 'active' : ''}`}
+              onClick={() => { setIsSearchMode(!isSearchMode); setIsThinkingMode(false); }}
+              title="Modo Busqueda"
+              data-testid="search-mode-btn"
+            >
+              <GlobeIcon />
+            </button>
             
             <input
               ref={inputRef}
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Escribe tu mensaje..."
+              placeholder={isThinkingMode ? "Piensa profundamente sobre..." : isSearchMode ? "Buscar informacion sobre..." : "Escribe tu mensaje..."}
               className="chat-input"
               disabled={isLoading}
+              data-testid="chat-input"
             />
             
-            <button type="button" className={`input-action-btn ${isListening ? 'recording' : ''}`} onClick={toggleListening}>
+            <button 
+              type="button" 
+              className={`input-action-btn ${isListening ? 'recording' : ''}`} 
+              onClick={toggleListening}
+              title="Grabar voz"
+              data-testid="mic-btn"
+            >
               <MicIcon active={isListening} />
             </button>
             
-            <button type="submit" className="send-btn" disabled={!inputText.trim() || isLoading}>
+            <button 
+              type="submit" 
+              className="send-btn" 
+              disabled={!inputText.trim() || isLoading}
+              data-testid="send-btn"
+            >
               <SendIcon />
             </button>
           </form>
