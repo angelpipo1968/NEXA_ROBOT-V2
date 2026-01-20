@@ -844,57 +844,102 @@ function App() {
     e?.preventDefault();
     if (!inputText.trim() || isLoading) return;
     
-    const userMessage = { id: `user-${Date.now()}`, role: 'user', content: inputText.trim(), timestamp: new Date().toISOString() };
+    const userMessage = { 
+      id: `user-${Date.now()}`, 
+      role: 'user', 
+      content: inputText.trim() + (uploadedFiles.length > 0 ? `\n[Archivos adjuntos: ${uploadedFiles.map(f => f.name).join(', ')}]` : ''),
+      timestamp: new Date().toISOString() 
+    };
     setMessages(prev => [...prev, userMessage]);
     const currentInput = inputText;
     setInputText('');
+    setUploadedFiles([]);
     setIsLoading(true);
     
     try {
       // Check if it's a special feature request
       let endpoint = `${API}/chat`;
-      let payload = { message: currentInput, session_id: sessionId, include_history: true, creative_mode: activeFeature === 'thinking' };
+      let payload = { 
+        message: currentInput, 
+        session_id: sessionId, 
+        include_history: true, 
+        creative_mode: isThinkingMode || activeFeature === 'thinking',
+        search_mode: isSearchMode,
+        custom_instructions: settings.customInstructions,
+        user_name: settings.userName,
+        assistant_name: settings.assistantName
+      };
       
-      if (activeFeature === 'image' && currentInput.toLowerCase().includes('genera') && currentInput.toLowerCase().includes('imagen')) {
+      // Handle image generation
+      if (activeFeature === 'image' || (currentInput.toLowerCase().includes('genera') && currentInput.toLowerCase().includes('imagen'))) {
         endpoint = `${API}/generate/image`;
-        payload = { prompt: currentInput.replace(/genera una imagen de/i, '').trim(), style: 'realistic' };
+        const prompt = currentInput.replace(/genera una imagen de/i, '').replace(/genera imagen de/i, '').trim();
+        payload = { prompt: prompt || currentInput, style: 'realistic' };
         const response = await axios.post(endpoint, payload);
         if (response.data.success && response.data.image_base64) {
-          setMessages(prev => [...prev, { 
-            id: `assistant-${Date.now()}`, role: 'assistant', 
-            content: `He generado esta imagen para ti:\n\n![Imagen generada](data:image/png;base64,${response.data.image_base64})`, 
+          const assistantMsg = { 
+            id: `assistant-${Date.now()}`, 
+            role: 'assistant', 
+            content: `He generado esta imagen para ti:`, 
             timestamp: new Date().toISOString(),
             image: `data:image/png;base64,${response.data.image_base64}`
-          }]);
+          };
+          setMessages(prev => [...prev, assistantMsg]);
+          if (autoSpeak && voiceEnabled) {
+            setTimeout(() => speak('He generado la imagen que pediste'), 500);
+          }
         }
-      } else if (activeFeature === 'web' && currentInput.toLowerCase().includes('crea') && currentInput.toLowerCase().includes('pagina')) {
+      } 
+      // Handle website generation
+      else if (activeFeature === 'web' || (currentInput.toLowerCase().includes('crea') && currentInput.toLowerCase().includes('pagina'))) {
         endpoint = `${API}/generate/website`;
-        payload = { prompt: currentInput.replace(/crea una pagina web sobre/i, '').trim(), style: 'modern' };
+        const prompt = currentInput.replace(/crea una pagina web sobre/i, '').replace(/crea pagina web/i, '').trim();
+        payload = { prompt: prompt || currentInput, style: 'modern' };
         const response = await axios.post(endpoint, payload);
         if (response.data.success) {
+          const codeContent = `He creado tu pagina web!\n\n**HTML:**\n\`\`\`html\n${response.data.html}\n\`\`\`\n\n**CSS:**\n\`\`\`css\n${response.data.css}\n\`\`\`${response.data.js ? `\n\n**JavaScript:**\n\`\`\`javascript\n${response.data.js}\n\`\`\`` : ''}`;
           setMessages(prev => [...prev, { 
-            id: `assistant-${Date.now()}`, role: 'assistant', 
-            content: `He creado tu pagina web! Aqui esta el codigo:\n\n**HTML:**\n\`\`\`html\n${response.data.html}\n\`\`\`\n\n**CSS:**\n\`\`\`css\n${response.data.css}\n\`\`\``, 
-            timestamp: new Date().toISOString()
+            id: `assistant-${Date.now()}`, 
+            role: 'assistant', 
+            content: codeContent, 
+            timestamp: new Date().toISOString(),
+            websiteData: response.data
           }]);
+          if (autoSpeak && voiceEnabled) {
+            setTimeout(() => speak('He creado tu pagina web. Puedes ver el codigo generado.'), 500);
+          }
         }
-      } else if (activeFeature === 'video' && currentInput.toLowerCase().includes('guion')) {
+      } 
+      // Handle video script generation
+      else if (activeFeature === 'video' || (currentInput.toLowerCase().includes('guion') || currentInput.toLowerCase().includes('video'))) {
         endpoint = `${API}/generate/video-script`;
-        payload = { prompt: currentInput.replace(/crea un guion de video sobre/i, '').trim(), duration: '1 minute' };
+        const prompt = currentInput.replace(/crea un guion de video sobre/i, '').replace(/guion de video/i, '').trim();
+        payload = { prompt: prompt || currentInput, duration: '1 minute' };
         const response = await axios.post(endpoint, payload);
         if (response.data.success) {
           setMessages(prev => [...prev, { 
-            id: `assistant-${Date.now()}`, role: 'assistant', 
+            id: `assistant-${Date.now()}`, 
+            role: 'assistant', 
             content: response.data.script, 
             timestamp: new Date().toISOString()
           }]);
+          if (autoSpeak && voiceEnabled) {
+            setTimeout(() => speak(response.data.script.substring(0, 200)), 500);
+          }
         }
-      } else {
+      } 
+      // Regular chat
+      else {
         const response = await axios.post(endpoint, payload);
         const assistantResponse = response.data.response;
-        setMessages(prev => [...prev, { id: response.data.message_id || `assistant-${Date.now()}`, role: 'assistant', content: assistantResponse, timestamp: new Date().toISOString() }]);
+        setMessages(prev => [...prev, { 
+          id: response.data.message_id || `assistant-${Date.now()}`, 
+          role: 'assistant', 
+          content: assistantResponse, 
+          timestamp: new Date().toISOString() 
+        }]);
         
-        // Auto hablar la respuesta
+        // Auto speak response
         if (autoSpeak && voiceEnabled) {
           setTimeout(() => speak(assistantResponse), 500);
         }
@@ -903,10 +948,17 @@ function App() {
       await loadSessions();
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, { id: `error-${Date.now()}`, role: 'assistant', content: 'Error al procesar tu mensaje. Intenta de nuevo.', timestamp: new Date().toISOString() }]);
+      setMessages(prev => [...prev, { 
+        id: `error-${Date.now()}`, 
+        role: 'assistant', 
+        content: 'Error al procesar tu mensaje. Intenta de nuevo.', 
+        timestamp: new Date().toISOString() 
+      }]);
     } finally { 
       setIsLoading(false); 
       setActiveFeature(null);
+      setIsSearchMode(false);
+      setIsThinkingMode(false);
     }
   };
 
