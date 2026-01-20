@@ -128,9 +128,49 @@ async def get_user_memories(user_id: str = "default") -> str:
         memory_text += f"- {mem['key']}: {mem['value']}\n"
     return memory_text
 
-async def get_nexa_response(message: str, session_id: str, conversation_history: List[dict] = None, creative_mode: bool = False) -> str:
+async def get_nexa_response(
+    message: str, 
+    session_id: str, 
+    conversation_history: List[dict] = None, 
+    creative_mode: bool = False,
+    search_mode: bool = False,
+    custom_instructions: str = "",
+    user_name: str = "",
+    assistant_name: str = "NEXA"
+) -> str:
     try:
-        system_prompt = NEXA_SYSTEM_PROMPT
+        # Build dynamic system prompt
+        name_to_use = assistant_name if assistant_name else "NEXA"
+        system_prompt = f"""Eres {name_to_use}, un asistente de IA avanzado, creativo e inteligente.
+Hablas en espanol principalmente. Eres experto en programacion, diseno y creatividad.
+Respondes de forma clara y util."""
+        
+        # Add custom instructions if provided
+        if custom_instructions:
+            system_prompt += f"\n\nInstrucciones personalizadas del usuario:\n{custom_instructions}"
+        
+        # Add user name context
+        if user_name:
+            system_prompt += f"\n\nEl nombre del usuario es: {user_name}"
+        
+        # Add mode-specific instructions
+        if creative_mode:
+            system_prompt += """\n\nMODO PENSAMIENTO PROFUNDO ACTIVADO:
+- Analiza el problema desde multiples perspectivas
+- Razona paso a paso antes de responder
+- Considera todas las posibilidades
+- Se mas detallado y reflexivo en tus respuestas
+- Explora ideas creativas y no convencionales"""
+        
+        if search_mode:
+            system_prompt += """\n\nMODO BUSQUEDA ACTIVADO:
+- Proporciona informacion factual y verificable
+- Cita fuentes cuando sea posible
+- Se preciso y objetivo
+- Organiza la informacion de manera clara
+- Incluye datos relevantes y actualizados"""
+        
+        # Add memories
         memories = await get_user_memories()
         if memories:
             system_prompt += memories
@@ -146,7 +186,7 @@ async def get_nexa_response(message: str, session_id: str, conversation_history:
             recent_history = conversation_history[-10:]
             context = "Historial:\n"
             for msg in recent_history:
-                role = "Usuario" if msg.get('role') == 'user' else "NEXA"
+                role = "Usuario" if msg.get('role') == 'user' else name_to_use
                 context += f"{role}: {msg.get('content', '')}\n"
             context += "\n---\nMensaje: "
         
