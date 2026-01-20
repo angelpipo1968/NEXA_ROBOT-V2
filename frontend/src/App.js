@@ -885,7 +885,7 @@ function App() {
             image: `data:image/png;base64,${response.data.image_base64}`
           };
           setMessages(prev => [...prev, assistantMsg]);
-          if (autoSpeak && voiceEnabled) {
+          if (autoSpeak) {
             setTimeout(() => speak('He generado la imagen que pediste'), 500);
           }
         }
@@ -905,7 +905,7 @@ function App() {
             timestamp: new Date().toISOString(),
             websiteData: response.data
           }]);
-          if (autoSpeak && voiceEnabled) {
+          if (autoSpeak) {
             setTimeout(() => speak('He creado tu pagina web. Puedes ver el codigo generado.'), 500);
           }
         }
@@ -923,7 +923,7 @@ function App() {
             content: response.data.script, 
             timestamp: new Date().toISOString()
           }]);
-          if (autoSpeak && voiceEnabled) {
+          if (autoSpeak) {
             setTimeout(() => speak(response.data.script.substring(0, 200)), 500);
           }
         }
