@@ -446,7 +446,8 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                       <input 
                         type="checkbox" 
                         checked={settings.saveHistory}
-                        onChange={(e) => setSettings({...settings, saveHistory: e.target.checked})}
+                        onChange={(e) => handleSettingChange('saveHistory', e.target.checked)}
+                        data-testid="save-history-toggle"
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -459,7 +460,8 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                     <select 
                       className="setting-select"
                       value={settings.contextMessages}
-                      onChange={(e) => setSettings({...settings, contextMessages: parseInt(e.target.value)})}
+                      onChange={(e) => handleSettingChange('contextMessages', parseInt(e.target.value))}
+                      data-testid="context-messages-select"
                     >
                       <option value="5">5 mensajes</option>
                       <option value="10">10 mensajes</option>
@@ -472,7 +474,11 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                 <div className="setting-item danger">
                   <label className="setting-label">Borrar todos los chats</label>
                   <div className="setting-control">
-                    <button className="danger-btn">Borrar todo</button>
+                    <button 
+                      className="danger-btn" 
+                      onClick={onClearAllChats}
+                      data-testid="clear-all-chats-btn"
+                    >Borrar todo</button>
                   </div>
                 </div>
               </div>
