@@ -940,7 +940,7 @@ function App() {
         }]);
         
         // Auto speak response
-        if (autoSpeak && voiceEnabled) {
+        if (autoSpeak) {
           setTimeout(() => speak(assistantResponse), 500);
         }
       }
