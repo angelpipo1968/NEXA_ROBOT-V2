@@ -963,9 +963,42 @@ function App() {
   };
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setMessages(prev => [...prev, { id: `user-${Date.now()}`, role: 'user', content: `[Archivo adjunto: ${file.name}]`, timestamp: new Date().toISOString() }]);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    for (const file of files) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`El archivo ${file.name} es demasiado grande. Maximo 10MB.`);
+        continue;
+      }
+      
+      // Add to uploaded files list
+      const fileObj = {
+        id: `file-${Date.now()}-${Math.random()}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file: file
+      };
+      
+      setUploadedFiles(prev => [...prev, fileObj]);
+      
+      // If it's an image, try to upload to server
+      if (file.type.startsWith('image/')) {
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+          const response = await axios.post(`${API}/upload/image`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          console.log('Image uploaded:', response.data);
+        } catch (error) {
+          console.error('Error uploading image:', error);
+        }
+      }
+    }
+    
     e.target.value = '';
   };
 
