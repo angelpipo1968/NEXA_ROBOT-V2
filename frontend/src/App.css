@@ -513,6 +513,142 @@ body {
   gap: 12px;
 }
 
+/* Active Mode Indicator */
+.active-mode-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(97, 92, 237, 0.15);
+  border: 1px solid var(--accent-color);
+  border-radius: 20px;
+  color: var(--accent-color);
+  font-size: 13px;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease;
+}
+
+.clear-mode-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.clear-mode-btn:hover {
+  background: rgba(97, 92, 237, 0.2);
+}
+
+/* Uploaded Files Preview */
+.uploaded-files-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.uploaded-file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.uploaded-file-item .file-name {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.remove-file-btn:hover {
+  color: var(--error-color);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Feature Menu */
+.feature-menu-container {
+  position: relative;
+}
+
+.feature-menu-btn.active {
+  color: var(--accent-color);
+  background: rgba(97, 92, 237, 0.1);
+}
+
+.feature-dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px;
+  min-width: 200px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  animation: slideUp 0.2s ease;
+}
+
+.feature-dropdown-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.feature-dropdown-menu button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.feature-dropdown-menu button svg {
+  flex-shrink: 0;
+}
+
+/* Mode Buttons */
+.mode-btn {
+  transition: all 0.2s ease;
+}
+
+.mode-btn.active {
+  color: var(--accent-color) !important;
+  background: rgba(97, 92, 237, 0.15) !important;
+}
+
 .quick-features {
   display: flex;
   gap: 8px;
