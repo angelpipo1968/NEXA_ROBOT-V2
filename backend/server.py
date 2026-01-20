@@ -360,7 +360,14 @@ async def chat_with_nexa(request: ChatRequest):
                 conversation_history = conv["messages"]
         
         response = await get_nexa_response(
-            request.message, request.session_id, conversation_history, request.creative_mode
+            message=request.message, 
+            session_id=request.session_id, 
+            conversation_history=conversation_history, 
+            creative_mode=request.creative_mode,
+            search_mode=request.search_mode,
+            custom_instructions=request.custom_instructions,
+            user_name=request.user_name,
+            assistant_name=request.assistant_name
         )
         
         user_msg = Message(role="user", content=request.message)
