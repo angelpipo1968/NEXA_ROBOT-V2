@@ -1295,6 +1295,61 @@ body {
   color: var(--text-primary);
 }
 
+/* Voice Info */
+.voice-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.voice-lang {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.no-voices {
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Generated Image */
+.message-with-image {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-text-content {
+  margin: 0;
+}
+
+.generated-image {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 12px;
+  object-fit: contain;
+  border: 1px solid var(--border-color);
+}
+
+/* Code Block */
+.code-block {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  margin: 8px 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.code-block code {
+  color: var(--text-primary);
+}
+
 /* Responsive Settings */
 @media (max-width: 768px) {
   .settings-body {
