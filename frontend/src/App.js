@@ -617,6 +617,10 @@ function App() {
   const [activeFeature, setActiveFeature] = useState(null);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [recognitionSupported, setRecognitionSupported] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [isThinkingMode, setIsThinkingMode] = useState(false);
+  const [showFeatureMenu, setShowFeatureMenu] = useState(false);
   const [settings, setSettings] = useState({
     theme: 'dark',
     language: 'es',
@@ -625,7 +629,7 @@ function App() {
     fontSize: 'medium',
     showAvatars: true,
     animations: true,
-    chatModel: 'gpt-4',
+    chatModel: 'gpt-4.1',
     imageModel: 'gpt-image-1',
     temperature: 0.7,
     saveHistory: true,
@@ -642,6 +646,34 @@ function App() {
   const synthRef = useRef(null);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
+  const featureMenuRef = useRef(null);
+
+  // Load saved settings on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('nexa_settings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setSettings(prev => ({...prev, ...parsed}));
+        setAutoSpeak(parsed.autoSpeak ?? true);
+        applyTheme(parsed.theme || 'dark');
+        applyFontSize(parsed.fontSize || 'medium');
+      } catch (e) {
+        console.error('Error loading settings:', e);
+      }
+    }
+  }, []);
+
+  // Close feature menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (featureMenuRef.current && !featureMenuRef.current.contains(event.target)) {
+        setShowFeatureMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Initialize speech
   useEffect(() => {
