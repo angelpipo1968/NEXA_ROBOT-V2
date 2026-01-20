@@ -1067,8 +1067,15 @@ function App() {
           <div className="header-actions">
             <button 
               className={`voice-toggle ${autoSpeak ? 'active' : ''}`} 
-              onClick={() => setAutoSpeak(!autoSpeak)}
+              onClick={() => {
+                const newAutoSpeak = !autoSpeak;
+                setAutoSpeak(newAutoSpeak);
+                const newSettings = {...settings, autoSpeak: newAutoSpeak};
+                setSettings(newSettings);
+                localStorage.setItem('nexa_settings', JSON.stringify(newSettings));
+              }}
               title={autoSpeak ? 'Desactivar voz automatica' : 'Activar voz automatica'}
+              data-testid="voice-toggle-btn"
             >
               <SpeakerIcon muted={!autoSpeak} />
               <span className="voice-label">{autoSpeak ? 'Voz ON' : 'Voz OFF'}</span>
