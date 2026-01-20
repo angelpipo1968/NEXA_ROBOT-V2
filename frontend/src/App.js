@@ -156,7 +156,7 @@ const Message = ({ message, onSpeak, settings }) => {
 };
 
 // ==================== SETTINGS COMPONENT ====================
-const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
+const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats, setAutoSpeak }) => {
   const [activeSection, setActiveSection] = useState('general');
   const [availableVoices, setAvailableVoices] = useState([]);
   
