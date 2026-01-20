@@ -1050,6 +1050,7 @@ function App() {
           onClose={() => setShowSettings(false)} 
           settings={settings}
           setSettings={setSettings}
+          onClearAllChats={clearAllChats}
         />
       )}
 
