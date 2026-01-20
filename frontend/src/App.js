@@ -495,8 +495,9 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                       type="text"
                       className="setting-input"
                       value={settings.assistantName}
-                      onChange={(e) => setSettings({...settings, assistantName: e.target.value})}
+                      onChange={(e) => handleSettingChange('assistantName', e.target.value)}
                       placeholder="NEXA"
+                      data-testid="assistant-name-input"
                     />
                   </div>
                 </div>
@@ -508,8 +509,9 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                       type="text"
                       className="setting-input"
                       value={settings.userName}
-                      onChange={(e) => setSettings({...settings, userName: e.target.value})}
+                      onChange={(e) => handleSettingChange('userName', e.target.value)}
                       placeholder="Usuario"
+                      data-testid="user-name-input"
                     />
                   </div>
                 </div>
@@ -519,9 +521,10 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                   <textarea 
                     className="setting-textarea"
                     value={settings.customInstructions}
-                    onChange={(e) => setSettings({...settings, customInstructions: e.target.value})}
+                    onChange={(e) => handleSettingChange('customInstructions', e.target.value)}
                     placeholder="Describe como quieres que NEXA responda..."
                     rows={4}
+                    data-testid="custom-instructions-textarea"
                   />
                 </div>
               </div>
