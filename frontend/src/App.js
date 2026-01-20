@@ -91,21 +91,62 @@ const FeatureCard = ({ icon, title, onClick, active }) => (
 );
 
 // ==================== MESSAGE COMPONENT ====================
-const Message = ({ message, onSpeak }) => {
+const Message = ({ message, onSpeak, settings }) => {
   const isUser = message.role === 'user';
+  const [copied, setCopied] = useState(false);
+  
+  const copyText = () => {
+    navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  // Render image if present
+  const renderContent = () => {
+    if (message.image) {
+      return (
+        <div className="message-with-image">
+          <p className="message-text-content">{message.content.split('![')[0]}</p>
+          <img src={message.image} alt="Generated" className="generated-image" />
+        </div>
+      );
+    }
+    
+    // Check for code blocks
+    if (message.content.includes('```')) {
+      const parts = message.content.split(/(```[\s\S]*?```)/g);
+      return parts.map((part, i) => {
+        if (part.startsWith('```')) {
+          const code = part.replace(/```\w*\n?/g, '').replace(/```$/g, '');
+          return (
+            <pre key={i} className="code-block">
+              <code>{code}</code>
+            </pre>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      });
+    }
+    
+    return message.content;
+  };
+  
   return (
-    <div className={`message ${isUser ? 'user' : 'assistant'}`}>
-      {!isUser && (
+    <div className={`message ${isUser ? 'user' : 'assistant'}`} data-testid={`message-${message.id}`}>
+      {!isUser && settings?.showAvatars !== false && (
         <div className="message-avatar">
           <NexaLogo size={32} />
         </div>
       )}
       <div className="message-content">
-        <div className="message-text">{message.content}</div>
+        <div className="message-text">{renderContent()}</div>
         {!isUser && (
           <div className="message-actions">
             <button onClick={() => onSpeak(message.content)} className="action-btn" title="Escuchar">
               <SpeakerIcon muted={false} />
+            </button>
+            <button onClick={copyText} className="action-btn" title="Copiar">
+              {copied ? <CheckIcon /> : <CopyIcon />}
             </button>
           </div>
         )}
