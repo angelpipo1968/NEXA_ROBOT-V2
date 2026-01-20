@@ -570,16 +570,24 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
               <div className="settings-section">
                 <h2 className="section-title">Seleccionar Voz</h2>
                 <div className="voice-list">
-                  {voices.map(voice => (
-                    <button
-                      key={voice.id}
-                      className={`voice-item ${settings.voiceId === voice.id ? 'active' : ''}`}
-                      onClick={() => setSettings({...settings, voiceId: voice.id, voiceName: voice.name})}
-                    >
-                      <span className="voice-name">{voice.name}</span>
-                      {settings.voiceId === voice.id && <span className="check-mark">✓</span>}
-                    </button>
-                  ))}
+                  {availableVoices.length > 0 ? (
+                    availableVoices.map(voice => (
+                      <button
+                        key={voice.name}
+                        className={`voice-item ${settings.voiceId === voice.name ? 'active' : ''}`}
+                        onClick={() => handleVoiceChange(voice.name)}
+                        data-testid={`voice-${voice.name}`}
+                      >
+                        <div className="voice-info">
+                          <span className="voice-name">{voice.name}</span>
+                          <span className="voice-lang">{voice.lang}</span>
+                        </div>
+                        {settings.voiceId === voice.name && <span className="check-mark">✓</span>}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="no-voices">Cargando voces disponibles...</p>
+                  )}
                 </div>
                 <button className="back-to-general" onClick={() => setActiveSection('general')}>
                   <BackIcon /> Volver a General
