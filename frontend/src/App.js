@@ -391,9 +391,10 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                     <select 
                       className="setting-select"
                       value={settings.chatModel}
-                      onChange={(e) => setSettings({...settings, chatModel: e.target.value})}
+                      onChange={(e) => handleSettingChange('chatModel', e.target.value)}
+                      data-testid="chat-model-select"
                     >
-                      <option value="gpt-4">GPT-4</option>
+                      <option value="gpt-4.1">GPT-4.1</option>
                       <option value="gpt-4-turbo">GPT-4 Turbo</option>
                       <option value="gpt-3.5">GPT-3.5</option>
                     </select>
@@ -406,10 +407,11 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                     <select 
                       className="setting-select"
                       value={settings.imageModel}
-                      onChange={(e) => setSettings({...settings, imageModel: e.target.value})}
+                      onChange={(e) => handleSettingChange('imageModel', e.target.value)}
+                      data-testid="image-model-select"
                     >
+                      <option value="gpt-image-1">GPT Image 1</option>
                       <option value="dall-e-3">DALL-E 3</option>
-                      <option value="gpt-image-1">GPT Image</option>
                     </select>
                   </div>
                 </div>
@@ -423,8 +425,9 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                       max="1" 
                       step="0.1"
                       value={settings.temperature}
-                      onChange={(e) => setSettings({...settings, temperature: parseFloat(e.target.value)})}
+                      onChange={(e) => handleSettingChange('temperature', parseFloat(e.target.value))}
                       className="setting-range"
+                      data-testid="temperature-slider"
                     />
                     <span className="range-value">{settings.temperature}</span>
                   </div>
