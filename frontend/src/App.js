@@ -246,15 +246,18 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                     <div className="segmented-control">
                       <button 
                         className={`segment ${settings.theme === 'system' ? 'active' : ''}`}
-                        onClick={() => setSettings({...settings, theme: 'system'})}
+                        onClick={() => handleThemeChange('system')}
+                        data-testid="theme-system-btn"
                       >Sistema</button>
                       <button 
                         className={`segment ${settings.theme === 'light' ? 'active' : ''}`}
-                        onClick={() => setSettings({...settings, theme: 'light'})}
+                        onClick={() => handleThemeChange('light')}
+                        data-testid="theme-light-btn"
                       >Claro</button>
                       <button 
                         className={`segment ${settings.theme === 'dark' ? 'active' : ''}`}
-                        onClick={() => setSettings({...settings, theme: 'dark'})}
+                        onClick={() => handleThemeChange('dark')}
+                        data-testid="theme-dark-btn"
                       >Oscuro</button>
                     </div>
                   </div>
@@ -266,7 +269,8 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                     <select 
                       className="setting-select"
                       value={settings.language}
-                      onChange={(e) => setSettings({...settings, language: e.target.value})}
+                      onChange={(e) => handleSettingChange('language', e.target.value)}
+                      data-testid="language-select"
                     >
                       <option value="es">Espanol</option>
                       <option value="en">English</option>
@@ -291,7 +295,8 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                       <input 
                         type="checkbox" 
                         checked={settings.autoSpeak}
-                        onChange={(e) => setSettings({...settings, autoSpeak: e.target.checked})}
+                        onChange={(e) => handleSettingChange('autoSpeak', e.target.checked)}
+                        data-testid="auto-speak-toggle"
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -307,8 +312,9 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                       max="2" 
                       step="0.1"
                       value={settings.speechRate}
-                      onChange={(e) => setSettings({...settings, speechRate: parseFloat(e.target.value)})}
+                      onChange={(e) => handleSettingChange('speechRate', parseFloat(e.target.value))}
                       className="setting-range"
+                      data-testid="speech-rate-slider"
                     />
                     <span className="range-value">{settings.speechRate}x</span>
                   </div>
