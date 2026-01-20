@@ -1087,7 +1087,7 @@ function App() {
                 
                 <div className="features-grid">
                   <FeatureCard icon={<BrainIcon />} title="Pensamiento" onClick={() => handleFeatureClick('thinking')} active={activeFeature === 'thinking'} />
-                  <FeatureCard icon={<SearchIcon />} title="Buscar" onClick={() => handleFeatureClick('search')} active={activeFeature === 'search'} />
+                  <FeatureCard icon={<GlobeIcon />} title="Buscar" onClick={() => handleFeatureClick('search')} active={activeFeature === 'search'} />
                   <FeatureCard icon={<ImageGenIcon />} title="Crear Imagen" onClick={() => handleFeatureClick('image')} active={activeFeature === 'image'} />
                   <FeatureCard icon={<WebDevIcon />} title="Crear Web" onClick={() => handleFeatureClick('web')} active={activeFeature === 'web'} />
                   <FeatureCard icon={<VideoIcon />} title="Crear Video" onClick={() => handleFeatureClick('video')} active={activeFeature === 'video'} />
@@ -1097,7 +1097,7 @@ function App() {
           ) : (
             <div className="messages-container">
               {messages.map((msg) => (
-                <Message key={msg.id} message={msg} onSpeak={speak} />
+                <Message key={msg.id} message={msg} onSpeak={speak} settings={settings} />
               ))}
               {isLoading && (
                 <div className="message assistant">
