@@ -760,16 +760,23 @@ function App() {
     if (!cleanText) return;
     
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'es-ES';
+    utterance.lang = settings.language === 'es' ? 'es-ES' : settings.language === 'en' ? 'en-US' : 'es-ES';
     utterance.pitch = 1.0;
-    utterance.rate = 1.0;
+    utterance.rate = settings.speechRate || 1.0;
     utterance.volume = 1.0;
     
-    // Get voices and select Spanish
+    // Get voices and select based on settings
     const voices = synthRef.current.getVoices();
-    const spanishVoice = voices.find(v => v.lang.includes('es'));
-    if (spanishVoice) {
-      utterance.voice = spanishVoice;
+    if (settings.voiceId && settings.voiceId !== 'default') {
+      const selectedVoice = voices.find(v => v.name === settings.voiceId);
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+    } else {
+      const defaultVoice = voices.find(v => v.lang.includes(settings.language || 'es'));
+      if (defaultVoice) {
+        utterance.voice = defaultVoice;
+      }
     }
     
     utterance.onstart = () => {
@@ -786,7 +793,7 @@ function App() {
     };
     
     synthRef.current.speak(utterance);
-  }, [speechSupported]);
+  }, [speechSupported, settings.speechRate, settings.voiceId, settings.language]);
 
   const toggleListening = () => {
     if (!recognitionSupported) { alert('Reconocimiento de voz no soportado.'); return; }
