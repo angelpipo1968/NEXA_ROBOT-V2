@@ -209,6 +209,11 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats, setAuto
     const newSettings = {...settings, [key]: value};
     setSettings(newSettings);
     localStorage.setItem('nexa_settings', JSON.stringify(newSettings));
+    
+    // Sync autoSpeak with App state
+    if (key === 'autoSpeak' && setAutoSpeak) {
+      setAutoSpeak(value);
+    }
   };
 
   return (
