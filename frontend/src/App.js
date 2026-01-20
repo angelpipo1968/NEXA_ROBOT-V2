@@ -802,12 +802,42 @@ function App() {
 
   const handleFeatureClick = (feature) => {
     setActiveFeature(activeFeature === feature ? null : feature);
+    setShowFeatureMenu(false);
+    
     if (feature === 'image') setInputText('Genera una imagen de ');
     else if (feature === 'web') setInputText('Crea una pagina web sobre ');
     else if (feature === 'video') setInputText('Crea un guion de video sobre ');
-    else if (feature === 'search') setInputText('Busca informacion sobre ');
-    else if (feature === 'thinking') setInputText('');
+    else if (feature === 'search') {
+      setIsSearchMode(true);
+      setIsThinkingMode(false);
+      setInputText('');
+    }
+    else if (feature === 'thinking') {
+      setIsThinkingMode(true);
+      setIsSearchMode(false);
+      setInputText('');
+    }
     inputRef.current?.focus();
+  };
+  
+  // Clear all chats
+  const clearAllChats = async () => {
+    if (window.confirm('¿Seguro que quieres borrar todos los chats?')) {
+      try {
+        for (const session of sessions) {
+          await axios.delete(`${API}/sessions/${session.session_id}`);
+        }
+        await createNewSession();
+        await loadSessions();
+      } catch (error) {
+        console.error('Error clearing chats:', error);
+      }
+    }
+  };
+  
+  // Remove uploaded file
+  const removeUploadedFile = (index) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const sendMessage = async (e) => {
