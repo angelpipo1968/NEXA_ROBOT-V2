@@ -156,8 +156,22 @@ const Message = ({ message, onSpeak, settings }) => {
 };
 
 // ==================== SETTINGS COMPONENT ====================
-const SettingsPage = ({ onClose, settings, setSettings }) => {
+const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
   const [activeSection, setActiveSection] = useState('general');
+  const [availableVoices, setAvailableVoices] = useState([]);
+  
+  useEffect(() => {
+    // Load available browser voices
+    const loadVoices = () => {
+      const voices = window.speechSynthesis?.getVoices() || [];
+      const spanishVoices = voices.filter(v => v.lang.includes('es'));
+      setAvailableVoices(spanishVoices.length > 0 ? spanishVoices : voices.slice(0, 10));
+    };
+    
+    loadVoices();
+    window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
+    return () => window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices);
+  }, []);
   
   const menuItems = [
     { id: 'general', icon: <SettingsIcon />, label: 'General' },
@@ -169,12 +183,33 @@ const SettingsPage = ({ onClose, settings, setSettings }) => {
     { id: 'about', icon: <InfoIcon />, label: 'Sobre nosotros' },
   ];
 
-  const voices = [
-    { id: 'default', name: 'Predeterminada' },
-    { id: 'helena', name: 'Helena' },
-    { id: 'laura', name: 'Laura' },
-    { id: 'pablo', name: 'Pablo' },
-  ];
+  // Apply theme when changed
+  const handleThemeChange = (theme) => {
+    setSettings({...settings, theme});
+    applyTheme(theme);
+    localStorage.setItem('nexa_settings', JSON.stringify({...settings, theme}));
+  };
+  
+  // Apply font size when changed
+  const handleFontSizeChange = (fontSize) => {
+    setSettings({...settings, fontSize});
+    applyFontSize(fontSize);
+    localStorage.setItem('nexa_settings', JSON.stringify({...settings, fontSize}));
+  };
+  
+  // Handle voice selection
+  const handleVoiceChange = (voiceName) => {
+    const voice = availableVoices.find(v => v.name === voiceName);
+    setSettings({...settings, voiceId: voiceName, voiceName: voice?.name || voiceName});
+    localStorage.setItem('nexa_settings', JSON.stringify({...settings, voiceId: voiceName, voiceName: voice?.name || voiceName}));
+  };
+  
+  // Handle setting change and save to localStorage
+  const handleSettingChange = (key, value) => {
+    const newSettings = {...settings, [key]: value};
+    setSettings(newSettings);
+    localStorage.setItem('nexa_settings', JSON.stringify(newSettings));
+  };
 
   return (
     <div className="settings-overlay">
