@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 
 class NexaAPITester:
-    def __init__(self, base_url="https://voice-system-repair.preview.emergentagent.com"):
+    def __init__(self, base_url="https://smart-nexa-app.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.session_id = None
