@@ -608,7 +608,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [sessionId, setSessionId] = useState('');
   const [sessions, setSessions] = useState([]);
