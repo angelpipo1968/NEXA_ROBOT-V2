@@ -332,15 +332,18 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                     <div className="segmented-control">
                       <button 
                         className={`segment ${settings.fontSize === 'small' ? 'active' : ''}`}
-                        onClick={() => setSettings({...settings, fontSize: 'small'})}
+                        onClick={() => handleFontSizeChange('small')}
+                        data-testid="font-small-btn"
                       >Pequeno</button>
                       <button 
                         className={`segment ${settings.fontSize === 'medium' ? 'active' : ''}`}
-                        onClick={() => setSettings({...settings, fontSize: 'medium'})}
+                        onClick={() => handleFontSizeChange('medium')}
+                        data-testid="font-medium-btn"
                       >Mediano</button>
                       <button 
                         className={`segment ${settings.fontSize === 'large' ? 'active' : ''}`}
-                        onClick={() => setSettings({...settings, fontSize: 'large'})}
+                        onClick={() => handleFontSizeChange('large')}
+                        data-testid="font-large-btn"
                       >Grande</button>
                     </div>
                   </div>
@@ -353,7 +356,8 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                       <input 
                         type="checkbox" 
                         checked={settings.showAvatars}
-                        onChange={(e) => setSettings({...settings, showAvatars: e.target.checked})}
+                        onChange={(e) => handleSettingChange('showAvatars', e.target.checked)}
+                        data-testid="show-avatars-toggle"
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -367,7 +371,8 @@ const SettingsPage = ({ onClose, settings, setSettings, onClearAllChats }) => {
                       <input 
                         type="checkbox" 
                         checked={settings.animations}
-                        onChange={(e) => setSettings({...settings, animations: e.target.checked})}
+                        onChange={(e) => handleSettingChange('animations', e.target.checked)}
+                        data-testid="animations-toggle"
                       />
                       <span className="toggle-slider"></span>
                     </label>
