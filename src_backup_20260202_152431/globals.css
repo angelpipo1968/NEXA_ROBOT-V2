@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* --- Vision Pro Cinematic Palette (Forced Dark) --- */
+    --vp-bg-deep: #050505;
+    /* Deep Space Radial Gradient */
+    --vp-bg-radial: radial-gradient(circle at 50% 0%, #1a1a2e 0%, #050508 60%, #000000 100%);
+
+    --vp-glass-base: rgba(10, 10, 15, 0.4);
+    --vp-glass-border: rgba(255, 255, 255, 0.1);
+    --vp-glass-border-hover: rgba(255, 255, 255, 0.2);
+    --vp-glass-highlight: rgba(255, 255, 255, 0.05);
+
+    --vp-accent-cyan: #00E5FF;
+    --vp-accent-purple: #8A4DFF;
+    --vp-accent-pink: #FF2DAA;
+
+    --vp-text-primary: #FFFFFF;
+    --vp-text-secondary: rgba(255, 255, 255, 0.75);
+    --vp-text-tertiary: rgba(255, 255, 255, 0.4);
+
+    --vp-shadow-glow: 0 0 40px rgba(0, 229, 255, 0.15);
+    --font-sans: 'sf pro display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+}
+
+@layer base {
+    body {
+        /* Force dark background */
+        @apply bg-[#050505] text-white font-sans overflow-hidden;
+        background: var(--vp-bg-radial);
+    }
+}
+
+@layer utilities {
+    .vp-app {
+        position: relative;
+        display: flex;
+        width: 100%;
+        height: 100vh;
+        overflow: hidden;
+        background: var(--vp-bg-radial);
+        color: var(--vp-text-primary);
+    }
+
+    .vp-bg-glow {
+        position: absolute;
+        width: 800px;
+        height: 800px;
+        border-radius: 9999px;
+        filter: blur(120px);
+        opacity: 0.15;
+        /* Subtle glow */
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .vp-bg-glow--left {
+        background: var(--vp-accent-purple);
+        top: -200px;
+        left: -200px;
+        animation: pulse-glow 10s infinite alternate;
+    }
+
+    .vp-bg-glow--right {
+        background: var(--vp-accent-cyan);
+        bottom: -200px;
+        right: -200px;
+        animation: pulse-glow 12s infinite alternate-reverse;
+    }
+
+    /* Glassmorphism Classes */
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .glass-input {
+        background: rgba(20, 20, 25, 0.6);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    /* Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Animations */
+    @keyframes pulse-glow {
+        0% {
+            opacity: 0.1;
+            transform: scale(1);
+        }
+
+        100% {
+            opacity: 0.25;
+            transform: scale(1.1);
+        }
+    }
+}

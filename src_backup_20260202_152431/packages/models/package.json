@@ -1,0 +1,15 @@
+{
+    "name": "@nexa/models",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "build": "tsc"
+    },
+    "dependencies": {
+        "@nexa/core": "*"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

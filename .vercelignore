@@ -1,0 +1,16 @@
+node_modules
+_backup
+backups
+src_backup_*
+*.log
+*.txt
+python_agent
+.turbo
+.husky
+.git
+.github
+.vscode
+*.ps1
+*.sh
+*.sql
+*.md

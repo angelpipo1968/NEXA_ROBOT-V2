@@ -1,0 +1,25 @@
+{
+  "name": "nexa-ai-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:all": "turbo run dev",
+    "build": "turbo run build",
+    "build:all": "turbo run build",
+    "lint": "turbo run lint",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js",
+    "docker:logs": "docker-compose -f infra/docker-compose.yml logs -f",
+    "nexa": "npx ts-node packages/nexa-core/src/cli.ts"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "turbo": "latest"
+  },
+  "packageManager": "npm@10.2.4"
+}

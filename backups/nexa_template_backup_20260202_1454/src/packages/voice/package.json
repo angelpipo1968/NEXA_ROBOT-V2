@@ -1,0 +1,13 @@
+{
+    "name": "@nexa/voice",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "dependencies": {
+        "tone": "^14.7.77",
+        "howler": "^2.2.3"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "name": "@nexa/writing",
+    "version": "0.0.0",
+    "main": "src/index.ts",
+    "dependencies": {
+        "pdfkit": "^0.13.0",
+        "html-to-text": "^9.0.5",
+        "mammoth": "^1.6.0",
+        "cheerio": "^1.0.0-rc.12",
+        "natural": "^6.5.0"
+    }
+}

@@ -1,0 +1,33 @@
+{
+    "name": "@nexa/sdk",
+    "version": "1.0.0-alpha",
+    "description": "Official SDK for Nexa AI integrations",
+    "main": "dist/index.js",
+    "module": "dist/index.esm.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.js"
+        },
+        "./react": "./dist/react/index.js",
+        "./node": "./dist/node/index.js"
+    },
+    "scripts": {
+        "build": "tsc"
+    },
+    "dependencies": {
+        "events": "^3.3.0",
+        "axios": "^1.6.0",
+        "zod": "^3.22.0",
+        "commander": "^11.0.0",
+        "chalk": "^5.0.0",
+        "ora": "^7.0.0",
+        "react": "^18.2.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/react": "^18.2.0",
+        "typescript": "^5.0.0"
+    }
+}

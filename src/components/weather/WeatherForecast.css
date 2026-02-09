@@ -1,0 +1,123 @@
+/* Weather Forecast Styles */
+.weather-forecast-container {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.forecast-header {
+    margin-bottom: 1rem;
+}
+
+.forecast-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.forecast-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+}
+
+.forecast-day-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s ease;
+}
+
+.forecast-day-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.forecast-day-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.forecast-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.forecast-temps {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-family: 'Courier New', monospace;
+}
+
+.temp-max {
+    font-size: 1rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.temp-separator {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.875rem;
+}
+
+.temp-min {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.forecast-precipitation {
+    font-size: 0.7rem;
+    color: rgba(135, 206, 250, 0.9);
+    font-weight: 500;
+}
+
+.forecast-condition {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    line-height: 1.2;
+}
+
+.forecast-empty {
+    padding: 2rem;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .forecast-grid {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .forecast-day-card {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .forecast-icon {
+        font-size: 1.5rem;
+    }
+
+    .temp-max {
+        font-size: 0.875rem;
+    }
+
+    .temp-min {
+        font-size: 0.75rem;
+    }
+}

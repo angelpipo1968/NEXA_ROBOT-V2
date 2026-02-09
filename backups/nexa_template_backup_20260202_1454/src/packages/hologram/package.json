@@ -1,0 +1,23 @@
+{
+    "name": "@nexa/hologram",
+    "version": "0.0.1",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc -w"
+    },
+    "dependencies": {
+        "three": "^0.160.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/three": "^0.160.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0"
+    },
+    "peerDependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0"
+    }
+}

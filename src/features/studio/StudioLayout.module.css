@@ -1,0 +1,247 @@
+.container {
+    width: 100%;
+    height: 100vh;
+    background-color: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+@media (prefers-color-scheme: dark) {
+    .container {
+        background-color: #050505;
+        color: white;
+    }
+}
+
+.dark .container {
+    background-color: #050505;
+    color: white;
+}
+
+.innerContainer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.mainLayout {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    padding: 24px;
+    border-right: 1px solid #e5e7eb;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+}
+
+.dark .sidebar {
+    background-color: #0a0a0a;
+    border-color: #1f2937;
+}
+
+.sectionTitle {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: #9ca3af;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sectionTitleIcon {
+    opacity: 0.7;
+}
+
+.btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #4b5563;
+    transition: all 0.2s ease;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+}
+
+.dark .btn {
+    color: #9ca3af;
+}
+
+.btn:hover {
+    background-color: #f3f4f6;
+    color: #111827;
+}
+
+.dark .btn:hover {
+    background-color: #1f2937;
+    color: #ffffff;
+}
+
+.btnActive {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+.dark .btnActive {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: #60a5fa;
+}
+
+.btnActive:hover {
+    background-color: #dbeafe;
+}
+
+.dark .btnActive:hover {
+    background-color: rgba(37, 99, 235, 0.2);
+}
+
+.btnPrimary {
+    background-color: #2563eb;
+    color: white;
+    justify-content: center;
+}
+
+.btnPrimary:hover {
+    background-color: #1d4ed8;
+    color: white;
+}
+
+.btnOutline {
+    border: 1px solid #e5e7eb;
+    justify-content: center;
+}
+
+.dark .btnOutline {
+    border-color: #374151;
+}
+
+.btnOutline:hover {
+    border-color: #d1d5db;
+}
+
+/* Editor Section */
+.editorSection {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #ffffff;
+    position: relative;
+    padding: 0;
+}
+
+.dark .editorSection {
+    background-color: #000000;
+}
+
+/* Stats Section */
+.statsSection {
+    width: 280px;
+    padding: 24px;
+    border-left: 1px solid #e5e7eb;
+    background-color: #ffffff;
+    overflow-y: auto;
+}
+
+.dark .statsSection {
+    background-color: #0a0a0a;
+    border-color: #1f2937;
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.statCard {
+    padding: 12px;
+    background-color: #f9fafb;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid #f3f4f6;
+}
+
+.dark .statCard {
+    background-color: #111;
+    border-color: #1f2937;
+}
+
+.statValue {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.dark .statValue {
+    color: #ffffff;
+}
+
+.statLabel {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+/* AI Section in Sidebar */
+.aiTitle {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dark .aiTitle {
+    color: #d1d5db;
+}
+
+.aiItem {
+    padding: 10px;
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #0369a1;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.dark .aiItem {
+    background-color: rgba(14, 165, 233, 0.1);
+    border-color: rgba(14, 165, 233, 0.2);
+    color: #7dd3fc;
+}
+
+.footer {
+    height: 40px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ffffff;
+}
+
+.dark .footer {
+    background-color: #0a0a0a;
+    border-color: #1f2937;
+}
