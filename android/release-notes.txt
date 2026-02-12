@@ -1,0 +1,19 @@
+# Nexa Android Release Notes
+
+**Version:** 1.0 (Release Signed)
+**Date:** 2026-02-09
+
+## Files
+- **Play Store Upload (AAB):** `c:\nexa\android\app\build\outputs\bundle\release\app-release.aab`
+- **Device Installation (APK):** `c:\nexa\android\app\build\outputs\apk\release\app-release.apk`
+- **Keystore Location:** `c:\nexa\android\app\nexa-release.keystore`
+
+## Signing Credentials
+**Keep these safe for future updates!**
+- **Store Password:** nexa123456
+- **Key Alias:** nexa-alias
+- **Key Password:** nexa123456
+
+## Instructions
+- **To Upload to Play Store:** Upload the `.aab` file to the Google Play Console.
+- **To Install heavily on device:** Copy and install the `.apk` file.

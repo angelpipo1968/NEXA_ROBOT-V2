@@ -1,5 +1,5 @@
 import { geminiClient } from '@/lib/gemini';
-import { Project, ProjectFile } from '@/store/useChatStore';
+import { Project, ProjectFile } from '@/store/useProjectStore';
 import { saasStarter } from '@/data/webTemplates/saasStarter';
 
 interface GenerationRequest {
@@ -41,7 +41,8 @@ export const WebGenerator = {
                 temperature: 0.2
             });
 
-            const textResponse = await response.text();
+            const data = await response.json();
+            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
             // Basic parsing to extract JSON from potential markdown blocks
             const jsonMatch = textResponse.match(/\[[\s\S]*\]/);
             if (!jsonMatch) throw new Error("Failed to parse project structure");
@@ -88,7 +89,8 @@ export const WebGenerator = {
                 const temperature = file.path.endsWith('.json') || file.path.endsWith('.config.js') ? 0.1 : 0.4;
 
                 const response = await geminiClient.chat({ message: prompt, temperature });
-                const content = await response.text();
+                const data = await response.json();
+                const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
                 generatedFiles.push({
                     name: file.path.split('/').pop() || '',

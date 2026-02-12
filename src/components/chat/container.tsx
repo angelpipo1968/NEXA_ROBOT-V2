@@ -3,9 +3,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useChatStore, Message } from '@/store/useChatStore'
 import ChatInput from './ChatInput'
+import MessageBubble from './MessageBubble'
 import { ModernStudio } from '@/features/studio/ModernStudio'
 import DevStudio from '../dev/DevStudio'
-import { X, Sparkles, Brain, AudioWaveform, Search } from 'lucide-react'
+import { X } from 'lucide-react'
+import { VoiceChat } from './VoiceChat'
+import { VoiceVideoOverlay } from './VoiceVideoOverlay'
 
 interface ChatContainerProps {
     userId?: string
@@ -15,59 +18,8 @@ interface ChatContainerProps {
     onNewChat?: () => void
 }
 
-function MessageBubble({ message }: { message: Message }) {
-    const isUser = message.role === 'user'
-    const [isThoughtExpanded, setIsThoughtExpanded] = useState(false)
-
-    return (
-        <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-8 w-full group`}>
-            <div className={`max-w-[85%] flex gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                {/* Avatar/Icon */}
-                {!isUser && (
-                    <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-white font-black text-xs italic flex-shrink-0 mt-1 shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10">
-                        N
-                    </div>
-                )}
-
-                <div className="flex flex-col gap-3 overflow-hidden">
-                    {/* Thinking Section (for Assistant) */}
-                    {!isUser && message.content && (
-                        <div className="flex flex-col gap-2">
-                            <button
-                                onClick={() => setIsThoughtExpanded(!isThoughtExpanded)}
-                                className="flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-gray-200 transition-colors w-fit px-2 py-1 rounded-lg hover:bg-white/5"
-                            >
-                                <Sparkles size={14} className="text-[#6D5DFE]" />
-                                <span>{isThoughtExpanded ? 'Hide thinking' : 'Show thinking'}</span>
-                            </button>
-
-                            {isThoughtExpanded && (
-                                <div className="text-sm text-gray-400 italic bg-white/5 rounded-2xl px-4 py-3 border-l-2 border-[#6D5DFE]">
-                                    Analizando la solicitud...
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    <div
-                        className={`rounded-3xl px-5 py-3.5 text-[16px] leading-relaxed ${isUser
-                            ? 'bg-blue-600 dark:bg-white/10 text-white border border-transparent dark:border-white/5 backdrop-blur-sm'
-                            : 'bg-transparent text-gray-800 dark:text-gray-100'
-                            }`}
-                    >
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                        {message.isStreaming && (
-                            <span className="inline-block w-2 h-4 bg-[#6D5DFE] animate-pulse ml-1 align-middle" />
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
-}
-
 export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
-    const { messages, activeModule, setActiveModule, addMessage } = useChatStore()
+    const { messages, activeModule, setActiveModule, addMessage, isVoiceMode, isVideoMode, deleteMessage } = useChatStore()
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -79,6 +31,40 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
             addMessage({ id: Date.now().toString(), role: 'assistant', content: initialMessage, timestamp: Date.now() })
         }
     }, [initialMessage, messages.length, addMessage])
+
+    // Voice Mode View
+    if (isVoiceMode) {
+        return (
+            <div className="fixed inset-0 z-50 bg-[#05060a]">
+                <VoiceChat autoStart={true} />
+            </div>
+        )
+    }
+
+    // Video Mode View
+    if (isVideoMode) {
+        return (
+            <div className="relative h-full w-full">
+                <VoiceVideoOverlay />
+                {/* Fallback to normal chat behind overlay, blurred */}
+                <div className="flex flex-col h-full w-full relative overflow-hidden bg-transparent filter blur-md pointer-events-none">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar pb-4 w-full relative">
+                        <div className="w-full max-w-4xl mx-auto py-4 px-4">
+                            {messages.map((message) => (
+                                <MessageBubble
+                                    key={message.id}
+                                    id={message.id}
+                                    role={message.role}
+                                    content={message.content}
+                                    onDelete={() => deleteMessage(message.id)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="flex flex-col h-full w-full relative overflow-hidden bg-transparent">
@@ -103,7 +89,13 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
                     ) : (
                         <div className="w-full max-w-4xl mx-auto py-4 px-4">
                             {messages.map((message) => (
-                                <MessageBubble key={message.id} message={message} />
+                                <MessageBubble
+                                    key={message.id}
+                                    id={message.id}
+                                    role={message.role}
+                                    content={message.content}
+                                    onDelete={() => deleteMessage(message.id)}
+                                />
                             ))}
                             <div ref={messagesEndRef} />
                         </div>

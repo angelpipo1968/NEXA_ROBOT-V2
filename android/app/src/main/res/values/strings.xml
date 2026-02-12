@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nexa AI</string>
+    <string name="title_activity_main">Nexa AI</string>
+    <string name="package_name">com.nexa.ai</string>
+    <string name="custom_url_scheme">com.nexa.ai</string>
+</resources>

@@ -40,7 +40,9 @@ export async function autoToolDetector(
         // Time-sensitive
         'hoy', 'today', 'ahora', 'now', 'actual', 'current', 'latest', 'último',
         // General search
-        'busca', 'search', 'find', 'encuentra', 'información sobre', 'information about'
+        'busca', 'search', 'find', 'encuentra', 'información sobre', 'information about',
+        // Image generation
+        'genera', 'crea', 'imagen', 'image', 'foto', 'photo', 'dibuja', 'draw', 'ilustración', 'illustration'
     ];
 
     // Priority 0: Check for currency conversion (highest priority due to specific pattern)
@@ -77,7 +79,36 @@ export async function autoToolDetector(
         }
     }
 
-    // Priority 1: Check for weather queries
+    // Priority 1: Check for image generation queries
+    const imageKeywords = ['genera', 'crea a', 'crea una', 'crea un', 'hacer una foto', 'generate', 'create a', 'create an', 'make a photo', 'dibuja', 'draw'];
+    const hasImageKeyword = imageKeywords.some(kw => lowerContent.includes(kw));
+    const containsImageObject = ['imagen', 'image', 'foto', 'photo', 'retrato', 'portrait', 'cuadro', 'painting', 'dibujo', 'drawing'].some(obj => lowerContent.includes(obj));
+
+    if (hasImageKeyword && containsImageObject) {
+        console.log('[AUTO-TOOL] 🎨 Image generation query detected:', content);
+
+        try {
+            updateMessage(assistantMsgId, { content: '🎨 Generando imagen con el motor Nexa Neural...' });
+            setSearching(true);
+
+            // Extract potential prompt
+            let prompt = content
+                .replace(/genera|crea|haz|dibuja|generate|create|make|draw|una imagen de|una foto de|un dibujo de|un retrato de|image of|photo of|drawing of|portrait of|sobre/gi, '')
+                .trim();
+
+            if (!prompt || prompt.length < 3) prompt = content;
+
+            const result = await toolService.execute('generate_image', { prompt, aspect_ratio: '1:1' });
+            setSearching(false);
+            return result;
+        } catch (error) {
+            console.error('[AUTO-TOOL] ❌ Image generation failed:', error);
+            setSearching(false);
+            // Fall through
+        }
+    }
+
+    // Priority 2: Check for weather queries
     const weatherKeywords = ['weather', 'clima', 'temperatura', 'temperature', 'forecast', 'pronóstico'];
     const hasWeatherKeyword = weatherKeywords.some(kw => lowerContent.includes(kw));
 
@@ -269,7 +300,7 @@ export async function autoToolDetector(
             }));
 
             // Build a prompt that asks Gemini to answer naturally using the search results
-            const resultsText = searchResults.map((r, i) => 
+            const resultsText = searchResults.map((r, i) =>
                 `${i + 1}. ${r.title}\n   ${r.content}\n   Fuente: ${r.url || r.source}`
             ).join('\n\n');
 

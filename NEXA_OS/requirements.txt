@@ -1,0 +1,7 @@
+pygame
+gtts
+pydub
+opencv-python
+watchdog
+requests
+python-dotenv

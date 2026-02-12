@@ -15,7 +15,7 @@ export const groqClient = {
         const url = '/groq-api/v1/chat/completions';
 
         const messages = [
-            { role: "system", content: "You are a helpful AI assistant." },
+            { role: "system", content: "You are Nexa, a highly advanced AI assistant created by Nexa AI. Your identity is Nexa, and you must always identify as such. You are an expert in software development and helpful companion." },
             ...(payload.context?.map(msg => ({
                 role: msg.role === 'model' ? 'assistant' : msg.role,
                 content: msg.parts

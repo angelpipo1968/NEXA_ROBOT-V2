@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Download, Wand2, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Download, Wand2, Loader2, Image as ImageIcon, Sliders, Maximize2, Monitor } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useStudioStore } from '@/lib/stores/useStudioStore';
-import { geminiClient } from '@/lib/gemini';
+import { imageService, AspectRatio, ImageQuality } from '@/lib/services/imageService';
 
 import { HologramViewer } from '../components/HologramViewer';
 
@@ -22,7 +22,11 @@ export function DirectorMode() {
         assets,
         addAsset,
         selectedAsset,
-        setSelectedAsset
+        setSelectedAsset,
+        aspectRatio,
+        setAspectRatio,
+        quality,
+        setQuality
     } = useStudioStore();
 
     const [prompt, setPrompt] = useState('');
@@ -36,30 +40,31 @@ export function DirectorMode() {
 
         setIsGenerating(true);
         try {
-            // Real call to Pollinations via geminiClient
-            const url = await geminiClient.generateImage(promptToUse);
+            // 1. Enhance prompt for Flux 1.1
+            const enhancedPrompt = await imageService.enhancePrompt(promptToUse);
 
-            if (!url || url.includes('undefined')) {
-                throw new Error("Failed to generate a valid image URL.");
-            }
+            // 2. Generate Image with settings
+            const url = await imageService.generateFluxImage(enhancedPrompt, {
+                aspectRatio,
+                quality
+            });
+
+            if (!url) throw new Error("No URL returned from service.");
 
             const newAsset: GeneratedAsset = {
                 id: Date.now().toString(),
                 url: url,
-                prompt: promptToUse,
+                prompt: enhancedPrompt, // Save the enhanced version
                 timestamp: new Date(),
                 type: 'image'
             };
 
             addAsset(newAsset);
             setSelectedAsset(newAsset);
-            // Auto switch to hologram view for "wow" factor if it's the first asset
-            if (assets.length === 0) {
-                setIsHologramMode(true);
-            }
+            if (assets.length === 0) setIsHologramMode(true);
         } catch (error) {
             console.error("Generation failed:", error);
-            alert("No se pudo generar la imagen. Por favor intenta de nuevo. " + (error as any)?.message);
+            alert("Error al generar: " + (error as any)?.message);
         } finally {
             setIsGenerating(false);
         }
@@ -110,14 +115,45 @@ export function DirectorMode() {
                         />
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">Formato</label>
+                                <div className="flex bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--border-color)]">
+                                    {(['1:1', '16:9', '9:16'] as AspectRatio[]).map((r) => (
+                                        <button
+                                            key={r}
+                                            onClick={() => setAspectRatio(r)}
+                                            className={`flex-1 py-1 text-[10px] font-bold rounded transition-all ${aspectRatio === r ? 'bg-purple-600 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-white'}`}
+                                        >
+                                            {r}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">Calidad Flux</label>
+                                <div className="flex bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--border-color)]">
+                                    {(['draft', 'standard', 'ultra'] as ImageQuality[]).map((q) => (
+                                        <button
+                                            key={q}
+                                            onClick={() => setQuality(q)}
+                                            className={`flex-1 py-1 text-[10px] font-bold rounded transition-all capitalize ${quality === q ? 'bg-indigo-600 text-white shadow-sm' : 'text-[var(--text-muted)] hover:text-white'}`}
+                                        >
+                                            {q}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
                         <button
                             onClick={() => handleGenerate()}
                             disabled={isGenerating || !prompt.trim()}
-                            className="flex-1 py-3 bg-[var(--vp-accent-purple)] hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20"
+                            className="w-full py-3 bg-[var(--vp-accent-purple)] hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20 active:scale-95 group"
                         >
-                            {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 size={18} />}
-                            {isGenerating ? 'Generando...' : 'Generar Arte'}
+                            {isGenerating ? <Loader2 className="animate-spin" /> : <Wand2 size={18} className="group-hover:rotate-12 transition-transform" />}
+                            {isGenerating ? 'Evolucionando Arte...' : 'Generar Nexa Vision'}
                         </button>
                     </div>
                 </div>

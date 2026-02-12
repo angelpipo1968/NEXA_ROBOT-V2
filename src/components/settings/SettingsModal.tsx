@@ -23,6 +23,7 @@ import {
     LogOut,
     KeyRound
 } from 'lucide-react';
+import { MCPExplorer } from './MCPExplorer';
 import { SearchSettings } from './SearchSettings';
 import { MemoryPanel } from './MemoryPanel';
 
@@ -64,6 +65,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [voiceFilter, setVoiceFilter] = useState<'Female' | 'Male' | 'My Voice'>('Female');
     const { theme, setTheme } = useTheme();
     const [user, setUser] = useState<any>(null);
+    const [isGuest, setIsGuest] = useState(false);
 
     // Reset sub-tab when main tab changes
     useEffect(() => {
@@ -73,7 +75,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     React.useEffect(() => {
         const fetchUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
+            const guest = localStorage.getItem('nexa_guest') === 'true';
             setUser(user);
+            setIsGuest(guest);
         };
         fetchUser();
     }, []);
@@ -435,41 +439,158 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 <div className="flex items-center justify-between py-4">
                                     <div className="flex items-center gap-4">
                                         <div className="h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center text-xl font-bold text-white uppercase shadow-lg shadow-purple-900/20">
-                                            {user?.email?.[0] || 'A'}
+                                            {isGuest ? 'G' : (user?.email?.[0] || 'U')}
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
-                                                {user?.user_metadata?.full_name || 'Angel Gongora'}
-                                            </h3>
-                                            <p className="text-sm text-gray-500">{user?.email || 'pipogon0361@gmail.com'}</p>
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+                                                    {isGuest ? 'Invitado' : (user?.user_metadata?.full_name || 'Usuario')}
+                                                </h3>
+                                            </div>
+                                            <p className="text-sm text-gray-500">{isGuest ? 'Sesión de invitado' : (user?.email || 'N/A')}</p>
                                         </div>
                                     </div>
-                                    <button className="px-6 py-2 rounded-full border border-gray-200 dark:border-white/10 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                        Edit account
-                                    </button>
+                                    {!isGuest && (
+                                        <button
+                                            onClick={async () => {
+                                                const newName = prompt('Enter new full name:', user?.user_metadata?.full_name || '');
+                                                if (newName) {
+                                                    const { error } = await supabase.auth.updateUser({
+                                                        data: { full_name: newName }
+                                                    });
+                                                    if (error) alert(error.message);
+                                                    else {
+                                                        const { data: { user: updatedUser } } = await supabase.auth.getUser();
+                                                        setUser(updatedUser);
+                                                    }
+                                                }
+                                            }}
+                                            className="px-6 py-2 rounded-full border border-gray-200 dark:border-white/10 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                                        >
+                                            Edit name
+                                        </button>
+                                    )}
                                 </div>
 
                                 {/* Password Management */}
-                                <div className="flex items-center justify-between py-6 border-t border-gray-100 dark:border-white/5">
-                                    <span className="text-base text-gray-900 dark:text-gray-100 font-medium">Password management</span>
-                                    <button className="px-6 py-2 rounded-full border border-gray-200 dark:border-white/10 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                                        Change password
-                                    </button>
-                                </div>
+                                {!isGuest && (
+                                    <div className="flex items-center justify-between py-6 border-t border-gray-100 dark:border-white/5">
+                                        <div>
+                                            <span className="text-base text-gray-900 dark:text-gray-100 font-medium font-medium">Password management</span>
+                                            <p className="text-xs text-zinc-500">Update your account password</p>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                const newPassword = prompt('Enter new password (min 6 chars):');
+                                                if (newPassword && newPassword.length >= 6) {
+                                                    const { error } = await supabase.auth.updateUser({
+                                                        password: newPassword
+                                                    });
+                                                    if (error) alert(error.message);
+                                                    else alert('Contraseña actualizada correctamente.');
+                                                }
+                                            }}
+                                            className="px-6 py-2 rounded-full border border-gray-200 dark:border-white/10 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                                        >
+                                            Change password
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Sign Out */}
+                                {isGuest ? (
+                                    <div className="flex flex-col gap-4 py-6 border-t border-gray-100 dark:border-white/5">
+                                        <div>
+                                            <span className="text-base text-gray-900 dark:text-gray-100 font-medium font-medium">Cuenta Nexa</span>
+                                            <p className="text-xs text-zinc-500">Inicia sesión o regístrate para guardar tus chats y acceder a funciones PRO</p>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => { onClose(); navigate('/auth'); }}
+                                                className="px-6 py-2 rounded-full bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+                                            >
+                                                Iniciar Sesión
+                                            </button>
+                                            <button
+                                                onClick={() => { onClose(); navigate('/auth?mode=signup'); }}
+                                                className="px-6 py-2 rounded-full border border-gray-200 dark:border-white/10 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                                            >
+                                                Registrarse
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between py-6 border-t border-gray-100 dark:border-white/5">
+                                        <div>
+                                            <span className="text-base text-gray-900 dark:text-gray-100 font-medium">Sign Out</span>
+                                            <p className="text-xs text-zinc-500">Log out of your current session</p>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                if (isGuest) {
+                                                    localStorage.removeItem('nexa_guest');
+                                                    onClose();
+                                                    navigate('/auth');
+                                                } else {
+                                                    const { error } = await supabase.auth.signOut();
+                                                    if (error) alert(error.message);
+                                                    else {
+                                                        onClose();
+                                                        navigate('/auth');
+                                                    }
+                                                }
+                                            }}
+                                            className="px-6 py-2 rounded-full border border-zinc-200 dark:border-white/10 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                                        >
+                                            Sign Out
+                                        </button>
+                                    </div>
+                                )}
 
                                 {/* Account Management (Delete) */}
-                                <div className="flex items-center justify-between py-6 border-t border-gray-100 dark:border-white/5">
-                                    <span className="text-base text-gray-900 dark:text-gray-100 font-medium">Account Management</span>
-                                    <button className="px-6 py-2 rounded-full border border-red-200 dark:border-red-900/30 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                        Delete Account
-                                    </button>
-                                </div>
+                                {!isGuest && (
+                                    <div className="flex items-center justify-between py-6 border-t border-gray-100 dark:border-white/5">
+                                        <div>
+                                            <span className="text-base text-gray-900 dark:text-gray-100 font-medium">Danger Zone</span>
+                                            <p className="text-xs text-red-500/70">Permanently delete your account and data</p>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                if (confirm('WARNING: Are you sure you want to delete your account? This action is irreversible and all your chats and data will be lost.')) {
+                                                    // Note: Full deletion usually requires an Edge Function or admin key.
+                                                    // For MVP, we'll sign out and mark a flag, or just explain the limitation.
+                                                    const { error } = await supabase.auth.signOut(); // Sign out and redirect
+                                                    alert('Para una eliminación definitiva de tus datos, por favor contacta a soporte@nexa-ai.dev. Se ha cerrado tu sesión.');
+                                                    onClose();
+                                                    navigate('/auth');
+                                                }
+                                            }}
+                                            className="px-6 py-2 rounded-full border border-red-200 dark:border-red-900/30 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                        >
+                                            Delete Account
+                                        </button>
+                                    </div>
+                                )}
 
                             </div>
                         )}
 
+
+                        {/* MODELS TAB */}
+                        {activeTab === 'models' && (
+                            <div className="space-y-6 max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="mb-6">
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">MCP Tool Explorer</h3>
+                                    <p className="text-sm text-gray-400">
+                                        Explora y descubre las herramientas disponibles a través de tus servidores Model Context Protocol configurados.
+                                    </p>
+                                </div>
+                                <MCPExplorer />
+                            </div>
+                        )}
+
                         {/* OTHER TABS (Placeholders) */}
-                        {!['general', 'interface', 'chats', 'personalization', 'account'].includes(activeTab) && (
+                        {!['general', 'interface', 'chats', 'personalization', 'account', 'models'].includes(activeTab) && (
                             <div className="flex flex-col items-center justify-center h-64 text-gray-500">
                                 <Settings size={48} className="mb-4 opacity-20" />
                                 <p>Configuración de {activeTab} próximamente.</p>

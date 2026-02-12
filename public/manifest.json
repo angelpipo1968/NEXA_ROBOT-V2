@@ -2,16 +2,29 @@
     "name": "Nexa OS",
     "short_name": "Nexa",
     "description": "Nexa AI - Your Intelligent Operating System",
-    "start_url": "/",
+    "start_url": ".",
     "display": "standalone",
     "background_color": "#0a0a0a",
-    "theme_color": "#8b5cf6",
+    "theme_color": "#0a0a0a",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "categories": [
+        "utilities",
+        "productivity",
+        "ai"
+    ],
     "icons": [
         {
             "src": "/nexa-logo.jpg",
             "sizes": "512x512",
             "type": "image/jpeg",
-            "purpose": "any maskable"
+            "purpose": "any"
+        },
+        {
+            "src": "/nexa-logo.jpg",
+            "sizes": "512x512",
+            "type": "image/jpeg",
+            "purpose": "maskable"
         }
     ]
 }

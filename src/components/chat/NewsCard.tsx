@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatRelativeTime } from '@/lib/services/newsService';
 import type { NewsArticle } from '@/lib/services/newsService';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface NewsCardProps {
     articles: NewsArticle[];
@@ -38,8 +39,8 @@ export function NewsCard({ articles, query }: NewsCardProps) {
                         className="news-article-card"
                     >
                         {article.imageUrl && (
-                            <div className="article-image">
-                                <img src={article.imageUrl} alt={article.title} />
+                            <div className="article-image h-full w-full">
+                                <ImageWithFallback src={article.imageUrl} alt={article.title} className="w-full h-full" />
                             </div>
                         )}
 

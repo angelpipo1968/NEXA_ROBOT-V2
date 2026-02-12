@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useChatStore } from '@/store/useChatStore';
+import { useVoiceStore } from '@/store/useVoiceStore';
+import { X } from 'lucide-react';
 // Importing directly from packages for now
 import { UltraFastResponseSystem } from '../../packages/voice/src/core/UltraFastResponseSystem';
 import { LiveVoiceControl } from '../voice/LiveVoiceControl';
@@ -28,10 +31,13 @@ const VoiceWaveform = ({ isActive }: { isActive: boolean }) => (
 );
 
 export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps) {
+    const { } = useChatStore();
+    const { speak, stopSpeaking, isSpeaking: isVoiceSpeaking, toggleVoiceMode } = useVoiceStore();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputText, setInputText] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const [isHandsFree, setIsHandsFree] = useState(false);
     const [voiceResponseSystem, setVoiceResponseSystem] = useState<UltraFastResponseSystem | null>(null);
     const [nexaVoice, setNexaVoice] = useState<NexaVoice | null>(null);
 
@@ -121,6 +127,7 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
 
         setMessages(prev => [...prev, userMessage]);
         setInputText('');
+        // Local isSpeaking is used for UI feedback while processing
         setIsSpeaking(true);
 
 
@@ -185,7 +192,12 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
                         volume: settings.volume || 1.0,
                         voiceName: settings.voice,
                         onStart: () => setIsSpeaking(true),
-                        onEnd: () => setIsSpeaking(false)
+                        onEnd: () => {
+                            setIsSpeaking(false);
+                            if (isHandsFree) {
+                                setTimeout(handleStartListening, 500); // Small delay to avoid feedback
+                            }
+                        }
                     });
                 }
 
@@ -237,10 +249,21 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
                                 }`} />
                             <span className="text-sm">
                                 {isListening ? 'Escuchando...' :
-                                    isSpeaking ? 'Hablando...' :
+                                    (isSpeaking || isVoiceSpeaking) ? 'Hablando...' :
                                         'Listo'}
                             </span>
                         </div>
+
+                        <button
+                            onClick={() => setIsHandsFree(!isHandsFree)}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${isHandsFree
+                                ? 'bg-indigo-600 text-white shadow-[0_0_10px_rgba(79,70,229,0.5)]'
+                                : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                                }`}
+                            title="Modo Manos Libres: Nexa escuchará automáticamente tras hablar"
+                        >
+                            {isHandsFree ? '👐 Manos Libres: ON' : '👐 Manos Libres: OFF'}
+                        </button>
 
                         <div className="flex gap-2">
                             <button
@@ -264,6 +287,14 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
                                 ⏹️
                             </button>
                         </div>
+
+                        <button
+                            onClick={toggleVoiceMode}
+                            className="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20"
+                            title="Cerrar chat de voz"
+                        >
+                            <X size={20} />
+                        </button>
                     </div>
                 </div>
             </header>
@@ -438,6 +469,6 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
                     <span>🤖 IA + Humano + Futurista</span>
                 </div>
             </footer>
-        </div>
+        </div >
     );
 }

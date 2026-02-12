@@ -17,16 +17,15 @@ export const toolService = {
                     }
                 },
                 {
-                    name: "create_artifact",
-                    description: "Create a code file or document for the user to download.",
+                    name: "generate_image",
+                    description: "Generate a high-quality image based on a descriptive prompt.",
                     parameters: {
                         type: "OBJECT",
                         properties: {
-                            filename: { type: "STRING", description: "Name of the file (e.g., index.html, notes.txt)" },
-                            content: { type: "STRING", description: "The content of the file" },
-                            language: { type: "STRING", description: "Programming language or format (e.g., html, javascript, markdown)" }
+                            prompt: { type: "STRING", description: "The detailed description of the image to generate" },
+                            aspect_ratio: { type: "STRING", enum: ["1:1", "16:9", "9:16"], description: "The aspect ratio of the image" }
                         },
-                        required: ["filename", "content"]
+                        required: ["prompt"]
                     }
                 }
             ]
@@ -51,6 +50,52 @@ export const toolService = {
                 language: args.language,
                 status: 'success'
             });
+        }
+
+        if (functionName === 'generate_image') {
+            try {
+                const { geminiClient } = await import('./gemini');
+                const url = await geminiClient.generateImage(args.prompt);
+
+                // Generate a cinematic review using AI
+                const reviewResponse = await geminiClient.chat({
+                    message: `Act as a world-class cinematic art critic. Analyze this image prompt and generate a structured JSON review for the "Interactive Review Sheet".
+                    
+                    PROMPT: "${args.prompt}"
+                    
+                    Respond ONLY with a JSON object in this format:
+                    {
+                      "type": "image_review",
+                      "title": "Short Epic Title",
+                      "description": "One sentence poetic summary of the visual impact",
+                      "technicalSpecs": {
+                        "resolution": "8K UHD / 300 DPI",
+                        "model": "Flux.1 Pro",
+                        "seed": "${Math.floor(Math.random() * 999999)}"
+                      },
+                      "artisticAnalysis": {
+                        "lighting": "Description of the lighting style",
+                        "composition": "Description of the camera angle and framing",
+                        "colorPalette": ["#hex1", "#hex2", "#hex3"],
+                        "mood": "Emotional impact"
+                      }
+                    }`
+                });
+
+                const reviewText = await reviewResponse.json();
+                const reviewJson = reviewText.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+
+                // Return a combined string that includes the image and the review
+                return `IMAGEN_GENERADA: ${url}\n\n![${args.prompt}](${url})\n\njson_data: ${JSON.stringify({
+                    type: 'image_result',
+                    url: url,
+                    prompt: args.prompt,
+                    aspect_ratio: args.aspect_ratio || '1:1',
+                    review: JSON.parse(reviewJson.replace(/```json|```/g, '').trim())
+                })}`;
+            } catch (error) {
+                return "Error generating image.";
+            }
         }
 
         return "Unknown tool";

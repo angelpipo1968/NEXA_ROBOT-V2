@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite'
-// Force restart: 2026-02-06 11:35
+// Force restart: 2026-02-10 14:36
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+    base: './',
     plugins: [react()],
     resolve: {
         alias: {

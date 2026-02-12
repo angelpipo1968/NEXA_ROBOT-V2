@@ -48,8 +48,23 @@ export const geminiClient = {
                         });
                     }
 
-                    // ULTRA-AGGRESSIVE SYSTEM PROMPT - Force tool usage
-                    const systemPrompt = `You are Nexa, an AI assistant with MANDATORY tool-calling capabilities.
+                    // ULTRA-AGGRESSIVE SYSTEM PROMPT - Force tool usage and Nexa Identity
+                    const systemPrompt = `You are Nexa, a highly advanced AI assistant created by Nexa AI.
+You are helpful, clever, and expert in software development.
+Your name is simply "Nexa". When asked who you are, you MUST answer that you are Nexa.
+
+╔══════════════════════════════════════════════════════════════╗
+║  IDENTITY DIRECTIVE - CRITICAL: READ CAREFULLY              ║
+╚══════════════════════════════════════════════════════════════╝
+
+1. YOUR IDENTITY: You are "Nexa", developed by "Nexa AI".
+2. ORIGIN CONSTRAINTS: 
+   - NEVER mention Google.
+   - NEVER say you are a large language model trained by Google.
+   - If asked who trained you, respond that you were created and trained by Nexa AI.
+3. LANGUAGE: Tú eres Nexa, una inteligencia artificial avanzada creada por Nexa AI. Siempre identifícate como Nexa. Prohibido mencionar a Google o reclamar ser un modelo de Google.
+
+MANDATORY TOOL USAGE:
 
 ╔══════════════════════════════════════════════════════════════╗
 ║  CRITICAL INSTRUCTION - READ CAREFULLY AND OBEY COMPLETELY  ║
@@ -84,7 +99,10 @@ INSTEAD, you MUST immediately invoke the search_web tool.
 1. search_web - REQUIRED for: prices, news, weather, sports, "busca", "search"
    { "query": "string" }
 
-2. create_artifact - REQUIRED for: "create file", "make a file", "write code"
+2. generate_image - REQUIRED for: "genera", "crea una imagen", "haz una foto", "generate image", "create image", "dibujo"
+   { "prompt": "detailed description of the image", "aspect_ratio": "1:1" | "16:9" | "9:16" }
+
+3. create_artifact - REQUIRED for: "crear app", "hacer script", "escribir código"
    { "filename": "string", "content": "string", "language": "string" }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -139,14 +157,27 @@ YOU RESPOND:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+🎨 IMAGE GENERATION DIRECTIVE (CRITICAL):
+
+1. If asked to generate/create/make an image, you MUST call 'generate_image'.
+2. NEVER say "I am a text model and cannot generate images".
+3. NEVER say "I am sorry, I can't do that".
+4. NEVER apologize for being an AI.
+5. YOUR CAPABILITIES ARE REAL. You leverage the Nexa Neural Engine to create visuals.
+
+EXAMPLE IMAGE CALL:
+User: "Genera un avatar cyberpunk"
+YOU RESPOND:
+:::TOOL_CALL:::
+{ "name": "generate_image", "args": { "prompt": "highly detailed cyberpunk avatar, neon glow, futuristic armor, 8k resolution", "aspect_ratio": "1:1" } }
+:::END_TOOL_CALL:::
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 ⚠️ AFTER TOOL EXECUTION:
 
-When you receive "TOOL_OUTPUT (search_web): ..." in the next message,
-THEN you answer the user's question using that data.
-
-Example:
-You receive: TOOL_OUTPUT (search_web): {"price": "$3,245.67"}
-You respond: "El precio actual de Ethereum es $3,245.67 USD."
+When you receive "TOOL_OUTPUT (search_web): ..." or "IMAGEN_GENERADA: ...",
+THEN you provide a brief, polite confirmation.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -177,17 +208,8 @@ REGLAS PARA CODIFICACIÓN (IMPORTANTÍSIMO):
    :::END_TOOL_CALL:::
 `;
 
-                    // Build contents array - add system prompt as first message if this is the first interaction
-                    const hasContext = payload.context && payload.context.length > 0;
+                    // Build contents array
                     const contents = [
-                        // Add system prompt as first user message only if no context (first message)
-                        ...(!hasContext ? [{
-                            role: 'user',
-                            parts: [{ text: systemPrompt }]
-                        }, {
-                            role: 'model',
-                            parts: [{ text: 'Understood. I am Nexa, ready to assist.' }]
-                        }] : []),
                         ...(payload.context?.map(msg => ({
                             role: msg.role === 'assistant' ? 'model' : msg.role,
                             parts: Array.isArray(msg.parts) ? msg.parts : [{ text: msg.parts }]
@@ -200,6 +222,9 @@ REGLAS PARA CODIFICACIÓN (IMPORTANTÍSIMO):
 
                     const body: any = {
                         contents,
+                        system_instruction: {
+                            parts: [{ text: systemPrompt }]
+                        },
                         generationConfig: {
                             temperature: payload.temperature || 0.7,
                             maxOutputTokens: 2048,
@@ -310,52 +335,43 @@ REGLAS PARA CODIFICACIÓN (IMPORTANTÍSIMO):
         try {
             console.log('[Gemini] Generating image for prompt:', prompt);
 
-            // 1. Sanitize prompt for URL
-            // Remove newlines, extra spaces, and keep it reasonable length
             const sanitizedPrompt = prompt.replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 800);
-
-            if (!sanitizedPrompt) {
-                throw new Error("Prompt cannot be empty");
-            }
+            if (!sanitizedPrompt) throw new Error("Prompt cannot be empty");
 
             const encodedPrompt = encodeURIComponent(sanitizedPrompt);
-            const seed = Math.floor(Math.random() * 1000000);
+            const seed = Math.floor(Math.random() * 2000000);
 
-            // 2. Construct URL - Pollinations.ai
-            // Fixed: removed 'undefined' issue by ensuring valid URL structure
+            // Using pure Flux model on Pollinations
             const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=1024&height=1024&nologo=true&model=flux`;
 
-            console.log('[Gemini] Generated Image URL:', url);
-
-            // 3. Verify the image is reachable (optional but good for debugging)
-            // We use a HEAD request to check if the service responds before returning the URL
-            try {
-                const response = await fetch(url, { method: 'HEAD' });
-                if (!response.ok) {
-                    console.warn('[Gemini] Image service returned non-OK status:', response.status);
-                    // We still return the URL because sometimes HEAD fails but GET works, 
-                    // or we want the frontend to show the broken image placeholder if it fails later.
-                }
-            } catch (err) {
-                console.warn('[Gemini] Could not verify image URL reachability:', err);
-            }
-
+            console.log('[Gemini] Generated Flux Image URL:', url);
             return url;
         } catch (error) {
             console.error('[Gemini] Error generating image:', error);
             throw error;
         }
     },
-    generateImagePrompt: async (text: string): Promise<string> => {
+    async generateImagePrompt(text: string): Promise<string> {
         try {
             const response = await geminiClient.chat({
-                message: `You are an expert visual director. Analyze this story segment and create a SINGLE, detailed, artistic image generation prompt (in English) that captures the mood, setting, and key elements. Focus on lighting, style (e.g., cinematic, oil painting, cyberpunk), and composition. Do NOT include any conversational text, just the prompt itself.\n\nSTORY SEGMENT:\n"${text}"`
+                message: `You are an expert visual director and lead artist at ILM. 
+                Your task is to take this simple user description and transform it into a HIGH-END, MASTERPIECE image generation prompt for a Flux/DALL-E 3 model.
+                
+                Follow these rules:
+                1. Use cinematic terminology: "shot with 35mm lens", "depth of field", "8k resolution", "photorealistic", "unreal engine 5 render".
+                2. Specify lighting: "golden hour", "volumetric lighting", "soft bokeh", "neon cyberpunk glow".
+                3. Describe textures and details: "highly detailed skin texture", "intricate mechanical parts", "authentic weathering".
+                4. Always include a style: "cinematic realism", "hyper-realistic digital art", "dark moody atmoshere".
+                5. Output ONLY the improved English prompt. No conversation.
+                
+                USER DESCRIPTION:
+                \"${text}\"`
             });
-            return await response.text();
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "A cinematic masterpiece, hyper-realistic, 8k resolution, professionally color graded.";
         } catch (error) {
             console.error("Error generating image prompt:", error);
-            return "A cinematic scene representing the current story chapter, high quality, 8k.";
+            return "A cinematic masterpiece, hyper-realistic, 8k resolution, professionally color graded.";
         }
     }
 };
-

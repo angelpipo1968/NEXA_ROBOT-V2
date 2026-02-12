@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from './ExpandirPanel.module.css';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 
 interface Suggestion {
     titulo: string;
@@ -130,8 +131,8 @@ export const ExpandirPanel: React.FC<ExpandirPanelProps> = ({
                                 key={sub.id}
                                 onClick={() => setSubModo(sub.id)}
                                 className={`px-3 py-1 rounded-full text-sm border transition-colors ${subModo === sub.id
-                                        ? 'bg-blue-600 border-blue-400 text-white'
-                                        : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                                    ? 'bg-blue-600 border-blue-400 text-white'
+                                    : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
                                     }`}
                             >
                                 {sub.label}
@@ -199,11 +200,9 @@ export const ExpandirPanel: React.FC<ExpandirPanelProps> = ({
                                     </div>
 
                                     {/* Contenido Condicional según tipo */}
-                                    {sug.imageUrl && (
-                                        <div className="mb-3">
-                                            <img src={sug.imageUrl} alt={sug.titulo} className="w-full h-40 object-cover rounded-lg" />
-                                        </div>
-                                    )}
+                                    <div className="mb-3 h-40">
+                                        <ImageWithFallback src={sug.imageUrl} alt={sug.titulo} className="w-full h-full rounded-lg" />
+                                    </div>
 
                                     <div className={styles.sugerenciaContenido}>
                                         {sug.contenido}

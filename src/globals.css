@@ -6,66 +6,151 @@
 @tailwind utilities;
 
 :root {
-    /* --- Vision Pro Cinematic Palette (Forced Dark) --- */
-    --vp-bg-deep: #121212;
-    /* Modern Dark Gray Radial Gradient - Smoother transition from #121212 */
-    --vp-bg-radial: radial-gradient(circle at 50% 0%, #1e1e2e 0%, #121212 55%, #0d0d0d 100%);
+    /* --- Qwen-Style Cyberpunk Palette --- */
+    --vp-bg-deep: #030305;
+    --vp-bg-radial: radial-gradient(circle at 50% 0%, #080812 0%, #030305 65%, #000000 100%);
 
-    --vp-glass-base: rgba(18, 18, 18, 0.4);
-    --vp-glass-border: rgba(255, 255, 255, 0.08);
-    --vp-glass-border-hover: rgba(255, 255, 255, 0.15);
-    --vp-glass-highlight: rgba(255, 255, 255, 0.03);
+    --vp-glass-base: rgba(5, 5, 8, 0.75);
+    --vp-glass-border: rgba(0, 242, 255, 0.2);
+    --vp-glass-border-hover: rgba(0, 242, 255, 0.5);
+    --vp-glass-highlight: rgba(0, 242, 255, 0.08);
 
-    --vp-accent-cyan: #00E5FF;
-    --vp-accent-purple: #a855f7;
-    /* Vibrant purple accent */
-    --vp-accent-pink: #FF2DAA;
+    --vp-accent-cyan: #00F2FF;
+    --vp-accent-purple: #8100FF;
+    --vp-accent-pink: #FF00E5;
+    --vp-accent-green: #00FF9D;
+    --vp-accent-glow: rgba(0, 242, 255, 0.7);
 
-    --vp-text-primary: #FFFFFF;
-    --vp-text-secondary: rgba(255, 255, 255, 0.85);
-    --vp-text-tertiary: rgba(255, 255, 255, 0.6);
+    --vp-text-primary: #f8f8ff;
+    --vp-text-secondary: rgba(248, 248, 255, 0.9);
+    --vp-text-tertiary: rgba(248, 248, 255, 0.7);
 
-    --vp-shadow-glow: 0 0 50px rgba(168, 85, 247, 0.15);
-    --font-sans: 'sf pro display', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    --vp-shadow-glow: 0 0 35px rgba(0, 242, 255, 0.25);
+    --font-sans: 'Inter',
+        system-ui,
+        -apple-system,
+        sans-serif;
 
-    /* --- Theme System Variables (Dark by default - #121212 Basis) --- */
-    --bg-primary: #121212;
-    /* Modern Dark Gray requested by user */
-    --bg-secondary: #0d0d0d;
-    /* Deep contrast for sidebar/footer */
-    --bg-tertiary: #1e1e1e;
-    /* Elevation 1 */
+    /* --- Theme Core Basis --- */
+    --bg-primary: #030305;
+    --bg-secondary: #000000;
+    --bg-tertiary: #080812;
 
-    --text-primary: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.85);
-    --text-tertiary: rgba(255, 255, 255, 0.6);
-    --text-muted: rgba(255, 255, 255, 0.4);
+    --text-primary: #f8f8ff;
+    --text-secondary: rgba(248, 248, 255, 0.9);
+    --text-tertiary: rgba(248, 248, 255, 0.7);
+    --text-muted: rgba(248, 248, 255, 0.45);
 
-    --card-bg: rgba(255, 255, 255, 0.02);
-    --card-hover-bg: rgba(255, 255, 255, 0.05);
-    --card-border: rgba(255, 255, 255, 0.06);
+    --card-bg: rgba(10, 10, 18, 0.5);
+    --card-hover-bg: rgba(15, 15, 28, 0.75);
+    --card-border: rgba(0, 242, 255, 0.12);
 
-    --border-color: rgba(255, 255, 255, 0.06);
-    --border-hover: rgba(255, 255, 255, 0.12);
+    --border-color: rgba(0, 242, 255, 0.12);
+    --border-hover: rgba(0, 242, 255, 0.4);
 
-    --shadow-color: rgba(0, 0, 0, 0.6);
-    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.8);
+    --shadow-color: rgba(0, 0, 0, 0.9);
+    --shadow-lg: 0 12px 50px rgba(0, 0, 0, 0.95);
 
-    --success-color: #10b981;
-    --error-color: #ef4444;
-    --warning-color: #f59e0b;
-    --info-color: #3b82f6;
+    --success-color: #00FF9D;
+    --error-color: #FF0055;
+    --warning-color: #FFD500;
+    --info-color: #00F2FF;
 
-    /* --- Premium Writing Suite Variables --- */
-    --paper-bg: #fdfbf7;
-    /* Warm, premium paper white */
-    --paper-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.02),
-        0 8px 16px rgba(0, 0, 0, 0.04),
-        0 24px 48px rgba(0, 0, 0, 0.08);
-    --font-serif: 'Crimson Pro', serif;
-    --font-display: 'Playfair Display', serif;
-    --font-sans: 'Inter', sans-serif;
+    /* --- Paper Layout (Adaptive) --- */
+    --paper-bg: #080812;
+    --paper-shadow: 0 0 25px rgba(0, 242, 255, 0.15);
+    --font-serif: 'Crimson Pro',
+        serif;
+}
+
+/* Global Effects Layer */
+.cyber-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%,
+            rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg,
+            rgba(255, 0, 0, 0.03),
+            rgba(0, 255, 0, 0.01),
+            rgba(0, 0, 255, 0.03));
+    background-size: 100% 4px, 3px 100%;
+    opacity: 0.15;
+}
+
+.scanline {
+    width: 100%;
+    height: 100px;
+    z-index: 9991;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(0, 242, 255, 0.02) 50%, rgba(0, 0, 0, 0) 100%);
+    opacity: 0.1;
+    position: absolute;
+    bottom: 100%;
+    animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+    0% {
+        bottom: 100%;
+    }
+
+    100% {
+        bottom: -100px;
+    }
+}
+
+.neon-glow-text {
+    text-shadow: 0 0 10px var(--vp-accent-glow);
+}
+
+.neon-border {
+    box-shadow: 0 0 15px var(--vp-glass-border), inset 0 0 10px var(--vp-glass-border);
+}
+
+@keyframes flicker {
+    0% {
+        opacity: 0.97;
+    }
+
+    5% {
+        opacity: 0.95;
+    }
+
+    10% {
+        opacity: 0.9;
+    }
+
+    15% {
+        opacity: 0.95;
+    }
+
+    20% {
+        opacity: 0.98;
+    }
+
+    25% {
+        opacity: 0.95;
+    }
+
+    30% {
+        opacity: 0.9;
+    }
+
+    35% {
+        opacity: 0.95;
+    }
+
+    40% {
+        opacity: 0.98;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.flicker-slow {
+    animation: flicker 4s infinite alternate;
 }
 
 /* Light Theme - Refined Premium Soft Grey Aesthetic */
@@ -220,5 +305,17 @@
             opacity: 0.25;
             transform: scale(1.1);
         }
+    }
+
+    /* Force hide browser extensions */
+    lt-toolbar,
+    lt-div,
+    .lt-comp-icon,
+    grammarly-extension,
+    [data-grammarly-shadow-root] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
 }

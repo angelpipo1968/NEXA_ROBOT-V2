@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { BookTemplate } from '../studio/BookTemplates';
 import { museMemory } from '../museMemory';
+import { AspectRatio, ImageQuality } from '../services/imageService';
 
 interface Chapter {
     id: string;
@@ -42,6 +43,12 @@ interface StudioState {
     // UI State
     leftPanelWidth: number;
     setLeftPanelWidth: (width: number) => void;
+
+    // Image Settings
+    aspectRatio: AspectRatio;
+    setAspectRatio: (ratio: AspectRatio) => void;
+    quality: ImageQuality;
+    setQuality: (quality: ImageQuality) => void;
 }
 
 export const useStudioStore = create<StudioState>((set) => ({
@@ -69,4 +76,10 @@ export const useStudioStore = create<StudioState>((set) => ({
 
     leftPanelWidth: 400,
     setLeftPanelWidth: (leftPanelWidth) => set({ leftPanelWidth }),
+
+    // Image Settings Defaults
+    aspectRatio: '1:1',
+    setAspectRatio: (aspectRatio) => set({ aspectRatio }),
+    quality: 'standard',
+    setQuality: (quality) => set({ quality }),
 }));

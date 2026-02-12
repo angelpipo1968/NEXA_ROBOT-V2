@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { memoryService } from '@/lib/memory';
 import { toolService } from '@/lib/toolService';
+import { supabase } from '@/lib/supabase';
 import { geminiClient } from '@/lib/gemini';
 import { anthropicClient } from '@/lib/anthropic';
 import { openaiClient } from '@/lib/openai';
@@ -10,6 +11,9 @@ import { deepseekClient } from '@/lib/deepseek';
 import { groqClient } from '@/lib/groq';
 import { elevenlabsClient } from '@/lib/elevenlabs';
 import { autoToolDetector } from '@/lib/autoToolDetector';
+import { modelService, ModelMessage } from '@/services/ModelService';
+import { useVoiceStore } from './useVoiceStore';
+import { useProjectStore } from './useProjectStore';
 
 // Store definition
 
@@ -25,14 +29,7 @@ export interface ProjectFile {
     name: string;
     content: string;
     language: string;
-    path: string; // e.g., 'src/components/Header.tsx'
-}
-
-export interface Project {
-    id: string;
-    name: string;
-    created_at: number;
-    files: ProjectFile[];
+    path: string;
 }
 
 interface ChatState {
@@ -43,26 +40,11 @@ interface ChatState {
     currentInput: string;
     userName: string;
     hasGreeted: boolean;
-    voiceEnabled: boolean;
-    isRecording: boolean;
-    isVoiceMode: boolean;
     isVideoMode: boolean;
     reasoningMode: 'normal' | 'search' | 'deep';
 
     activeModule: 'chat' | 'studio' | 'dev';
-    isSpeaking: boolean;
-    currentAudio: HTMLAudioElement | null;
     attachments: Array<{ type: string, data: string, name: string }>; // Base64 files
-    projects: Project[];
-
-    // Web Builder State
-    activeProject: Project | null;
-    activeFile: ProjectFile | null;
-    mockNetworkLayer: Record<string, any>; // Stores mock DB/Auth state
-
-    // Developer Mode State (Legacy/Simple)
-    codeFiles: Array<{ name: string; content: string; language: string }>;
-    activeCodeFile: string | null;
 
     // Actions
     setMessages: (messages: Message[]) => void;
@@ -77,34 +59,19 @@ interface ChatState {
     removeAttachment: (name: string) => void;
     clearAttachments: () => void;
     clearMessages: () => void;
-    toggleVoice: () => void;
     setHasGreeted: (hasGreeted: boolean) => void;
-    setRecording: (isRecording: boolean) => void;
-    toggleVoiceMode: () => void;
     toggleVideoMode: () => void;
-    addProject: (name: string) => void;
-    deleteProject: (id: string) => void;
-    speak: (text: string) => void;
     uploadFile: (type: 'video' | 'pdf' | 'image' | 'audio') => Promise<void>;
 
     deleteMessage: (id: string) => void;
-    stopSpeaking: () => void;
-
-    // Web Builder Actions
-    setActiveProject: (project: Project | null) => void;
-    setActiveFile: (file: ProjectFile | null) => void;
-    updateProjectFile: (path: string, content: string) => void;
-    addProjectFile: (file: ProjectFile) => void;
-    setMockNetworkLayer: (data: Record<string, any>) => void;
+    forkChat: (messageId: string) => void;
 
     // Logic
     setActiveModule: (module: 'chat' | 'studio' | 'dev') => void;
-    sendMessage: (content: string) => Promise<void>;
-
-    // Code Actions (Legacy)
-    addCodeFile: (file: { name: string; content: string; language: string }) => void;
-    updateCodeFile: (name: string, content: string) => void;
-    setActiveCodeFile: (name: string) => void;
+    sendMessage: (content: string, onResponse?: (text: string) => void) => Promise<void>;
+    generateAIResponse: (content: string, onResponse?: (text: string) => void) => Promise<void>;
+    regenerateResponse: () => Promise<void>;
+    syncUser: () => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>()(
@@ -117,26 +84,10 @@ export const useChatStore = create<ChatState>()(
             currentInput: '',
             userName: 'Ángel',
             hasGreeted: false,
-            voiceEnabled: false,
-            isRecording: false,
-            isVoiceMode: false,
             isVideoMode: false,
             reasoningMode: 'normal',
-
             activeModule: 'chat',
-            isSpeaking: false,
-
-            codeFiles: [],
-            activeCodeFile: null,
-
-            currentAudio: null,
             attachments: [],
-            projects: [],
-
-            // Web Builder Init
-            activeProject: null,
-            activeFile: null,
-            mockNetworkLayer: {},
 
             setMessages: (messages) => set({ messages }),
 
@@ -172,49 +123,18 @@ export const useChatStore = create<ChatState>()(
 
             clearMessages: () => set({ messages: [] }),
 
-            toggleVoice: () => set((state) => ({ voiceEnabled: !state.voiceEnabled })),
-
             setHasGreeted: (hasGreeted) => set({ hasGreeted }),
 
-            setRecording: (isRecording: boolean) => set({ isRecording }),
+            toggleVideoMode: () => set((state) => ({ isVideoMode: !state.isVideoMode })),
 
-            toggleVoiceMode: () => set((state) => ({ isVoiceMode: !state.isVoiceMode, isVideoMode: false })),
-
-            toggleVideoMode: () => set((state) => ({ isVideoMode: !state.isVideoMode, isVoiceMode: false })),
-
-            addProject: (name) => set((state) => ({
-                projects: [...state.projects, { id: Date.now().toString(), name, created_at: Date.now(), files: [] }]
-            })),
-
-            deleteProject: (id) => set((state) => ({
-                projects: state.projects.filter(p => p.id !== id)
-            })),
-
-            // Web Builder Implementation
-            setActiveProject: (project) => set({ activeProject: project }),
-            setActiveFile: (file) => set({ activeFile: file }),
-
-            updateProjectFile: (path, content) => set((state) => {
-                if (!state.activeProject) return {};
-                const updatedFiles = state.activeProject.files.map(f =>
-                    f.path === path ? { ...f, content } : f
-                );
-                return {
-                    activeProject: { ...state.activeProject, files: updatedFiles }
-                };
-            }),
-
-            addProjectFile: (file) => set((state) => {
-                if (!state.activeProject) return {};
-                return {
-                    activeProject: {
-                        ...state.activeProject,
-                        files: [...state.activeProject.files, file]
-                    }
-                };
-            }),
-
-            setMockNetworkLayer: (data) => set({ mockNetworkLayer: data }),
+            syncUser: async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    set({
+                        userName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario'
+                    });
+                }
+            },
 
             uploadFile: async (type) => {
                 const input = document.createElement('input');
@@ -236,156 +156,223 @@ export const useChatStore = create<ChatState>()(
                 input.click();
             },
 
-            downloadContent: () => {
-                const messages = get().messages;
-                if (messages.length === 0) return;
-                const text = messages.map(m => `[${m.role.toUpperCase()}] ${m.content}`).join('\n\n');
-                const blob = new Blob([text], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `nexa-chat-${Date.now()}.txt`;
-                a.click();
-                URL.revokeObjectURL(url);
-            },
 
             deleteMessage: (id) => set((state) => ({
                 messages: state.messages.filter((msg) => msg.id !== id)
             })),
 
-            stopSpeaking: () => {
-                const { currentAudio } = get();
-                if (currentAudio) {
-                    currentAudio.pause();
-                    currentAudio.currentTime = 0;
-                    set({ currentAudio: null });
-                }
-                if (typeof window !== 'undefined' && window.speechSynthesis) {
-                    window.speechSynthesis.cancel();
-                }
-                set({ isSpeaking: false });
-            },
-
-            speak: async (text: string) => {
-
-                const playBrowserTTS = async () => {
-                    // Fallback to Browser TTS
-                    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-
-                    // Helper to get voices reliably
-                    const getVoicesLoaded = (): Promise<SpeechSynthesisVoice[]> => {
-                        return new Promise((resolve) => {
-                            const voices = window.speechSynthesis.getVoices();
-                            if (voices.length > 0) {
-                                resolve(voices);
-                                return;
-                            }
-                            window.speechSynthesis.onvoiceschanged = () => {
-                                resolve(window.speechSynthesis.getVoices());
-                            };
-                            // Timeout just in case
-                            setTimeout(() => resolve(window.speechSynthesis.getVoices()), 1000);
-                        });
-                    };
-
-                    const voices = await getVoicesLoaded();
-                    console.log("Voces disponibles:", voices.map(v => v.name));
-
-                    const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.rate = 1.0;
-                    utterance.volume = 1.0;
-
-                    // Prioritize High Quality Spanish Female Voices (Google, Microsoft)
-                    const femaleVoice = voices.find(v => v.lang.startsWith('es') && (v.name.toLowerCase().includes('google') || v.name.includes('Español'))) ||
-                        voices.find(v => v.lang.startsWith('es') && v.name.includes('Helena')) ||
-                        voices.find(v => v.lang.startsWith('es') && v.name.includes('Sabina')) ||
-                        voices.find(v => v.lang.startsWith('es') && v.name.includes('Paulina')) ||
-                        voices.find(v => v.lang.startsWith('es') && v.name.includes('Laura')) ||
-                        voices.find(v => v.lang.startsWith('es') && v.name.toLowerCase().includes('female')) ||
-                        voices.find(v => v.lang.includes('es')); // Last resort: any Spanish
-
-                    if (femaleVoice) {
-                        console.log("Voz seleccionada:", femaleVoice.name);
-                        utterance.voice = femaleVoice;
-                        // If it's a known female voice, natural pitch. If it's generic, boost it slightly.
-                        if (femaleVoice.name.includes('Male') || femaleVoice.name.includes('Raul') || femaleVoice.name.includes('Pablo')) {
-                            utterance.pitch = 1.4; // Force feminine pitch on male voice
-                        } else {
-                            utterance.pitch = 1.1; // Slight brightness for female
-                        }
-                    } else {
-                        console.log("No se encontró voz específica, usando default.");
-                        utterance.pitch = 1.3; // Default boost
-                    }
-
-                    utterance.onstart = () => set({ isSpeaking: true });
-                    utterance.onend = () => set({ isSpeaking: false });
-                    utterance.onerror = (e) => {
-                        console.error("Browser TTS Error:", e);
-                        set({ isSpeaking: false });
-                    };
-
-                    window.speechSynthesis.cancel(); // Cancel previous
-                    window.speechSynthesis.speak(utterance);
-                };
-
-                // Try ElevenLabs First
-                try {
-                    const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
-                    if (apiKey) {
-                        const audioData = await elevenlabsClient.speakText(text);
-                        const blob = new Blob([audioData], { type: 'audio/mpeg' });
-                        const url = URL.createObjectURL(blob);
-                        const audio = new Audio(url);
-
-                        await new Promise((resolve, reject) => {
-                            set({ currentAudio: audio, isSpeaking: true });
-                            audio.onended = () => {
-                                set({ currentAudio: null, isSpeaking: false });
-                                URL.revokeObjectURL(url);
-                                resolve(true);
-                            };
-                            audio.onerror = (e) => {
-                                set({ isSpeaking: false });
-                                reject(e);
-                            };
-                            audio.play().catch(reject);
-                        });
-                        return; // Successfully played
-                    }
-                } catch (error) {
-                    console.error("ElevenLabs/Audio error, falling back...", error);
-                    set({ currentAudio: null });
-                    // Fallback will handle isSpeaking=true
-                }
-
-                // Fallback if ElevenLabs skipped or failed
-                await playBrowserTTS();
-            },
-
-            setActiveModule: (module) => set({ activeModule: module }),
-
-            addCodeFile: (file) => set((state) => {
-                const exists = state.codeFiles.some(f => f.name === file.name);
-                if (exists) {
-                    return {
-                        codeFiles: state.codeFiles.map(f => f.name === file.name ? file : f),
-                        activeCodeFile: file.name
-                    };
-                }
+            forkChat: (messageId: string) => set((state) => {
+                const index = state.messages.findIndex(m => m.id === messageId);
+                if (index === -1) return {};
                 return {
-                    codeFiles: [...state.codeFiles, file],
-                    activeCodeFile: file.name
+                    messages: state.messages.slice(0, index + 1),
+                    attachments: []
                 };
             }),
 
-            updateCodeFile: (name, content) => set((state) => ({
-                codeFiles: state.codeFiles.map(f => f.name === name ? { ...f, content } : f)
-            })),
+            setActiveModule: (module) => set({ activeModule: module }),
 
-            setActiveCodeFile: (name) => set({ activeCodeFile: name }),
+            generateAIResponse: async (content: string, onResponse?: (text: string) => void) => {
+                const assistantMsgId = (Date.now() + 1).toString();
 
-            sendMessage: async (content) => {
+                // Optimistic UI update
+                set((state) => ({
+                    messages: [...state.messages, {
+                        id: assistantMsgId,
+                        role: 'assistant',
+                        content: '',
+                        timestamp: Date.now(),
+                        isStreaming: true
+                    }],
+                    isThinking: state.reasoningMode === 'deep',
+                    isSearching: state.reasoningMode === 'search',
+                    isStreaming: true
+                }));
+
+                // AUTO-TOOL DETECTION: Try to handle search queries directly
+                const autoToolResult = await autoToolDetector(
+                    content,
+                    assistantMsgId,
+                    get().updateMessage,
+                    (searching) => set({ isSearching: searching }),
+                    () => get().messages
+                );
+
+                if (autoToolResult) {
+                    get().updateMessage(assistantMsgId, { content: autoToolResult, isStreaming: false });
+                    // if (useVoiceStore.getState().voiceEnabled) {
+                    //     useVoiceStore.getState().speak(autoToolResult);
+                    // }
+                    if (onResponse) onResponse(autoToolResult);
+                    memoryService.addMemory(autoToolResult, 'assistant');
+                    set({ isThinking: false, isStreaming: false });
+                    return;
+                }
+
+                console.log('[CHAT STORE] ⚠️ Auto-tool returned null, proceeding with normal AI flow');
+
+                // Add mode-specific hints to the content
+                let contentWithMode = content;
+                if (get().reasoningMode === 'search') {
+                    contentWithMode = `🔍 MODO BÚSQUEDA RÁPIDA: Realiza una búsqueda exhaustiva en la web para responder con la información más actual y precisa posible.\n\n${content}`;
+                } else if (get().reasoningMode === 'deep') {
+                    contentWithMode = `🧠 MODO PENSAMIENTO PROFUNDO: Analiza este problema paso a paso con máximo detalle, considerando todas las posibilidades y ramificaciones antes de dar una respuesta final.\n\n${content}`;
+                }
+
+                try {
+                    // 1. Retrieve relevant memories (RAG)
+                    const memories = await memoryService.searchMemories(content);
+                    const memoryContext = memories.length > 0
+                        ? `\n\nContexto relevante de memoria:\n${memories.join('\n')}`
+                        : '';
+
+                    // Build messages for ModelService
+                    const history: ModelMessage[] = get().messages.map(m => ({
+                        role: m.role,
+                        content: m.content
+                    }));
+
+                    const finalPrompt = contentWithMode + memoryContext;
+                    history.push({ role: 'user', content: finalPrompt });
+
+                    // 2. Save User Memory asynchronously
+                    memoryService.addMemory(content, 'user');
+
+                    // 3. Call Unified Model Service
+                    const finalResponse = await modelService.generateResponse(history, {
+                        temperature: get().reasoningMode === 'deep' ? 0.3 : 0.7
+                    });
+
+                    // Update UI with Final Response
+                    get().updateMessage(assistantMsgId, { content: finalResponse, isStreaming: false });
+
+                    // if (useVoiceStore.getState().voiceEnabled) {
+                    //     useVoiceStore.getState().speak(finalResponse);
+                    // }
+
+                    if (onResponse) onResponse(finalResponse);
+
+                    // 4. Save Assistant Memory
+                    memoryService.addMemory(finalResponse, 'assistant');
+
+                    set({ isThinking: false, isStreaming: false, isSearching: false });
+
+                } catch (error: any) {
+                    console.error('ModelService Error, trying backups...', error);
+
+                    try {
+                        // Fallback to Groq
+                        const groqResponse = await groqClient.chat({
+                            message: content,
+                            context: get().messages.map(m => ({
+                                role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
+                                parts: m.content
+                            })) as any
+                        });
+
+                        get().updateMessage(assistantMsgId, { content: groqResponse });
+                        // if (useVoiceStore.getState().voiceEnabled) {
+                        //     useVoiceStore.getState().speak(groqResponse);
+                        // }
+
+                    } catch (groqError) {
+                        console.error('Groq Error, trying backup (Claude)...', groqError);
+
+                        try {
+                            // Fallback to Anthropic (Claude)
+                            const claudeResponse = await anthropicClient.chat({
+                                message: content,
+                                context: get().messages.map(m => ({
+                                    role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
+                                    parts: m.content
+                                })) as any
+                            });
+
+                            get().updateMessage(assistantMsgId, { content: claudeResponse });
+
+                            // if (useVoiceStore.getState().voiceEnabled) {
+                            //     useVoiceStore.getState().speak(claudeResponse);
+                            // }
+
+                        } catch (backupError) {
+                            console.error('Backup (Claude) Error, trying OpenAI...', backupError);
+
+                            try {
+                                // Second Fallback: OpenAI
+                                const openaiResponse = await openaiClient.chat({
+                                    message: content,
+                                    context: get().messages.map(m => ({
+                                        role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
+                                        parts: m.content
+                                    })) as any
+                                });
+
+                                get().updateMessage(assistantMsgId, { content: openaiResponse });
+                                // if (useVoiceStore.getState().voiceEnabled) {
+                                //     useVoiceStore.getState().speak(openaiResponse);
+                                // }
+
+                            } catch (finalError) {
+                                console.error('OpenAI Error, trying DeepSeek...', finalError);
+
+                                try {
+                                    // Third Fallback: DeepSeek
+                                    const deepseekResponse = await deepseekClient.chat({
+                                        message: content,
+                                        context: get().messages.map(m => ({
+                                            role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
+                                            parts: m.content
+                                        })) as any
+                                    });
+
+                                    get().updateMessage(assistantMsgId, { content: deepseekResponse });
+                                    // if (useVoiceStore.getState().voiceEnabled) {
+                                    //     useVoiceStore.getState().speak(deepseekResponse);
+                                    // }
+                                    if (onResponse) onResponse(deepseekResponse);
+
+                                } catch (deepseekError) {
+                                    console.error('Final Fallback (DeepSeek) Error:', deepseekError);
+                                    // Absolute Final Failure
+                                    const simResponse = "⚠️ Error TOTAL (Gemini, Claude, OpenAI, DeepSeek). \n\n¡REINICIA LA TERMINAL!";
+                                    get().updateMessage(assistantMsgId, { content: simResponse });
+                                    // if (useVoiceStore.getState().voiceEnabled) {
+                                    //     useVoiceStore.getState().speak("Por favor reinicia el servidor.");
+                                    // }
+                                    if (onResponse) onResponse(simResponse);
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    set({ isThinking: false, isStreaming: false, attachments: [] }); // Clear attachments
+                    get().updateMessage(assistantMsgId, { isStreaming: false });
+                }
+            },
+
+            regenerateResponse: async () => {
+                const { messages } = get();
+                if (messages.length === 0) return;
+
+                const lastMsg = messages[messages.length - 1];
+                let targetUserMsg: Message | undefined;
+
+                if (lastMsg.role === 'assistant') {
+                    // Remove the assistant message
+                    get().deleteMessage(lastMsg.id);
+                    // Get the previous message (User)
+                    const newMessages = get().messages; // state updated by deleteMessage
+                    targetUserMsg = newMessages[newMessages.length - 1];
+                } else {
+                    targetUserMsg = lastMsg;
+                }
+
+                if (targetUserMsg && targetUserMsg.role === 'user') {
+                    await get().generateAIResponse(targetUserMsg.content);
+                }
+            },
+
+            sendMessage: async (content, onResponse) => {
                 if (!content.trim()) return;
 
                 const userMessage: Message = {
@@ -397,300 +384,16 @@ export const useChatStore = create<ChatState>()(
 
                 set((state) => ({
                     messages: [...state.messages, userMessage],
-                    isThinking: state.reasoningMode === 'deep',
-                    isSearching: state.reasoningMode === 'search',
-                    isStreaming: true
+                    // We don't set isStreaming/Thinking here anymore, generateAIResponse handles it
                 }));
 
-                const assistantMsgId = (Date.now() + 1).toString();
-
-                // Optimistic UI update
-                set((state) => ({
-                    messages: [...state.messages, {
-                        id: assistantMsgId,
-                        role: 'assistant',
-                        content: '',
-                        timestamp: Date.now(),
-                        isStreaming: true
-                    }]
-                }));
-
-                // AUTO-TOOL DETECTION: Try to handle search queries directly
-                console.log('[CHAT STORE] 🔍 Invoking autoToolDetector with content:', content);
-                const autoToolResult = await autoToolDetector(
-                    content,
-                    assistantMsgId,
-                    get().updateMessage,
-                    (searching) => set({ isSearching: searching }),
-                    () => get().messages
-                );
-                console.log('[CHAT STORE] 📊 autoToolDetector returned:', autoToolResult ? 'SUCCESS' : 'NULL (falling back to AI)');
-
-                if (autoToolResult) {
-                    // Auto-tool succeeded! Update message and finish
-                    console.log('[CHAT STORE] ✅ Using auto-tool result, skipping AI');
-                    get().updateMessage(assistantMsgId, { content: autoToolResult, isStreaming: false });
-                    if (get().voiceEnabled) get().speak(autoToolResult);
-                    memoryService.addMemory(autoToolResult, 'assistant');
-                    set({ isThinking: false, isStreaming: false });
-                    return;
-                }
-
-                console.log('[CHAT STORE] ⚠️ Auto-tool returned null, proceeding with normal AI flow');
-
-                // Add mode-specific hints to the content
-                let contentWithMode = content;
-                if (get().reasoningMode === 'search') {
-                    contentWithMode = `🔍 MODO BÚSQUEDA RÁPIDA: Realiza una búsqueda exhaustiva en la web para responder con la información más actual y precisa posible.\\n\\n${content}`;
-                } else if (get().reasoningMode === 'deep') {
-                    contentWithMode = `🧠 MODO PENSAMIENTO PROFUNDO: Analiza este problema paso a paso con máximo detalle, considerando todas las posibilidades y ramificaciones antes de dar una respuesta final.\\n\\n${content}`;
-                }
-
-                // 1. Retrieve relevant memories (RAG)
-                const memories = await memoryService.searchMemories(content);
-                const memoryContext = memories.length > 0
-                    ? `\\n\\nContexto relevante de memoria:\\n${memories.join('\\n')}`
-                    : '';
-
-                // Build full context
-                const context = get().messages.map(m => ({ role: m.role, parts: m.content }));
-
-                // Add memory and mode-specific text
-                const finalPrompt = contentWithMode + memoryContext;
-
-                try {
-
-                    // Call Gemini API
-                    const initialGeminiResponse = await geminiClient.chat({
-                        message: finalPrompt,
-                        attachments: get().attachments,
-                        context: context,
-                        temperature: get().reasoningMode === 'deep' ? 0.3 : 0.7 // Lower temperature for deep reasoning
-                    });
-
-                    // 2. Save User Memory asynchronously
-                    memoryService.addMemory(content, 'user');
-
-                    // Handle Agent Loop with Tool Calling
-                    let finalResponse = '';
-                    let currentResponse = initialGeminiResponse;
-                    let iterationCount = 0;
-                    const MAX_ITERATIONS = 5; // Prevent infinite loops
-
-                    while (iterationCount < MAX_ITERATIONS) {
-                        iterationCount++;
-
-                        // CRITICAL FIX: Call .json() only once per response
-                        const data = await currentResponse.json();
-                        console.log(`[Iteration ${iterationCount}] Gemini Response:`, data);
-
-                        // Check for errors
-                        if (data.error) {
-                            console.error('Gemini API Error:', data.error);
-                            throw new Error(data.error.message || 'Gemini API Error');
-                        }
-
-                        const candidate = data.candidates?.[0];
-                        const part = candidate?.content?.parts?.[0];
-                        const text = part?.text || '';
-
-                        console.log(`[Iteration ${iterationCount}] AI Text:`, text);
-
-                        // Check for TOOL_CALL block (ReAct Pattern)
-                        const toolCallMatch = text.match(/:::TOOL_CALL:::([\\s\\S]*?):::END_TOOL_CALL:::/);
-
-                        if (toolCallMatch) {
-                            try {
-                                const jsonStr = toolCallMatch[1].trim();
-                                const { name, args } = JSON.parse(jsonStr);
-
-                                console.log(`[Tool Call] Executing: ${name}`, args);
-
-                                // Update UI with tool execution indicator
-                                set(state => ({
-                                    messages: state.messages.map(msg =>
-                                        msg.id === assistantMsgId
-                                            ? { ...msg, content: `🔍 Using tool: ${name}...` }
-                                            : msg
-                                    ),
-                                    isSearching: name === 'search_web'
-                                }));
-
-                                // Execute Tool
-                                const toolResult = await toolService.execute(name, args);
-                                console.log(`[Tool Result] ${name}:`, toolResult);
-
-                                // SPECIAL HANDLING: If tool is create_artifact, add to store
-                                if (name === 'create_artifact') {
-                                    try {
-                                        // toolService.execute now returns a JSON string or object for create_artifact
-                                        const fileData = typeof toolResult === 'string' && toolResult.startsWith('{')
-                                            ? JSON.parse(toolResult)
-                                            : args; // Fallback to args if result isn't JSON (should match what we want)
-
-                                        // If the tool return structure is different, we construct it from args
-                                        const newFile = {
-                                            name: args.filename,
-                                            content: args.content,
-                                            language: args.language || 'javascript'
-                                        };
-
-                                        get().addCodeFile(newFile);
-                                        get().setActiveModule('dev'); // Auto-switch to Developer Mode
-
-                                        // Update the message to show a distinct "File Created" UI block if needed
-                                        // For now, we'll let the AI confirm it.
-                                    } catch (err) {
-                                        console.error("[Store] Failed to add code file to state:", err);
-                                    }
-                                }
-
-                                // Build new context with tool result
-                                const newContext = [
-                                    ...context,
-                                    { role: 'user', parts: finalPrompt },
-                                    { role: 'model', parts: [{ text: text }] },
-                                    { role: 'user', parts: [{ text: `TOOL_OUTPUT (${name}): ${toolResult}` }] }
-                                ];
-
-                                // Get new response with tool result
-                                currentResponse = await geminiClient.chat({
-                                    message: '',
-                                    context: newContext as any,
-                                    temperature: 0.7
-                                });
-
-                                set({ isSearching: false });
-                                continue; // Continue the loop with new response
-
-                            } catch (e) {
-                                console.error("Failed to parse/execute tool call:", e);
-                                finalResponse = text + "\\n\\n[Error: Tool execution failed]";
-                                break;
-                            }
-                        }
-
-                        // No tool call - this is the final response
-                        if (text && !toolCallMatch) {
-                            finalResponse = text;
-                            console.log('[Final Response]', finalResponse);
-                            break;
-                        }
-
-                        // Safety check - no text and no tool call
-                        if (!text) {
-                            console.warn('[Warning] Empty response from Gemini');
-                            finalResponse = "Lo siento, no pude generar una respuesta.";
-                            break;
-                        }
-                    }
-
-                    if (iterationCount >= MAX_ITERATIONS) {
-                        console.warn('[Warning] Max iterations reached');
-                        finalResponse += "\\n\\n[Sistema: Iteraciones máximas alcanzadas]";
-                    }
-
-                    // Display Final Response
-                    get().updateMessage(assistantMsgId, { content: finalResponse, isStreaming: false });
-
-                    if (get().voiceEnabled) {
-                        get().speak(finalResponse);
-                    }
-
-                    // 3. Save Assistant Memory
-                    memoryService.addMemory(finalResponse, 'assistant');
-
-                } catch (error: any) {
-                    console.error('Gemini Error, trying backup...', error);
-
-                    // Optional: Notify user of internal error (debug mode)
-                    // set(state => ({ messages: [...state.messages, { id: crypto.randomUUID(), role: 'assistant', content: `[Debug Error]: ${error.message || 'Unknown Gemini Error'}` }] }));
-
-                    try {
-                        // Fallback to Groq
-                        const groqResponse = await groqClient.chat({
-                            message: content,
-                            context: context.map(c => ({
-                                role: c.role === 'assistant' ? 'model' : c.role as 'user' | 'model',
-                                parts: c.parts
-                            }))
-                        });
-
-                        get().updateMessage(assistantMsgId, { content: groqResponse });
-                        if (get().voiceEnabled) get().speak(groqResponse);
-
-                    } catch (groqError) {
-                        console.error('Groq Error, trying backup (Claude)...', groqError);
-
-                        try {
-                            // Fallback to Anthropic (Claude)
-                            const claudeResponse = await anthropicClient.chat({
-                                message: content,
-                                context: context.map(c => ({
-                                    role: c.role === 'assistant' ? 'model' : c.role as 'user' | 'model',
-                                    parts: c.parts // Fixed: use parts, not content
-                                }))
-                            });
-
-                            get().updateMessage(assistantMsgId, { content: claudeResponse });
-
-                            if (get().voiceEnabled) {
-                                get().speak(claudeResponse);
-                            }
-
-                        } catch (backupError) {
-                            console.error('Backup (Claude) Error, trying OpenAI...', backupError);
-
-                            try {
-                                // Second Fallback: OpenAI
-                                const openaiResponse = await openaiClient.chat({
-                                    message: content,
-                                    context: context.map(c => ({
-                                        role: c.role === 'assistant' ? 'model' : c.role as 'user' | 'model',
-                                        parts: c.parts
-                                    }))
-                                });
-
-                                get().updateMessage(assistantMsgId, { content: openaiResponse });
-                                if (get().voiceEnabled) get().speak(openaiResponse);
-
-                            } catch (finalError) {
-                                console.error('OpenAI Error, trying DeepSeek...', finalError);
-
-                                try {
-                                    // Third Fallback: DeepSeek
-                                    const deepseekResponse = await deepseekClient.chat({
-                                        message: content,
-                                        context: context.map(c => ({
-                                            role: c.role === 'assistant' ? 'model' : c.role as 'user' | 'model',
-                                            parts: c.parts
-                                        }))
-                                    });
-
-                                    get().updateMessage(assistantMsgId, { content: deepseekResponse });
-                                    if (get().voiceEnabled) get().speak(deepseekResponse);
-
-                                } catch (deepseekError) {
-                                    console.error('Final Fallback (DeepSeek) Error:', deepseekError);
-                                    // Absolute Final Failure
-                                    const simResponse = "⚠️ Error TOTAL (Gemini, Claude, OpenAI, DeepSeek). \n\n¡REINICIA LA TERMINAL!";
-                                    get().updateMessage(assistantMsgId, { content: simResponse });
-                                    if (get().voiceEnabled) get().speak("Por favor reinicia el servidor.");
-                                }
-                            }
-                        }
-                    }
-                } finally {
-                    set({ isThinking: false, isStreaming: false, attachments: [] }); // Clear attachments
-                    get().updateMessage(assistantMsgId, { isStreaming: false });
-                }
+                await get().generateAIResponse(content, onResponse);
             },
         }),
         {
             name: 'nexa-chat-storage',
             partialize: (state) => ({
                 messages: state.messages,
-                voiceEnabled: state.voiceEnabled // Persist voice preference
             }),
         }
     )

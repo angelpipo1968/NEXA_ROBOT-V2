@@ -25,20 +25,33 @@ import {
     FileJson,
     FileText,
     LogOut,
-    User
+    User,
+    Palette,
+    Wand2
 } from 'lucide-react';
+import { NexaAvatar, AvatarState } from '@/components/ui/NexaAvatar';
 import { useChatStore } from '@/store/useChatStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { useUIStore } from '@/store/useUIStore';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { EditProjectDialog } from '@/components/chat/EditProjectDialog';
 
 
 export default function NexaSidebar() {
-    const { clearMessages, projects, addProject, deleteProject } = useChatStore();
+    const { messages, clearMessages, isThinking, isStreaming } = useChatStore();
+    const { projects, addProject, deleteProject } = useProjectStore();
     const { isSidebarOpen, toggleSidebar } = useUIStore();
     const navigate = useNavigate();
     const location = useLocation();
+
+    // Determine avatar state based on chat status
+    const avatarState: AvatarState = React.useMemo(() => {
+        if (isThinking) return 'thinking';
+        if (isStreaming) return 'speaking';
+        return 'logo';
+    }, [isThinking, isStreaming]);
 
     const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
 
@@ -58,6 +71,27 @@ export default function NexaSidebar() {
         navigate(path);
     };
 
+    const { userName, syncUser } = useChatStore();
+    const [isGuest, setIsGuest] = useState(false);
+
+    const handleSignOut = async () => {
+        if (isGuest) {
+            localStorage.removeItem('nexa_guest');
+            navigate('/auth');
+        } else {
+            const { error } = await supabase.auth.signOut();
+            if (error) alert(error.message);
+            else {
+                navigate('/auth');
+            }
+        }
+    };
+
+    useEffect(() => {
+        setIsGuest(localStorage.getItem('nexa_guest') === 'true');
+        syncUser();
+    }, [syncUser]);
+
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -71,203 +105,235 @@ export default function NexaSidebar() {
     }, []);
 
     return (
-        <aside
-            className={`fixed left-0 top-0 h-screen transition-all duration-300 z-50 flex flex-col border-r shadow-xl ${isSidebarOpen ? 'w-[280px]' : 'w-[80px]'
-                } bg-[var(--bg-secondary)] border-[var(--border-color)]`}
-        >
-            {/* Header: Logo & New Chat */}
-            <div className="p-4">
-                <div className={`flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} mb-6 px-2`}>
+        <>
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden animate-in fade-in duration-200"
+                    onClick={toggleSidebar}
+                />
+            )}
+
+            <aside
+                className={`fixed left-0 top-0 h-screen transition-all duration-300 z-50 flex flex-col border-r shadow-xl bg-[var(--bg-secondary)] border-[var(--border-color)]
+                /* Mobile Styles */
+                ${isSidebarOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full w-[280px]'}
+                /* Desktop Styles */
+                md:translate-x-0 md:w-auto ${isSidebarOpen ? 'md:w-[280px]' : 'md:w-[80px]'}
+                `}
+            >
+                {/* Header: Logo & New Chat */}
+                <div className="p-4">
+                    <div className={`flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} mb-6 px-2`}>
+                        {isSidebarOpen ? (
+                            <div className="flex items-center gap-3">
+                                <NexaAvatar state={avatarState} size={32} />
+                                <span className="font-bold text-xl tracking-tight text-[var(--text-primary)] neon-glow-text">NEXA AI</span>
+                            </div>
+                        ) : (
+                            <NexaAvatar state={avatarState} size={32} />
+                        )}
+                        <button
+                            onClick={toggleSidebar}
+                            className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+                        >
+                            {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+                        </button>
+                    </div>
+
+                    <motion.button
+                        onClick={() => {
+                            clearMessages();
+                            navigate('/');
+                        }}
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--card-hover-bg)] border border-[var(--border-color)] transition-all text-[var(--text-primary)] shadow-sm hover:shadow-md group ${isSidebarOpen ? 'w-full' : 'w-full justify-center px-0'
+                            }`}
+                    >
+                        <Plus size={20} className="text-[var(--vp-accent-purple)] group-hover:scale-110 transition-transform" />
+                        {isSidebarOpen && <span className="font-medium">Nuevo Chat</span>}
+                    </motion.button>
+
                     {isSidebarOpen && (
-                        <div className="flex items-center gap-3">
-                            <img
-                                src="/nexa-logo.jpg"
-                                alt="Nexa AI"
-                                className="w-8 h-8 rounded-lg object-cover"
-                                onError={(e) => {
-                                    // Fallback if image fails
-                                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=Nexa+AI&background=2563eb&color=fff`;
-                                }}
+                        <div className="mt-4 relative animate-in fade-in duration-300">
+                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <input
+                                type="text"
+                                placeholder="Chats de búsqueda..."
+                                className="w-full bg-transparent border border-[var(--border-color)] rounded-lg pl-9 pr-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--vp-accent-purple)] placeholder-[var(--text-muted)]"
                             />
-                            <span className="font-bold text-xl tracking-tight text-[var(--text-primary)]">NEXA AI</span>
                         </div>
                     )}
-                    <button
-                        onClick={toggleSidebar}
-                        className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
-                    >
-                        {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
-                    </button>
                 </div>
 
-                <motion.button
-                    onClick={() => {
-                        clearMessages();
-                        navigate('/');
-                    }}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--card-hover-bg)] border border-[var(--border-color)] transition-all text-[var(--text-primary)] shadow-sm hover:shadow-md group ${isSidebarOpen ? 'w-full' : 'w-full justify-center px-0'
-                        }`}
-                >
-                    <Plus size={20} className="text-[var(--vp-accent-purple)] group-hover:scale-110 transition-transform" />
-                    {isSidebarOpen && <span className="font-medium">Nuevo Chat</span>}
-                </motion.button>
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto px-2 py-2 space-y-6 custom-scrollbar pb-20">
 
-                {isSidebarOpen && (
-                    <div className="mt-4 relative animate-in fade-in duration-300">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                        <input
-                            type="text"
-                            placeholder="Chats de búsqueda..."
-                            className="w-full bg-transparent border border-[var(--border-color)] rounded-lg pl-9 pr-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--vp-accent-purple)] placeholder-[var(--text-muted)]"
+                    {/* Navigation Links (The "Three Things") */}
+                    <div className="space-y-1">
+                        <NavItem
+                            icon={MessageSquare}
+                            label="Nexa Chat"
+                            active={location.pathname === '/' || location.pathname === '/home' || location.pathname === '/chat'}
+                            onClick={() => handleNavigation('/')}
+                            collapsed={!isSidebarOpen}
+                        />
+                        <NavItem
+                            icon={Palette}
+                            label="Studio"
+                            active={location.pathname === '/studio'}
+                            onClick={() => handleNavigation('/studio')}
+                            collapsed={!isSidebarOpen}
+                        />
+                        <NavItem
+                            icon={Wand2}
+                            label="Generador"
+                            active={location.pathname === '/generator'}
+                            onClick={() => handleNavigation('/generator')}
+                            collapsed={!isSidebarOpen}
                         />
                     </div>
-                )}
-            </div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-6 custom-scrollbar pb-20">
-
-                {/* Navigation Links (The "Three Things") */}
-                <div className="space-y-1">
-                    <NavItem
-                        icon={MessageSquare}
-                        label="Nexa Chat"
-                        active={location.pathname === '/' || location.pathname === '/home' || location.pathname === '/chat'}
-                        onClick={() => handleNavigation('/')}
-                        collapsed={!isSidebarOpen}
-                    />
-                </div>
-
-                {isSidebarOpen && (
-                    <>
-                        {/* Projects Section */}
-                        <div className="animate-in fade-in duration-300">
-                            <button
-                                onClick={() => setIsProjectsOpen(!isProjectsOpen)}
-                                className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider hover:text-[var(--text-primary)] transition-colors mb-2"
-                            >
-                                <span>Proyectos</span>
-                                {isProjectsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                            </button>
-
-                            {isProjectsOpen && (
-                                <div className="space-y-1">
-                                    <NavItem
-                                        icon={Box}
-                                        label="Nuevo Proyecto"
-                                        active={false}
-                                        onClick={() => setIsProjectDialogOpen(true)}
-                                        collapsed={false}
-                                    />
-                                    {projects.map(project => (
-                                        <HistoryItem
-                                            key={project.id}
-                                            label={project.name}
-                                            onDelete={() => deleteProject(project.id)}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Recent History Section */}
-                        <div className="animate-in fade-in duration-300">
-                            <button
-                                onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-                                className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider hover:text-[var(--text-primary)] transition-colors mb-2"
-                            >
-                                <span>Todas las conversaciones</span>
-                                {isHistoryOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                            </button>
-
-                            {isHistoryOpen && (
-                                <div className="space-y-1">
-                                    {historyItems.map(item => (
-                                        <HistoryItem
-                                            key={item.id}
-                                            label={item.label}
-                                            onDelete={() => setHistoryItems(prev => prev.filter(i => i.id !== item.id))}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </>
-                )}
-            </div>
-
-            {/* Footer: Theme Toggle & User Profile */}
-            <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] absolute bottom-0 left-0 w-full" ref={userMenuRef}>
-
-                {/* Theme Toggle - Only show when sidebar is open */}
-                {isSidebarOpen && (
-                    <div className="mb-3 animate-in fade-in duration-300">
-                        <ThemeToggle />
-                    </div>
-                )}
-
-                {/* User Settings Menu Popover */}
-                {showUserMenu && isSidebarOpen && (
-                    <div className="absolute bottom-full left-4 mb-2 w-64 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] shadow-[var(--shadow-lg)] overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
-                        <div className="p-3 border-b border-[var(--border-color)]">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-[var(--vp-accent-purple)] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
-                                    AG
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium text-[var(--text-primary)] truncate">pipogon0361@gmail.com</div>
-                                    <div className="text-xs text-[var(--text-tertiary)] truncate">Free Plan</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-1 space-y-0.5">
-                            <MenuItem
-                                icon={Settings}
-                                label="Settings"
-                                onClick={() => {
-                                    setShowUserMenu(false);
-                                    useUIStore.getState().setSettingsOpen(true);
-                                }}
-                            />
-                            <MenuItem icon={Archive} label="Archived Chats" />
-                            <div className="h-px bg-white/5 my-1" />
-                            <MenuItem icon={LogOut} label="Log out" />
-                        </div>
-                    </div>
-                )}
-
-                <motion.div
-                    onClick={() => isSidebarOpen && setShowUserMenu(!showUserMenu)}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[var(--card-hover-bg)] cursor-pointer transition-colors ${!isSidebarOpen && 'justify-center'}`}
-                >
-                    <div className="w-8 h-8 rounded-full bg-[var(--vp-accent-purple)] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
-                        AG
-                    </div>
                     {isSidebarOpen && (
                         <>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate text-[var(--text-primary)]">Angel Gongora</p>
-                                <p className="text-[10px] text-[var(--text-muted)] truncate uppercase tracking-wider font-bold">NEXA PRO</p>
+                            {/* Projects Section */}
+                            <div className="animate-in fade-in duration-300">
+                                <button
+                                    onClick={() => setIsProjectsOpen(!isProjectsOpen)}
+                                    className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider hover:text-[var(--text-primary)] transition-colors mb-2"
+                                >
+                                    <span>Proyectos</span>
+                                    {isProjectsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                </button>
+
+                                {isProjectsOpen && (
+                                    <div className="space-y-1">
+                                        <NavItem
+                                            icon={Box}
+                                            label="Nuevo Proyecto"
+                                            active={false}
+                                            onClick={() => setIsProjectDialogOpen(true)}
+                                            collapsed={false}
+                                        />
+                                        {projects.map(project => (
+                                            <HistoryItem
+                                                key={project.id}
+                                                label={project.name}
+                                                onDelete={() => deleteProject(project.id)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <ChevronRight size={14} className={`text-[var(--text-muted)] transition-transform ${showUserMenu ? 'rotate-90' : ''}`} />
+
+                            {/* Recent History Section */}
+                            <div className="animate-in fade-in duration-300">
+                                <button
+                                    onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+                                    className="w-full flex items-center justify-between px-3 py-1 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider hover:text-[var(--text-primary)] transition-colors mb-2"
+                                >
+                                    <span>Todas las conversaciones</span>
+                                    {isHistoryOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                </button>
+
+                                {isHistoryOpen && (
+                                    <div className="space-y-1">
+                                        {historyItems.map(item => (
+                                            <HistoryItem
+                                                key={item.id}
+                                                label={item.label}
+                                                onDelete={() => setHistoryItems(prev => prev.filter(i => i.id !== item.id))}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </>
                     )}
-                </motion.div>
+                </div>
 
-                <EditProjectDialog
-                    open={isProjectDialogOpen}
-                    onOpenChange={setIsProjectDialogOpen}
-                    onSave={(newTitle) => {
-                        addProject(newTitle);
-                        setIsProjectDialogOpen(false);
-                    }}
-                />
-            </div>
-        </aside >
+                {/* Footer: Theme Toggle & User Profile */}
+                <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] absolute bottom-0 left-0 w-full" ref={userMenuRef}>
+
+                    {/* Theme Toggle - Only show when sidebar is open */}
+                    {isSidebarOpen && (
+                        <div className="mb-3 animate-in fade-in duration-300">
+                            <ThemeToggle />
+                        </div>
+                    )}
+
+                    {/* User Settings Menu Popover */}
+                    {showUserMenu && isSidebarOpen && (
+                        <div className="absolute bottom-full left-4 mb-2 w-64 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] shadow-[var(--shadow-lg)] overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+                            <div className="p-3 border-b border-[var(--border-color)]">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-[var(--vp-accent-purple)] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
+                                        {userName.substring(0, 2).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium text-[var(--text-primary)] truncate">{isGuest ? 'Invitado' : userName}</div>
+                                        <div className="text-xs text-[var(--text-tertiary)] truncate">{isGuest ? 'Sesión Temporal' : 'NEXA PRO'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-1 space-y-0.5">
+                                {isGuest && (
+                                    <MenuItem
+                                        icon={User}
+                                        label="Iniciar Sesión"
+                                        onClick={() => {
+                                            setShowUserMenu(false);
+                                            navigate('/auth');
+                                        }}
+                                    />
+                                )}
+                                <MenuItem
+                                    icon={Settings}
+                                    label="Settings"
+                                    onClick={() => {
+                                        setShowUserMenu(false);
+                                        useUIStore.getState().setSettingsOpen(true);
+                                    }}
+                                />
+                                <MenuItem icon={Archive} label="Archived Chats" />
+                                <div className="h-px bg-white/5 my-1" />
+                                <MenuItem icon={LogOut} label="Log out" onClick={handleSignOut} />
+                            </div>
+                        </div>
+                    )}
+
+                    <motion.div
+                        onClick={() => isSidebarOpen && setShowUserMenu(!showUserMenu)}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[var(--card-hover-bg)] cursor-pointer transition-colors ${!isSidebarOpen && 'justify-center'}`}
+                    >
+                        <div className="w-8 h-8 rounded-full bg-[var(--vp-accent-purple)] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
+                            {isGuest ? 'IN' : userName.substring(0, 2).toUpperCase()}
+                        </div>
+                        {isSidebarOpen && (
+                            <>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold truncate text-[var(--text-primary)]">{isGuest ? 'Invitado' : userName}</p>
+                                    <p className="text-[10px] text-[var(--text-muted)] truncate uppercase tracking-wider font-bold">{isGuest ? 'SESIÓN TEMPORAL' : 'NEXA PRO'}</p>
+                                </div>
+                                <ChevronRight size={14} className={`text-[var(--text-muted)] transition-transform ${showUserMenu ? 'rotate-90' : ''}`} />
+                            </>
+                        )}
+                    </motion.div>
+
+                    <EditProjectDialog
+                        open={isProjectDialogOpen}
+                        onOpenChange={setIsProjectDialogOpen}
+                        onSave={(newTitle) => {
+                            addProject(newTitle);
+                            setIsProjectDialogOpen(false);
+                        }}
+                    />
+                </div>
+            </aside >
+        </>
     );
 }
 
