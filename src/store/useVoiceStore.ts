@@ -61,7 +61,7 @@ export const useVoiceStore = create<VoiceState>()(
             },
 
             speak: async (text: string, onEnd?: () => void) => {
-                if (!get().voiceEnabled) return;
+                // if (!get().voiceEnabled) return; // Allow clear explicit speak requests (e.g. "Read aloud")
 
                 // Stop any current speaking
                 get().stopSpeaking();

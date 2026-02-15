@@ -156,7 +156,7 @@ export default function ChatInput() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Describe the image you want to generate."
+                        placeholder="Mensaje a Nexa..."
                         className="w-full bg-transparent !border-none focus:ring-0 !outline-none focus:outline-none appearance-none !ring-0 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none min-h-[44px] max-h-[150px] py-1 text-[16px] leading-snug"
                         style={{ scrollbarWidth: 'none' }}
                     />
@@ -176,11 +176,6 @@ export default function ChatInput() {
                                     <Plus size={12} className="rotate-45 text-blue-600 dark:text-blue-400" />
                                 </button>
                             </div>
-
-                            <button className="flex items-center gap-1 px-3 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400 text-sm font-medium">
-                                <span>16:9</span>
-                                <ChevronDown size={14} />
-                            </button>
                         </div>
 
                         <button
@@ -195,10 +190,10 @@ export default function ChatInput() {
                             disabled={isThinking || (!isSpeaking && !input.trim() && attachments.length === 0)}
                             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-90 ${(!isSpeaking && !input.trim() && attachments.length === 0)
                                 ? 'bg-gray-200 dark:bg-white/5 text-gray-400 dark:text-gray-600'
-                                : 'bg-gray-900 dark:bg-white text-white dark:text-black'
+                                : 'bg-gray-900 dark:bg-white text-white dark:text-black shadow-lg'
                                 }`}
                         >
-                            {isSpeaking ? <Square size={16} fill="currentColor" /> : (isThinking ? <Wand2 size={20} className="animate-pulse" /> : <div className="w-4 h-4 bg-current rounded-sm" />)}
+                            {isSpeaking ? <Square size={16} fill="currentColor" /> : (isThinking ? <Wand2 size={20} className="animate-pulse" /> : <ArrowUp size={20} strokeWidth={2.5} />)}
                         </button>
                     </div>
                 </div>
