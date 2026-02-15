@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "deploy:vercel": "vercel --prod",
     "validate": "node scripts/validate.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "update": "powershell -ExecutionPolicy Bypass -File ./scripts/auto_update.ps1"
   },
   "workspaces": [
     "apps/*",
@@ -32,7 +33,7 @@
     "@react-three/fiber": "^9.5.0",
     "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/supabase-js": "^2.93.3",
-    "axios": "^1.13.4",
+    "axios": "^1.13.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

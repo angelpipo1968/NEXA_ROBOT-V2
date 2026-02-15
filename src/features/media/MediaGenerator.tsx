@@ -36,7 +36,22 @@ const PRESETS = [
     { id: 'anime', label: 'Anime', prompt: 'anime style, vibrant colors, high quality digital art, studio ghibli vibes', icon: '🌸' },
     { id: '3d', label: '3D Render', prompt: 'octane render, unreal engine 5, toy-like, tilt-shift, cute', icon: '🧊' },
     { id: 'cyberpunk', label: 'Cyberpunk', prompt: 'cyberpunk aesthetic, neon lights, futuristic, rainy streets, blade runner style', icon: '🌃' },
-    { id: 'artistic', label: 'Artístico', prompt: 'abstract art style, van gogh starry night texture, oil painting, expressive', icon: '🎨' }
+    { id: 'artistic', label: 'Artístico', prompt: 'abstract art style, van gogh starry night texture, oil painting, expressive', icon: '🎨' },
+    { id: 'portrait', label: 'Retrato', prompt: 'professional portrait photography, 85mm lens, f/1.8, bokeh, studio lighting', icon: '📸' },
+    { id: 'macro', label: 'Macro', prompt: 'macro photography, extreme close-up, intricate details, depth of field', icon: '🔍' }
+];
+
+const MODELS = [
+    { id: 'flux', label: 'Flux (Transformer)', description: 'Calidad Máxima' },
+    { id: 'flux-realism', label: 'Realism (CNN+)', description: 'Fotorealismo' },
+    { id: 'turbo', label: 'Turbo (GAN/Diff)', description: 'Velocidad Extrema' }
+];
+
+const SUBJECTS = [
+    { id: 'auto', label: 'Auto' },
+    { id: 'person', label: 'Persona' },
+    { id: 'landscape', label: 'Paisaje' },
+    { id: 'object', label: 'Objeto' }
 ];
 
 export default function MediaGenerator() {
@@ -45,6 +60,8 @@ export default function MediaGenerator() {
     const [type, setType] = useState<'image' | 'video'>('image');
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
     const [selectedPreset, setSelectedPreset] = useState('none');
+    const [selectedModel, setSelectedModel] = useState('flux');
+    const [selectedSubject, setSelectedSubject] = useState('auto');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
@@ -84,13 +101,19 @@ export default function MediaGenerator() {
 
         try {
             const preset = PRESETS.find(p => p.id === selectedPreset);
-            const fullPrompt = preset?.prompt ? `${prompt}, ${preset.prompt}` : prompt;
+            let subjectPrefix = '';
+            if (selectedSubject === 'person') subjectPrefix = 'A portrait of ';
+            if (selectedSubject === 'landscape') subjectPrefix = 'A landscape view of ';
+            if (selectedSubject === 'object') subjectPrefix = 'A detailed object shot of ';
+
+            const basePrompt = `${subjectPrefix}${prompt}`;
+            const fullPrompt = preset?.prompt ? `${basePrompt}, ${preset.prompt}` : basePrompt;
 
             const enhanced = await imageService.enhancePrompt(fullPrompt, type);
             let url = '';
 
             if (type === 'image') {
-                url = await imageService.generateFluxImage(enhanced, { aspectRatio });
+                url = await imageService.generateFluxImage(enhanced, { aspectRatio, model: selectedModel });
             } else {
                 url = await imageService.generateVideo(enhanced, { aspectRatio });
             }
@@ -252,6 +275,37 @@ export default function MediaGenerator() {
 
                         {/* Dimensions & Generate */}
                         <div className="space-y-6">
+
+
+                            {/* Model & Subject Selector */}
+                            <section className="space-y-4">
+                                <label className="text-[10px] font-black text-gray-500 underline decoration-green-500/50 underline-offset-4 uppercase tracking-[0.2em]">Tecnología</label>
+                                <div className="space-y-2">
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {MODELS.map(model => (
+                                            <button
+                                                key={model.id}
+                                                onClick={() => setSelectedModel(model.id)}
+                                                className={`p-2 rounded-xl text-[9px] font-black border transition-all flex flex-col items-center gap-1 ${selectedModel === model.id ? 'bg-white/10 border-green-500/50 text-white' : 'border-white/5 text-gray-500'}`}
+                                            >
+                                                <span className="uppercase">{model.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {SUBJECTS.map(subj => (
+                                            <button
+                                                key={subj.id}
+                                                onClick={() => setSelectedSubject(subj.id)}
+                                                className={`p-2 rounded-lg text-[9px] font-bold border transition-all ${selectedSubject === subj.id ? 'bg-white/10 border-blue-500/50 text-white' : 'border-white/5 text-gray-500'}`}
+                                            >
+                                                {subj.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+
                             <section className="space-y-4">
                                 <label className="text-[10px] font-black text-gray-500 underline decoration-pink-500/50 underline-offset-4 uppercase tracking-[0.2em]">Formato de Salida</label>
                                 <div className="grid grid-cols-3 gap-2">
@@ -530,7 +584,7 @@ export default function MediaGenerator() {
                     )}
                 </AnimatePresence>
             </div>
-        </div>
+        </div >
     );
 }
 

@@ -19,9 +19,9 @@ android {
     signingConfigs {
         release {
             storeFile file("nexa-release.keystore")
-            storePassword "nexa123456"
+            storePassword System.getenv("NEXA_KEYSTORE_PASSWORD")
             keyAlias "nexa-alias"
-            keyPassword "nexa123456"
+            keyPassword System.getenv("NEXA_KEYSTORE_PASSWORD")
         }
     }
     buildTypes {
@@ -30,6 +30,10 @@ android {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 

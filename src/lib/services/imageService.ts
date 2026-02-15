@@ -6,6 +6,7 @@ export type ImageQuality = 'draft' | 'standard' | 'ultra';
 interface MediaOptions {
     aspectRatio?: AspectRatio;
     quality?: ImageQuality;
+    model?: string;
 }
 
 export const imageService = {
@@ -37,7 +38,7 @@ export const imageService = {
      */
     async generateFluxImage(prompt: string, options: MediaOptions = {}): Promise<string> {
         try {
-            const { aspectRatio = '1:1', quality = 'standard' } = options;
+            const { aspectRatio = '1:1', quality = 'standard', model = 'flux' } = options;
 
             // Define dimensions based on aspect ratio
             let width = 1024;
@@ -62,7 +63,8 @@ export const imageService = {
             const encodedPrompt = encodeURIComponent(finalPrompt);
             const seed = Math.floor(Math.random() * 2000000);
 
-            const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=${width}&height=${height}&nologo=true&model=flux`;
+            // Use specified model
+            const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?seed=${seed}&width=${width}&height=${height}&nologo=true&model=${model}`;
 
             console.log('[ImageService] World-Class Image URL:', url);
             return url;

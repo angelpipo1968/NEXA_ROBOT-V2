@@ -5,3 +5,7 @@ dist
 .turbo
 nul
 .vercel
+*.keystore
+*.jks
+google-services.json
+local.properties
