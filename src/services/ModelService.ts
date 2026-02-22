@@ -85,7 +85,7 @@ export class ModelService {
     ): Promise<string> {
         let currentText = initialText;
         let iteration = 0;
-        const MAX_ITERATIONS = 5;
+        const MAX_ITERATIONS = 10;
 
         while (iteration < MAX_ITERATIONS) {
             const match = currentText.match(/:::TOOL_CALL:::([\s\S]*?):::END_TOOL_CALL:::/);
@@ -93,7 +93,12 @@ export class ModelService {
 
             iteration++;
             try {
-                const { name, args } = JSON.parse(match[1].trim());
+                let jsonStr = match[1].trim();
+                // Clean potential markdown or noise
+                if (jsonStr.startsWith('```json')) jsonStr = jsonStr.replace(/^```json/, '').replace(/```$/, '');
+                else if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```/, '').replace(/```$/, '');
+
+                const { name, args } = JSON.parse(jsonStr.trim());
                 console.log(`[ModelService] 🛠️ Executing tool: ${name}`, args);
 
                 const result = await toolService.execute(name, args);

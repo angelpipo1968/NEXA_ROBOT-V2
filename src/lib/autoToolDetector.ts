@@ -91,9 +91,27 @@ export async function autoToolDetector(
             updateMessage(assistantMsgId, { content: '🎨 Generando imagen con el motor Nexa Neural...' });
             setSearching(true);
 
-            // Extract potential prompt
-            let prompt = content
-                .replace(/genera|crea|haz|dibuja|generate|create|make|draw|una imagen de|una foto de|un dibujo de|un retrato de|image of|photo of|drawing of|portrait of|sobre/gi, '')
+            // Extract potential prompt - be smarter about hybrid queries
+            let prompt = content;
+
+            // Try to find where the image request starts
+            const imageStarts = [
+                'genera', 'crea', 'hacer', 'dibuja', 'generate', 'create', 'make', 'draw',
+                'una imagen', 'una foto', 'un dibujo', 'un retrato', 'image of', 'photo of'
+            ];
+
+            for (const startWord of imageStarts) {
+                const index = lowerContent.indexOf(startWord);
+                if (index !== -1) {
+                    prompt = content.substring(index);
+                    break;
+                }
+            }
+
+            // Standard cleaning
+            prompt = prompt
+                .replace(/genera|crea|haz|hacer|dibuja|generate|create|make|draw|una imagen de|una foto de|un dibujo de|un retrato de|image of|photo of|drawing of|portrait of|sobre|/gi, '')
+                .replace(/^["'«„\s]+|["'»“\s]+$/g, '') // Remove quotes and surrounding whitespace
                 .trim();
 
             if (!prompt || prompt.length < 3) prompt = content;
@@ -300,7 +318,7 @@ export async function autoToolDetector(
             }));
 
             // Build a prompt that asks Gemini to answer naturally using the search results
-            const resultsText = searchResults.map((r, i) =>
+            const resultsText = searchResults.map((r: any, i: number) =>
                 `${i + 1}. ${r.title}\n   ${r.content}\n   Fuente: ${r.url || r.source}`
             ).join('\n\n');
 

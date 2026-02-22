@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { elevenlabsClient } from '@/lib/elevenlabs';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import { Capacitor } from '@capacitor/core';
 
 interface VoiceState {
     voiceEnabled: boolean;
@@ -51,7 +53,9 @@ export const useVoiceStore = create<VoiceState>()(
                     set({ currentAudio: null });
                 }
                 if (currentUtterance) {
-                    window.speechSynthesis.cancel();
+                    if (typeof window !== 'undefined' && window.speechSynthesis) {
+                        window.speechSynthesis.cancel();
+                    }
                     set({ currentUtterance: null });
                 }
                 if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -66,7 +70,40 @@ export const useVoiceStore = create<VoiceState>()(
                 // Stop any current speaking
                 get().stopSpeaking();
 
-                const playBrowserTTS = () => {
+                const playBrowserTTS = async () => {
+                    if (Capacitor.isNativePlatform()) {
+                        try {
+                            await TextToSpeech.speak({
+                                text,
+                                lang: 'es-ES',
+                                rate: 1.0,
+                                pitch: 1.0,
+                                volume: 1.0,
+                            });
+                            set({ isSpeaking: false });
+                            onEnd?.();
+                        } catch (e) {
+                            console.error('Capacitor TTS failed', e);
+                            set({ isSpeaking: false });
+                        }
+                        return;
+                    }
+
+                    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+                        console.warn('[VOICE] Browser TTS not supported or SpeechSynthesisUtterance not defined');
+                        set({ isSpeaking: false });
+                        return;
+                    }
+
+                    // Safety check for Android WebView where checking 'in window' might pass but constructor fails
+                    try {
+                        const testUtterance = new SpeechSynthesisUtterance("test");
+                    } catch (e) {
+                        console.warn('[VOICE] SpeechSynthesisUtterance constructor failed:', e);
+                        set({ isSpeaking: false });
+                        return;
+                    }
+
                     const utterance = new SpeechSynthesisUtterance(text);
 
                     const getVoicesLoaded = (): Promise<SpeechSynthesisVoice[]> => {

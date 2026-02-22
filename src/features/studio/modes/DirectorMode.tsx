@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Download, Wand2, Loader2, Image as ImageIcon, Sliders, Maximize2, Monitor } from 'lucide-react';
 import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { useStudioStore } from '@/lib/stores/useStudioStore';
 import { imageService, AspectRatio, ImageQuality } from '@/lib/services/imageService';
 
-import { HologramViewer } from '../components/HologramViewer';
+const HologramViewer = lazy(() => import('../components/HologramViewer').then(module => ({ default: module.HologramViewer })));
 
 // Extracted from StudioModule types
 interface GeneratedAsset {
@@ -199,7 +199,14 @@ export function DirectorMode() {
                         >
                             <div className={`relative group rounded-2xl shadow-2xl overflow-hidden border border-white/5 ${isCoverMode ? 'max-h-[85%] aspect-[2/3]' : 'max-h-[70%] aspect-square'}`}>
                                 {isHologramMode ? (
-                                    <HologramViewer imageUrl={selectedAsset.url} prompt={selectedAsset.prompt} />
+                                    <Suspense fallback={
+                                        <div className="flex items-center justify-center p-12 bg-black/40 backdrop-blur-sm rounded-3xl w-full h-full">
+                                            <Loader2 className="animate-spin text-purple-500" size={32} />
+                                            <span className="ml-4 text-purple-300 font-medium tracking-wider">Cargando 3D Engine...</span>
+                                        </div>
+                                    }>
+                                        <HologramViewer imageUrl={selectedAsset.url} prompt={selectedAsset.prompt} />
+                                    </Suspense>
                                 ) : (
                                     <>
                                         <ImageWithFallback

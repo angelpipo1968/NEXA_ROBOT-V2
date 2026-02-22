@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { Copy, Trash2, Volume2, Edit2, GitFork, ThumbsUp, ThumbsDown, Share2, RotateCw, MoreHorizontal, Settings, ChevronLeft, Check } from 'lucide-react';
 import ThinkingCard from './ThinkingCard';
@@ -25,10 +26,12 @@ interface MessageBubbleProps {
     role: 'user' | 'assistant';
     content: string;
     id: string;
-    onDelete?: () => void;
+    deleteMessage: (id: string) => void;
+    forkChat: (messageId: string) => void;
+    regenerateResponse: () => Promise<void>;
 }
 
-export default function MessageBubble({ role, content, id, onDelete }: MessageBubbleProps) {
+export default function MessageBubble({ role, content, id, deleteMessage, forkChat, regenerateResponse }: MessageBubbleProps) {
     const isUser = role === 'user';
     const [showMoreMenu, setShowMoreMenu] = useState(false);
     const [showVoiceMenu, setShowVoiceMenu] = useState(false);
@@ -37,7 +40,7 @@ export default function MessageBubble({ role, content, id, onDelete }: MessageBu
     const [editContent, setEditContent] = useState(content);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    const { forkChat, updateMessage, generateAIResponse, regenerateResponse } = useChatStore();
+    const { updateMessage, generateAIResponse } = useChatStore();
     const { speak, selectedVoice, setSelectedVoice } = useVoiceStore();
 
     const handleSaveEdit = async () => {
@@ -66,6 +69,7 @@ export default function MessageBubble({ role, content, id, onDelete }: MessageBu
         if (!showVoiceMenu) return;
 
         const loadVoices = () => {
+            if (typeof window === 'undefined' || !window.speechSynthesis) return;
             const voices = window.speechSynthesis.getVoices();
             // Filter mainly for Spanish/English or show all but sorted
             // For now, let's just show all distinct ones or filter by current lang if possible
@@ -79,8 +83,14 @@ export default function MessageBubble({ role, content, id, onDelete }: MessageBu
         };
 
         loadVoices();
-        window.speechSynthesis.onvoiceschanged = loadVoices;
-        return () => { window.speechSynthesis.onvoiceschanged = null; };
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        return () => {
+            if (typeof window !== 'undefined' && window.speechSynthesis) {
+                window.speechSynthesis.onvoiceschanged = null;
+            }
+        };
     }, [showVoiceMenu]);
 
     // Close menu when clicking outside
@@ -101,11 +111,16 @@ export default function MessageBubble({ role, content, id, onDelete }: MessageBu
     }, [showMoreMenu]);
 
     return (
-        <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} group mb-2`}>
+        <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.4, type: 'spring', bounce: 0.3 }}
+            className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} group mb-4`}
+        >
             <div
-                className={`max-w-[85%] rounded-2xl px-5 py-4 text-[15px] leading-relaxed shadow-[var(--shadow-lg)] ${isUser
-                    ? 'bg-[var(--vp-accent-purple)] text-white rounded-tr-sm'
-                    : 'bg-[var(--card-bg)] text-[var(--text-primary)] border border-[var(--card-border)]'
+                className={`max-w-[85%] rounded-3xl px-6 py-4 text-[15px] leading-relaxed shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-xl border border-white/10 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] ${isUser
+                    ? 'bg-gradient-to-br from-purple-600/90 to-indigo-600/90 text-white rounded-tr-sm'
+                    : 'bg-white/5 dark:bg-black/20 text-[var(--text-primary)]'
                     }`}
             >
                 {isUser ? (
@@ -152,10 +167,10 @@ export default function MessageBubble({ role, content, id, onDelete }: MessageBu
                                 label="Copiar"
                                 isUserMessage
                             />
-                            {onDelete && (
+                            {deleteMessage && (
                                 <ActionButton
                                     icon={<Trash2 size={14} className="text-white/70 hover:text-white" />}
-                                    onClick={onDelete}
+                                    onClick={() => deleteMessage(id)}
                                     label="Eliminar"
                                     isUserMessage
                                     isDanger
@@ -170,12 +185,41 @@ export default function MessageBubble({ role, content, id, onDelete }: MessageBu
                             (() => {
                                 try {
                                     let jsonStr = '';
-                                    if (content.includes('TOOL_CALL: ')) {
-                                        jsonStr = content.split('TOOL_CALL: ')[1].split('\n')[0];
-                                    } else {
-                                        jsonStr = content.split(':::TOOL_CALL:::')[1].split(':::END_TOOL_CALL:::')[0];
+                                    let isComplete = false;
+
+                                    if (content.includes(':::TOOL_CALL:::')) {
+                                        const parts = content.split(':::TOOL_CALL:::');
+                                        const lastPart = parts[parts.length - 1];
+                                        if (lastPart.includes(':::END_TOOL_CALL:::')) {
+                                            jsonStr = lastPart.split(':::END_TOOL_CALL:::')[0];
+                                            isComplete = true;
+                                        } else {
+                                            // Incomplete tool call (still streaming)
+                                            jsonStr = lastPart;
+                                            isComplete = false;
+                                        }
+                                    } else if (content.includes('TOOL_CALL: ')) {
+                                        // Support legacy TOOL_CALL: format
+                                        const parts = content.split('TOOL_CALL: ');
+                                        jsonStr = parts[parts.length - 1].split('\n')[0];
+                                        isComplete = true; // Legacy format is usually single-line
                                     }
-                                    const toolData = JSON.parse(jsonStr.trim());
+
+                                    if (!jsonStr.trim()) return <ThinkingCard toolName="Pensando..." toolArgs={{}} />;
+
+                                    let cleanJson = jsonStr.trim();
+                                    // Remove markdown code blocks if present
+                                    cleanJson = cleanJson.replace(/^```json\s*/, '').replace(/\s*```$/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+
+                                    // If not complete, don't try to parse yet, just show "Thinking"
+                                    if (!isComplete) {
+                                        // Try a very basic extraction for name if possible to show more info
+                                        const nameMatch = cleanJson.match(/"name":\s*"([^"]+)"/);
+                                        const toolName = nameMatch ? nameMatch[1] : '...';
+                                        return <ThinkingCard toolName={toolName} toolArgs={{}} />;
+                                    }
+
+                                    const toolData = JSON.parse(cleanJson.trim());
                                     return (
                                         <>
                                             <ThinkingCard toolName={toolData.name} toolArgs={toolData.args} />
@@ -189,7 +233,17 @@ export default function MessageBubble({ role, content, id, onDelete }: MessageBu
                                         </>
                                     );
                                 } catch (e) {
-                                    return <div className="text-red-400">Error rendering tool execution</div>;
+                                    console.error('Tool rendering error:', e);
+                                    // If it fails to parse but we are still in a tool call zone, 
+                                    // just show Thinking instead of a red error if it's likely still streaming
+                                    if (!content.includes(':::END_TOOL_CALL:::')) {
+                                        return <ThinkingCard toolName="..." toolArgs={{}} />;
+                                    }
+                                    return (
+                                        <div className="text-red-400 bg-red-400/10 p-2 rounded-lg border border-red-400/20 text-xs">
+                                            ⚠️ Error al procesar acción de la IA. Ver consola para detalles.
+                                        </div>
+                                    );
                                 }
                             })()
                         ) : (() => {
@@ -443,7 +497,7 @@ export default function MessageBubble({ role, content, id, onDelete }: MessageBu
                     </div>
                 )}
             </div>
-        </div>
+        </motion.div>
     );
 }
 

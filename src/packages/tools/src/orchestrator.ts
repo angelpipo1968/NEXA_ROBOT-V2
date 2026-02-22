@@ -3,24 +3,36 @@ import { ToolResult, ExecutionContext, ToolRoutingResult } from './types'
 import { WebSearchTool } from './tools/web-search'
 import { CodeExecutionTool } from './tools/code-execution'
 import { RAGTool } from './tools/rag'
+import { SequentialThinkingTool } from './tools/sequential-thinking'
 import {
     SandboxManager,
     PermissionManager,
     BrowserTool,
     CalculatorTool
 } from './tools/stubs'
+import { ListDirTool, ReadFileTool, WriteFileTool } from './tools/file-system'
+import { SaveKnowledgeTool } from './tools/knowledge'
+import { CodebaseSearchTool, IndexCodebaseTool } from './tools/codebase'
+
+import { GenericMCPTool } from './tools/mcp-tool'
+import { MCPClient } from './mcp-client'
+import * as fs from 'fs'
+import * as path from 'path'
 
 export class ToolOrchestrator {
     private tools: Map<string, Tool>
     private sandbox: SandboxManager
     private permissionManager: PermissionManager
+    private mcpClient: MCPClient
 
     constructor() {
         this.tools = new Map()
         this.sandbox = new SandboxManager()
         this.permissionManager = new PermissionManager()
+        this.mcpClient = new MCPClient()
 
         this.registerDefaultTools()
+        this.loadMCPServers()
     }
 
     private registerDefaultTools() {
@@ -29,10 +41,38 @@ export class ToolOrchestrator {
         this.registerTool(new RAGTool())
         this.registerTool(new BrowserTool())
         this.registerTool(new CalculatorTool())
+        this.registerTool(new SequentialThinkingTool())
+        this.registerTool(new ListDirTool())
+        this.registerTool(new ReadFileTool())
+        this.registerTool(new WriteFileTool())
+        this.registerTool(new SaveKnowledgeTool())
+        this.registerTool(new CodebaseSearchTool())
+        this.registerTool(new IndexCodebaseTool())
     }
 
     registerTool(tool: Tool) {
         this.tools.set(tool.name, tool);
+    }
+
+    private loadMCPServers() {
+        try {
+            const configPath = path.join(process.cwd(), 'mcp_config.json');
+            if (fs.existsSync(configPath)) {
+                const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                const servers = config.mcpServers || {};
+
+                for (const [serverName, serverConfig] of Object.entries(servers)) {
+                    if ((serverConfig as any).disabled) continue;
+
+                    // Note: In a real implementation, we would call 'tools/list'
+                    // to discover available tools. For now, we'll register the server
+                    // as a placeholder or list known tools.
+                    console.log(`[ToolOrchestrator] 🌐 MCP Server indexed: ${serverName}`);
+                }
+            }
+        } catch (e) {
+            console.error('[ToolOrchestrator] Error loading MCP servers:', e);
+        }
     }
 
     async execute(

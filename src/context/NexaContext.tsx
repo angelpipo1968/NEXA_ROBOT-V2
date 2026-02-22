@@ -338,6 +338,12 @@ export function NexaProvider({ children }: { children: React.ReactNode }) {
 
     const speakText = (text: string) => {
         if (!synthesisRef.current || !text.trim()) return;
+
+        if (typeof SpeechSynthesisUtterance === 'undefined') {
+            console.warn('SpeechSynthesisUtterance is not defined');
+            return;
+        }
+
         synthesisRef.current.cancel();
         const utterance = new SpeechSynthesisUtterance(text.substring(0, 5000));
         utterance.lang = 'es-ES';

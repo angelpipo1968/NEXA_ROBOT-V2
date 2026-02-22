@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Paperclip, Plus, Sparkles, Image as ImageIcon, Code, Globe, Film, FileText, Music, Upload, Square, Wand2, Bot, Video, ChevronDown, Mic2, AudioWaveform, Check, Atom, ArrowUp } from 'lucide-react';
+import { Send, Mic, Paperclip, Plus, Sparkles, Image as ImageIcon, Code, Globe, Film, FileText, Music, Upload, Square, Wand2, Bot, Video, ChevronDown, Mic2, AudioWaveform, Check, Atom, ArrowUp, Layout, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '@/store/useChatStore';
 import { useVoiceStore } from '@/store/useVoiceStore';
@@ -10,7 +10,7 @@ export default function ChatInput() {
     const [input, setInput] = useState('');
     const [showAttachments, setShowAttachments] = useState(false);
     const navigate = useNavigate();
-    const { sendMessage, isThinking, attachments, addAttachment, removeAttachment, clearAttachments, reasoningMode, setReasoningMode, setActiveModule, toggleVideoMode } = useChatStore();
+    const { sendMessage, isThinking, attachments, addAttachment, removeAttachment, clearAttachments, reasoningMode, setReasoningMode, setActiveModule, toggleVideoMode, isArtifactPanelOpen, setArtifactPanelOpen } = useChatStore();
     const { toggleVoice, voiceEnabled, stopSpeaking, currentAudio, isSpeaking, toggleVoiceMode, isContinuousListening, toggleContinuousListening, speak } = useVoiceStore();
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -108,11 +108,11 @@ export default function ChatInput() {
     ];
 
     return (
-        <div className="w-full max-w-4xl mx-auto px-4 pb-6">
+        <div className="w-full max-w-4xl mx-auto md:px-4 md:pb-6 pb-0 px-0">
             <input
                 type="file"
                 ref={fileInputRef}
-                className="hidden"
+                className="opacity-0 absolute pointer-events-none w-px h-px top-0 left-0" // Fix for Android WebView: display:none blocks click()
                 accept="image/*"
                 onChange={handleFileSelect}
             />
@@ -149,33 +149,63 @@ export default function ChatInput() {
                 </div>
             )}
 
-            {/* MOBILE INPUT (Qwen-style) */}
+            {/* MOBILE INPUT (Nexa-style) */}
             <div className="md:hidden">
-                <div className="bg-gray-50 dark:bg-[#1a1b1e] rounded-[32px] p-2 flex flex-col gap-2 shadow-2xl">
+                <div className="bg-gray-50 dark:bg-[#1a1b1e] rounded-t-2xl p-3 flex flex-col gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.2)] border-t border-gray-100 dark:border-white/5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Mensaje a Nexa..."
-                        className="w-full bg-transparent !border-none focus:ring-0 !outline-none focus:outline-none appearance-none !ring-0 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none min-h-[44px] max-h-[150px] py-1 text-[16px] leading-snug"
+                        className="w-full bg-transparent !border-none focus:ring-0 !outline-none focus:outline-none appearance-none !ring-0 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none min-h-[44px] max-h-[150px] py-2 px-1 text-[16px] leading-snug"
                         style={{ scrollbarWidth: 'none' }}
                     />
 
                     <div className="flex items-center justify-between px-2 pb-1">
                         <div className="flex items-center gap-1.5">
+
+                            {/* ATTACHMENT MENU (Mobile) */}
+                            {showAttachments && (
+                                <div className="absolute bottom-16 left-4 mb-2 w-48 p-1.5 rounded-xl bg-white dark:bg-[#25262b] border border-gray-100 dark:border-white/10 shadow-xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                    {attachmentOptions.map((opt, idx) => (
+                                        <button
+                                            key={idx}
+                                            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg text-left transition-colors group"
+                                            onClick={() => { opt.onClick(); setShowAttachments(false); }}
+                                        >
+                                            <div className={`p-1.5 rounded-full bg-gray-50 dark:bg-white/5 group-hover:bg-gray-100 dark:group-hover:bg-white/10 transition-colors ${opt.color}`}>
+                                                <opt.icon size={18} />
+                                            </div>
+                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-black dark:group-hover:text-white">{opt.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
                             <button
                                 onClick={() => setShowAttachments(!showAttachments)}
-                                className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 dark:bg-white/10 text-gray-700 dark:text-gray-300 active:scale-95 transition-all"
+                                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-95 ${showAttachments ? 'bg-gray-200 dark:bg-white/10 text-black dark:text-white' : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'}`}
                             >
-                                <Plus size={22} />
+                                <Plus size={24} className={showAttachments ? 'rotate-45 transition-transform duration-200' : 'transition-transform duration-200'} />
                             </button>
 
-                            <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-blue-600/10 dark:bg-blue-500/10 border border-blue-200/50 dark:border-blue-500/20">
-                                <ImageIcon size={16} className="text-blue-600 dark:text-blue-400" />
-                                <button className="p-0.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full">
-                                    <Plus size={12} className="rotate-45 text-blue-600 dark:text-blue-400" />
-                                </button>
-                            </div>
+                            {/* REASONING MODE TOGGLE */}
+                            <button
+                                onClick={() => setReasoningMode(reasoningMode === 'normal' ? 'deep' : 'normal')}
+                                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-95 ${reasoningMode === 'deep' ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400' : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'}`}
+                                title={reasoningMode === 'deep' ? 'Modo Pensamiento Profundo' : 'Modo Rápido'}
+                            >
+                                <Atom size={20} className={reasoningMode === 'deep' ? 'animate-pulse' : ''} />
+                            </button>
+
+                            {/* VOICE MODE TOGGLE */}
+                            <button
+                                onClick={toggleListening}
+                                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-95 ${isListening ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 animate-pulse' : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'}`}
+                            >
+                                <Mic size={20} />
+                            </button>
+
                         </div>
 
                         <button
@@ -195,11 +225,12 @@ export default function ChatInput() {
                         >
                             {isSpeaking ? <Square size={16} fill="currentColor" /> : (isThinking ? <Wand2 size={20} className="animate-pulse" /> : <ArrowUp size={20} strokeWidth={2.5} />)}
                         </button>
+
                     </div>
+                    <p className="text-[10px] text-center mt-3 text-gray-400 dark:text-gray-600 px-6">
+                        By using Nexa Chat, you agree to our <span className="underline cursor-pointer">Terms of Service</span> and <span className="underline cursor-pointer">Privacy Policy</span>.
+                    </p>
                 </div>
-                <p className="text-[10px] text-center mt-3 text-gray-400 dark:text-gray-600 px-6">
-                    By using Nexa Chat, you agree to our <span className="underline cursor-pointer">Terms of Service</span> and <span className="underline cursor-pointer">Privacy Policy</span>.
-                </p>
             </div>
 
             {/* DESKTOP INPUT (Original PC design kept intact) */}
@@ -243,6 +274,22 @@ export default function ChatInput() {
                         />
 
                         <div className="flex items-center gap-1.5 pr-2">
+                            <button
+                                onClick={() => sendMessage("index_codebase")}
+                                className="w-8 h-8 rounded-full flex items-center justify-center transition-all text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]"
+                                title="Indexar proyecto (Búsqueda semántica)"
+                            >
+                                <Database size={17} />
+                            </button>
+                            <div className="w-px h-5 bg-[var(--border-color)] mx-1"></div>
+                            <button
+                                onClick={() => setArtifactPanelOpen(!isArtifactPanelOpen)}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isArtifactPanelOpen ? 'bg-blue-500/20 text-blue-400' : 'text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]'}`}
+                                title="Panel Pro de Artefactos"
+                            >
+                                <Layout size={18} />
+                            </button>
+                            <div className="w-px h-5 bg-[var(--border-color)] mx-1"></div>
                             <button
                                 onClick={() => reasoningMode === 'normal' ? setReasoningMode('deep') : setReasoningMode('normal')}
                                 className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${reasoningMode !== 'normal' ? 'bg-purple-500/20 text-purple-400' : 'text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]'}`}

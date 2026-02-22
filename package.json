@@ -12,16 +12,20 @@
     "deploy:vercel": "vercel --prod",
     "validate": "node scripts/validate.js",
     "prepare": "husky",
-    "update": "powershell -ExecutionPolicy Bypass -File ./scripts/auto_update.ps1"
+    "update": "powershell -ExecutionPolicy Bypass -File ./scripts/auto_update.ps1",
+    "test": "vitest"
   },
   "workspaces": [
     "apps/*",
     "src/packages/*"
   ],
   "dependencies": {
+    "@capacitor-community/text-to-speech": "^8.0.0",
     "@capacitor/android": "^8.0.2",
     "@capacitor/cli": "^8.0.2",
     "@capacitor/core": "^8.0.2",
+    "@capacitor/keyboard": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.1",
     "@google/generative-ai": "^0.24.1",
     "@magenta/music": "^1.23.1",
     "@phosphor-icons/react": "^2.1.10",
@@ -62,6 +66,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22.13.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -74,10 +80,13 @@
     "eslint-plugin-react-refresh": "^0.4.18",
     "globals": "^15.14.0",
     "husky": "^9.1.7",
+    "jsdom": "^28.1.0",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",
-    "vite": "^6.1.0"
+    "vite": "^6.1.0",
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^4.0.18"
   }
 }

@@ -22,6 +22,10 @@ import { MobileTopBar } from '@/components/layout/MobileTopBar';
 
 import CyberpunkParticles from '@/components/ui/CyberpunkParticles';
 
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Keyboard, KeyboardResize } from '@capacitor/keyboard';
+
 function Layout({ children }: { children: React.ReactNode }) {
     const { isSidebarOpen, toggleSidebar } = useUIStore();
     const { syncUser } = useChatStore();
@@ -29,6 +33,13 @@ function Layout({ children }: { children: React.ReactNode }) {
     const [isGuest, setIsGuest] = React.useState(false);
 
     React.useEffect(() => {
+        // Initialize native platform features
+        if (Capacitor.isNativePlatform()) {
+            StatusBar.setOverlaysWebView({ overlay: true }).catch(() => { });
+            StatusBar.setStyle({ style: Style.Dark }).catch(() => { });
+            Keyboard.setResizeMode({ mode: KeyboardResize.None }).catch(() => { });
+        }
+
         setIsGuest(localStorage.getItem('nexa_guest') === 'true');
 
         // Sync user on initial load and handle redirect
@@ -73,7 +84,7 @@ function Layout({ children }: { children: React.ReactNode }) {
             <div className="cyber-overlay" />
             <div className="scanline" />
 
-            {/* New Qwen-Style Sidebar with Branding */}
+            {/* New Nexa-Style Sidebar with Branding */}
             <NexaSidebar />
 
             {/* Mobile Optimized Header */}
@@ -84,7 +95,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Main Content - Adjusted padding for wider sidebar */}
             <main
-                className={`vp-main flex-1 relative h-full overflow-hidden transition-all duration-300 w-full ${isSidebarOpen ? 'md:pl-[280px]' : 'pl-[0px] md:pl-[80px]'
+                className={`vp-main flex-1 relative h-full overflow-hidden transition-all duration-300 w-full pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 ${isSidebarOpen ? 'md:pl-[280px]' : 'pl-[0px] md:pl-[80px]'
                     }`}
             >
                 <Suspense fallback={<LoadingSpinner />}>

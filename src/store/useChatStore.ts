@@ -44,7 +44,12 @@ interface ChatState {
     reasoningMode: 'normal' | 'search' | 'deep';
 
     activeModule: 'chat' | 'studio' | 'dev';
-    attachments: Array<{ type: string, data: string, name: string }>; // Base64 files
+    attachments: Array<{ type: string, data: string, name: string }>;
+
+    // Nexa Pro Max Features
+    isArtifactPanelOpen: boolean;
+    showArtifacts: boolean;
+    terminalLogs: string[];
 
     // Actions
     setMessages: (messages: Message[]) => void;
@@ -65,13 +70,16 @@ interface ChatState {
 
     deleteMessage: (id: string) => void;
     forkChat: (messageId: string) => void;
+    regenerateResponse: () => Promise<void>;
 
     // Logic
     setActiveModule: (module: 'chat' | 'studio' | 'dev') => void;
     sendMessage: (content: string, onResponse?: (text: string) => void) => Promise<void>;
     generateAIResponse: (content: string, onResponse?: (text: string) => void) => Promise<void>;
-    regenerateResponse: () => Promise<void>;
-    syncUser: () => Promise<void>;
+    // Pro Max Actions
+    setArtifactPanelOpen: (isOpen: boolean) => void;
+    addTerminalLog: (log: string) => void;
+    clearTerminalLogs: () => void;
 }
 
 export const useChatStore = create<ChatState>()(
@@ -88,6 +96,9 @@ export const useChatStore = create<ChatState>()(
             reasoningMode: 'normal',
             activeModule: 'chat',
             attachments: [],
+            isArtifactPanelOpen: false,
+            showArtifacts: false,
+            terminalLogs: [],
 
             setMessages: (messages) => set({ messages }),
 
@@ -172,6 +183,12 @@ export const useChatStore = create<ChatState>()(
 
             setActiveModule: (module) => set({ activeModule: module }),
 
+            setArtifactPanelOpen: (isOpen) => set({ isArtifactPanelOpen: isOpen }),
+            addTerminalLog: (log) => set((state) => ({
+                terminalLogs: [...state.terminalLogs.slice(-50), `[${new Date().toLocaleTimeString()}] ${log}`]
+            })),
+            clearTerminalLogs: () => set({ terminalLogs: [] }),
+
             generateAIResponse: async (content: string, onResponse?: (text: string) => void) => {
                 const assistantMsgId = (Date.now() + 1).toString();
 
@@ -200,9 +217,9 @@ export const useChatStore = create<ChatState>()(
 
                 if (autoToolResult) {
                     get().updateMessage(assistantMsgId, { content: autoToolResult, isStreaming: false });
-                    // if (useVoiceStore.getState().voiceEnabled) {
-                    //     useVoiceStore.getState().speak(autoToolResult);
-                    // }
+                    if (useVoiceStore.getState().voiceEnabled) {
+                        useVoiceStore.getState().speak(autoToolResult);
+                    }
                     if (onResponse) onResponse(autoToolResult);
                     memoryService.addMemory(autoToolResult, 'assistant');
                     set({ isThinking: false, isStreaming: false });
@@ -246,9 +263,9 @@ export const useChatStore = create<ChatState>()(
                     // Update UI with Final Response
                     get().updateMessage(assistantMsgId, { content: finalResponse, isStreaming: false });
 
-                    // if (useVoiceStore.getState().voiceEnabled) {
-                    //     useVoiceStore.getState().speak(finalResponse);
-                    // }
+                    if (useVoiceStore.getState().voiceEnabled) {
+                        useVoiceStore.getState().speak(finalResponse);
+                    }
 
                     if (onResponse) onResponse(finalResponse);
 

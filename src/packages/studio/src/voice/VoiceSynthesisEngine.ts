@@ -69,7 +69,13 @@ export class VoiceSynthesisEngine {
         }
 
         // Cancel previous speech
+        // Cancel previous speech
         this.synth.cancel();
+
+        if (typeof SpeechSynthesisUtterance === 'undefined') {
+            console.warn('SpeechSynthesisUtterance is not defined');
+            return;
+        }
 
         const utterance = new SpeechSynthesisUtterance(text);
 

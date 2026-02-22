@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Sparkles,
@@ -20,7 +20,8 @@ import {
 } from 'lucide-react';
 import { imageService, AspectRatio } from '@/lib/services/imageService';
 import { useNavigate } from 'react-router-dom';
-import { HologramViewer } from '@/features/studio/components/HologramViewer';
+
+const HologramViewer = lazy(() => import('@/features/studio/components/HologramViewer').then(module => ({ default: module.HologramViewer })));
 
 interface HistoryItem {
     id: string;
@@ -462,7 +463,14 @@ export default function MediaGenerator() {
                                     </div>
                                 ) : (
                                     <div className="w-full h-full max-w-4xl aspect-[4/3]">
-                                        <HologramViewer imageUrl={generatedUrl} prompt={prompt} />
+                                        <Suspense fallback={
+                                            <div className="flex flex-col items-center justify-center h-full space-y-4">
+                                                <Loader2 className="animate-spin text-cyan-500" size={48} />
+                                                <p className="text-cyan-400 font-bold tracking-[0.2em] uppercase text-xs">Iniciando Motor Holográfico...</p>
+                                            </div>
+                                        }>
+                                            <HologramViewer imageUrl={generatedUrl} prompt={prompt} />
+                                        </Suspense>
                                     </div>
                                 )}
                             </motion.div>

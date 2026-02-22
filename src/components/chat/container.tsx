@@ -9,6 +9,8 @@ import DevStudio from '../dev/DevStudio'
 import { X } from 'lucide-react'
 import { VoiceChat } from './VoiceChat'
 import { VoiceVideoOverlay } from './VoiceVideoOverlay'
+import ArtifactPanel from './ArtifactPanel'
+import { useVoiceStore } from '@/store/useVoiceStore'
 
 interface ChatContainerProps {
     userId?: string
@@ -19,7 +21,8 @@ interface ChatContainerProps {
 }
 
 export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
-    const { messages, activeModule, setActiveModule, addMessage, isVoiceMode, isVideoMode, deleteMessage } = useChatStore()
+    const { messages, activeModule, setActiveModule, addMessage, isVideoMode, deleteMessage, isArtifactPanelOpen, forkChat, regenerateResponse } = useChatStore()
+    const { isVoiceMode } = useVoiceStore()
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -56,7 +59,9 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
                                     id={message.id}
                                     role={message.role}
                                     content={message.content}
-                                    onDelete={() => deleteMessage(message.id)}
+                                    deleteMessage={deleteMessage}
+                                    forkChat={forkChat}
+                                    regenerateResponse={regenerateResponse}
                                 />
                             ))}
                         </div>
@@ -67,64 +72,77 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
     }
 
     return (
-        <div className="flex flex-col h-full w-full relative overflow-hidden bg-transparent">
-            {/* Header / Top Bar (Optional, can be added here) */}
+        <div className="flex h-full w-full relative overflow-hidden bg-transparent">
+            {/* Status Debug (Ephemeral) */}
+            <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[10000] px-3 py-1 bg-purple-600 text-white text-[10px] font-bold rounded-full transition-opacity duration-500 ${isArtifactPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                NEXA PRO PANEL ACTIVE
+            </div>
 
-            {/* Messages Area - Grows to fill space */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth pb-4 w-full relative">
-                {/* Header / Logo Section - Only show when no messages */}
-                {activeModule === 'chat' && messages.length === 0 && (
-                    <div className="flex flex-col items-center mt-10 mb-6 z-10 md:hidden">
-                        <div className="text-2xl font-bold tracking-tight mb-2 text-white">
-                            NEXA
+            {/* Main Chat Area */}
+            <div className={`flex flex-col h-full transition-all duration-300 ${isArtifactPanelOpen ? 'w-[55%]' : 'w-full'}`}>
+                {/* Messages Area - Grows to fill space */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth pb-4 w-full relative">
+                    {/* Header / Logo Section - Only show when no messages */}
+                    {activeModule === 'chat' && messages.length === 0 && (
+                        <div className="flex flex-col items-center mt-10 mb-6 z-10 md:hidden">
+                            <div className="text-2xl font-bold tracking-tight mb-2 text-white">
+                                NEXA
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {activeModule === 'chat' ? (
-                    messages.length === 0 ? (
-                        <div className="w-full max-w-6xl px-4 flex flex-col gap-10 animate-in fade-in zoom-in-95 duration-700">
-                            {/* Empty State */}
-                        </div>
+                    {activeModule === 'chat' ? (
+                        messages.length === 0 ? (
+                            <div className="w-full max-w-6xl px-4 flex flex-col gap-10 animate-in fade-in zoom-in-95 duration-700">
+                                {/* Empty State */}
+                            </div>
+                        ) : (
+                            <div className="w-full max-w-4xl mx-auto py-4 px-4 overflow-x-hidden">
+                                {messages.map((message) => (
+                                    <MessageBubble
+                                        key={message.id}
+                                        id={message.id}
+                                        role={message.role}
+                                        content={message.content}
+                                        deleteMessage={deleteMessage}
+                                        forkChat={forkChat}
+                                        regenerateResponse={regenerateResponse}
+                                    />
+                                ))}
+                                <div ref={messagesEndRef} />
+                            </div>
+                        )
                     ) : (
-                        <div className="w-full max-w-4xl mx-auto py-4 px-4">
-                            {messages.map((message) => (
-                                <MessageBubble
-                                    key={message.id}
-                                    id={message.id}
-                                    role={message.role}
-                                    content={message.content}
-                                    onDelete={() => deleteMessage(message.id)}
-                                />
-                            ))}
-                            <div ref={messagesEndRef} />
+                        <div className="absolute inset-0 z-50 bg-[#05060a] flex flex-col">
+                            <div className="flex justify-end p-4 absolute top-0 right-0 z-[60]">
+                                <button
+                                    onClick={() => setActiveModule('chat')}
+                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                                {activeModule === 'studio' ? <ModernStudio /> :
+                                    <DevStudio />}
+                            </div>
                         </div>
-                    )
-                ) : (
-                    <div className="absolute inset-0 z-50 bg-[#05060a] flex flex-col">
-                        <div className="flex justify-end p-4 absolute top-0 right-0 z-[60]">
-                            <button
-                                onClick={() => setActiveModule('chat')}
-                                className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            {activeModule === 'studio' ? <ModernStudio /> :
-                                <DevStudio />}
+                    )}
+                </div>
+
+                {/* Input Area - Fixed at bottom */}
+                {activeModule === 'chat' && (
+                    <div className="w-full bg-transparent pb-0 px-4 md:px-8 z-20">
+                        <div className="max-w-4xl mx-auto">
+                            <ChatInput />
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Input Area - Fixed at bottom */}
-            {activeModule === 'chat' && (
-                <div className="w-full bg-transparent pb-0 px-4 md:px-8 z-20">
-                    <div className="max-w-4xl mx-auto">
-                        <ChatInput />
-                    </div>
-                </div>
+            {/* Nexa Pro Artifact Panel */}
+            {isArtifactPanelOpen && (
+                <ArtifactPanel />
             )}
         </div>
     )

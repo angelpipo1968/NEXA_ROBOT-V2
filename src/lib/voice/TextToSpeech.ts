@@ -52,6 +52,11 @@ export class NexaVoice {
             this.stop();
         }
 
+        if (typeof SpeechSynthesisUtterance === 'undefined') {
+            console.warn('SpeechSynthesisUtterance is not defined');
+            return;
+        }
+
         const utterance = new SpeechSynthesisUtterance(text);
 
         // Configurar opciones
