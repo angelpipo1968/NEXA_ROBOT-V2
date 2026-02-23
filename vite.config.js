@@ -45,6 +45,7 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
             "@nexa": path.resolve(__dirname, "./src/packages"),
         },
+        dedupe: ['react', 'react-dom']
     },
     server: {
         port: 3000,
