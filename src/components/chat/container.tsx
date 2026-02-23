@@ -1,16 +1,18 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useChatStore, Message } from '@/store/useChatStore'
 import ChatInput from './ChatInput'
 import MessageBubble from './MessageBubble'
-import { ModernStudio } from '@/features/studio/ModernStudio'
-import DevStudio from '../dev/DevStudio'
 import { X } from 'lucide-react'
-import { VoiceChat } from './VoiceChat'
-import { VoiceVideoOverlay } from './VoiceVideoOverlay'
-import ArtifactPanel from './ArtifactPanel'
 import { useVoiceStore } from '@/store/useVoiceStore'
+
+// Lazy loaded heavy components
+const ModernStudio = React.lazy(() => import('@/features/studio/ModernStudio').then(m => ({ default: m.ModernStudio })))
+const DevStudio = React.lazy(() => import('../dev/DevStudio'))
+const VoiceChat = React.lazy(() => import('./VoiceChat').then(m => ({ default: m.VoiceChat })))
+const VoiceVideoOverlay = React.lazy(() => import('./VoiceVideoOverlay').then(m => ({ default: m.VoiceVideoOverlay })))
+const ArtifactPanel = React.lazy(() => import('./ArtifactPanel'))
 
 interface ChatContainerProps {
     userId?: string
@@ -39,7 +41,9 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
     if (isVoiceMode) {
         return (
             <div className="fixed inset-0 z-50 bg-[#05060a]">
-                <VoiceChat autoStart={true} />
+                <Suspense fallback={<div className="flex items-center justify-center h-full text-cyan-500 font-mono tracking-widest text-sm">INICIALIZANDO MOTOR VOCAL...</div>}>
+                    <VoiceChat autoStart={true} />
+                </Suspense>
             </div>
         )
     }
@@ -48,7 +52,9 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
     if (isVideoMode) {
         return (
             <div className="relative h-full w-full">
-                <VoiceVideoOverlay />
+                <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-cyan-500 z-[100] bg-black/50">Cargando Overlay de Video...</div>}>
+                    <VoiceVideoOverlay />
+                </Suspense>
                 {/* Fallback to normal chat behind overlay, blurred */}
                 <div className="flex flex-col h-full w-full relative overflow-hidden bg-transparent filter blur-md pointer-events-none">
                     <div className="flex-1 overflow-y-auto custom-scrollbar pb-4 w-full relative">
@@ -123,8 +129,9 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
                                 </button>
                             </div>
                             <div className="flex-1 overflow-hidden">
-                                {activeModule === 'studio' ? <ModernStudio /> :
-                                    <DevStudio />}
+                                <Suspense fallback={<div className="flex items-center justify-center h-full text-cyan-400 font-mono uppercase">Cargando Módulo de Estudio...</div>}>
+                                    {activeModule === 'studio' ? <ModernStudio /> : <DevStudio />}
+                                </Suspense>
                             </div>
                         </div>
                     )}
@@ -142,7 +149,9 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
 
             {/* Nexa Pro Artifact Panel */}
             {isArtifactPanelOpen && (
-                <ArtifactPanel />
+                <Suspense fallback={<></>}>
+                    <ArtifactPanel />
+                </Suspense>
             )}
         </div>
     )

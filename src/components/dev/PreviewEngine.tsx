@@ -1,89 +1,156 @@
-// Retrying creation in the correct directory once found 
-// (Holding off on content until path is confirmed, but code is ready)
 import React, { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '@/store/useChatStore';
-import { Loader2, RefreshCw, Smartphone, Monitor, Tablet } from 'lucide-react';
+import { useProjectStore } from '@/store/useProjectStore';
+import { Loader2, RefreshCw, Smartphone, Monitor, Terminal, Webhook } from 'lucide-react';
+import { sandboxService } from '@/lib/sandbox';
 
 interface PreviewEngineProps {
     className?: string;
 }
 
 export const PreviewEngine: React.FC<PreviewEngineProps> = ({ className }) => {
-    // ... (Implementation same as before)
     const iframeRef = useRef<HTMLIFrameElement>(null);
-    const { activeProject, activeFile, mockNetworkLayer } = useChatStore();
-    const [viewport, setViewport] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
-    const [key, setKey] = useState(0); // To force reload
+    const { activeProject } = useProjectStore();
+    const [viewport, setViewport] = useState<'mobile' | 'desktop'>('desktop');
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [status, setStatus] = useState<'idle' | 'booting' | 'installing' | 'starting' | 'ready' | 'error'>('idle');
+    const [logs, setLogs] = useState<string[]>([]);
 
     useEffect(() => {
-        if (!activeProject || !iframeRef.current) return;
+        if (!activeProject || !activeProject.files.length) return;
 
-        const doc = iframeRef.current.contentDocument;
-        if (!doc) return;
+        let isMounted = true;
+        const initSandbox = async () => {
+            try {
+                setStatus('booting');
+                setLogs(['Iniciando contenedor WebContainer...']);
 
-        // 1. Get Entry Point
-        // 1. Get Entry Point - Robust Lookup
-        const indexHtml = activeProject.files.find(f =>
-            f.name === 'index.html' ||
-            f.path === 'index.html' ||
-            f.path.endsWith('/index.html')
-        )?.content || '<h1>No index.html found. Please regenerate or check file structure.</h1>';
-
-        // 2. Inject Mock Network Layer
-        const networkInterceptor = `
-            <script>
-                (function() {
-                    const originalFetch = window.fetch;
-                    const mockData = ${JSON.stringify(mockNetworkLayer)};
-                    
-                    window.fetch = async (url, options) => {
-                        console.log('[Mock Network] Request:', url);
-                        const endpoint = Object.keys(mockData).find(key => url.toString().includes(key));
-                        
-                        if (endpoint) {
-                           console.log('[Mock Network] Intercepted:', endpoint);
-                           // Simulate network delay
-                           await new Promise(r => setTimeout(r, 500));
-                           return new Response(JSON.stringify(mockData[endpoint]), {
-                                status: 200,
-                                headers: { 'Content-Type': 'application/json' }
-                           });
-                        }
-                        return originalFetch(url, options);
+                // Formatear archivos para WebContainer API
+                const webContainerFiles: Record<string, any> = {};
+                activeProject.files.forEach(file => {
+                    // Solo soporte plano por ahora (sin carpetas anidadas profundas)
+                    const parts = file.path.split('/');
+                    const fileName = parts[parts.length - 1];
+                    webContainerFiles[fileName] = {
+                        file: { contents: file.content }
                     };
-                    console.log('Mock Network Layer Active');
-                })();
-            </script>
-        `;
+                });
 
-        const tailwindCDN = '<script src="https://cdn.tailwindcss.com"></script>';
+                // Si no hay package.json, inyectar el mock en un iframe estático
+                if (!webContainerFiles['package.json']) {
+                    setStatus('ready');
+                    setPreviewUrl('static'); // Flag to render as static
+                    renderStaticPreview();
+                    return;
+                }
 
-        const finalContent = indexHtml
-            .replace('</head>', `${tailwindCDN}${networkInterceptor}</head>`);
+                await sandboxService.mountFiles(webContainerFiles);
+                setLogs(prev => [...prev.slice(-10), 'Archivos montados. Instalando dependencias...']);
+                setStatus('installing');
 
-        doc.open();
-        doc.write(finalContent);
-        doc.close();
+                const exitCode = await sandboxService.installDependencies((data) => {
+                    setLogs(prev => [...prev.slice(-10), data]);
+                    try { useChatStore.getState().addTerminalLog(`[NPM] ${data}`) } catch (e) { }
+                });
 
-    }, [activeProject, activeProject?.files, key, mockNetworkLayer]);
+                if (exitCode !== 0) {
+                    throw new Error('Instalación fallida');
+                }
 
-    // UI Render
-    // ... (Same UI code as previous attempt)
+                setLogs(prev => [...prev.slice(-10), 'Dependencias listas. Iniciando servidor...']);
+                setStatus('starting');
+
+                sandboxService.onServerReady((url) => {
+                    if (isMounted) {
+                        setPreviewUrl(url);
+                        setStatus('ready');
+                    }
+                });
+
+                await sandboxService.runScript('start', (data) => {
+                    setLogs(prev => [...prev.slice(-10), data]);
+                    try { useChatStore.getState().addTerminalLog(`[DEV SERVER] ${data}`) } catch (e) { }
+                });
+
+            } catch (error: any) {
+                console.error('[PreviewEngine]', error);
+                setStatus('error');
+                setLogs(prev => [...prev, `Error crítico: ${error.message}`]);
+            }
+        };
+
+        const renderStaticPreview = () => {
+            const doc = iframeRef.current?.contentDocument;
+            if (!doc) return;
+            const indexHtml = activeProject.files.find(f => f.name === 'index.html' || f.name.endsWith('html'))?.content || '<h1>No index.html</h1>';
+            const tailwindCDN = '<script src="https://cdn.tailwindcss.com"></script>';
+            doc.open();
+            doc.write(indexHtml.replace('</head>', `${tailwindCDN}</head>`));
+            doc.close();
+        }
+
+        initSandbox();
+
+        return () => { isMounted = false; };
+    }, [activeProject]);
+
+    // Recargar iframe
+    const handleReload = () => {
+        if (iframeRef.current && previewUrl && previewUrl !== 'static') {
+            iframeRef.current.src = previewUrl;
+        } else if (previewUrl === 'static') {
+            // Re-render static logic triggers via effect naturally but we can force it
+            setStatus('booting'); setTimeout(() => setStatus('ready'), 200);
+        }
+    };
+
     return (
-        <div className={`flex flex-col bg-gray-50 h-full ${className}`}>
-            <div className="h-10 border-b border-gray-200 flex items-center justify-between px-4 bg-white">
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-500 uppercase">{activeProject?.name || 'Untitled'}</span>
-                    <div className="flex gap-1 bg-gray-100 p-1 rounded-lg ml-4">
-                        <button onClick={() => setViewport('mobile')} className={`p-1 rounded ${viewport === 'mobile' ? 'bg-white shadow text-blue-500' : 'text-gray-400'}`}><Smartphone size={14} /></button>
-                        <button onClick={() => setViewport('desktop')} className={`p-1 rounded ${viewport === 'desktop' ? 'bg-white shadow text-blue-500' : 'text-gray-400'}`}><Monitor size={14} /></button>
+        <div className={`flex flex-col h-full bg-[#1e1e1e] border-l border-gray-800 ${className}`}>
+            <div className="h-10 border-b border-gray-800 flex items-center justify-between px-4 bg-[#151515] text-gray-400">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        {status === 'ready' ? <Webhook size={14} className="text-cyan-400" /> : <Loader2 size={14} className="animate-spin text-purple-500" />}
+                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                            {status === 'ready' ? 'Holocubierta Activa' : status.toUpperCase()}
+                        </span>
                     </div>
                 </div>
+
+                <div className="flex items-center gap-2">
+                    <button onClick={handleReload} className="p-1.5 hover:bg-gray-800 rounded text-gray-400 transition-colors" title="Recargar"><RefreshCw size={14} /></button>
+                    <div className="w-px h-4 bg-gray-700 mx-1"></div>
+                    <button onClick={() => setViewport('mobile')} className={`p-1.5 rounded transition-colors ${viewport === 'mobile' ? 'bg-cyan-500/20 text-cyan-400' : 'hover:bg-gray-800'}`}><Smartphone size={14} /></button>
+                    <button onClick={() => setViewport('desktop')} className={`p-1.5 rounded transition-colors ${viewport === 'desktop' ? 'bg-cyan-500/20 text-cyan-400' : 'hover:bg-gray-800'}`}><Monitor size={14} /></button>
+                </div>
             </div>
-            <div className="flex-1 bg-gray-200 flex items-center justify-center overflow-hidden p-4">
+
+            <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden">
+                {status !== 'ready' && status !== 'error' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1e1e1e] z-10 font-mono">
+                        <Loader2 size={40} className="animate-spin text-cyan-500 mb-6" />
+                        <div className="w-64 space-y-2">
+                            {logs.map((log, i) => (
+                                <div key={i} className="text-[10px] text-gray-500 truncate">{log}</div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {status === 'error' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-red-950/20 z-10 font-mono text-red-400 p-8 text-center border border-red-900/50">
+                        <Terminal size={40} className="mb-4 text-red-500 opacity-50" />
+                        <h3 className="text-sm font-bold tracking-widest uppercase mb-2">WebContainer Error</h3>
+                        <div className="text-xs space-y-1 opacity-80 max-w-md break-all">
+                            {logs.slice(-3).map((l, i) => <p key={i}>{l}</p>)}
+                        </div>
+                    </div>
+                )}
+
                 <iframe
                     ref={iframeRef}
-                    className={`bg-white shadow-xl transition-all ${viewport === 'mobile' ? 'w-[375px] h-[667px] rounded-2xl border-4 border-gray-800' : 'w-full h-full'}`}
+                    src={previewUrl !== 'static' && previewUrl ? previewUrl : undefined}
+                    className={`bg-white shadow-[0_0_50px_rgba(0,0,0,0.5)] transition-all duration-300 ${viewport === 'mobile' ? 'w-[375px] h-[667px] rounded-[3rem] border-[12px] border-[#0a0a0a]' : 'w-full h-full'}`}
+                    allow="cross-origin-isolated"
                 />
             </div>
         </div>

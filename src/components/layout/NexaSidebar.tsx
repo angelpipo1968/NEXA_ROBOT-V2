@@ -187,6 +187,13 @@ export default function NexaSidebar() {
                             collapsed={!isSidebarOpen}
                         />
                         <NavItem
+                            icon={Bot}
+                            label="Dev Studio"
+                            active={location.pathname === '/webdev'}
+                            onClick={() => handleNavigation('/webdev')}
+                            collapsed={!isSidebarOpen}
+                        />
+                        <NavItem
                             icon={Wand2}
                             label="Generador"
                             active={location.pathname === '/generator'}

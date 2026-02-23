@@ -4,15 +4,13 @@ import {
     LayoutTemplate, Cpu, Folder, Wand2, Monitor
 } from 'lucide-react';
 import { useChatStore } from '@/store/useChatStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { WebGenerator } from '@/services/WebGenerator';
 import { PreviewEngine } from './PreviewEngine';
 
 export const DevStudio = () => {
-    const {
-        activeProject, activeFile,
-        projects, addProject,
-        setActiveProject, setActiveFile, updateProjectFile
-    } = useChatStore();
+    const { } = useChatStore();
+    const { activeProject, projects, addProject, setActiveProject, activeFile, setActiveFile, updateProjectFile } = useProjectStore();
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [prompt, setPrompt] = useState('');

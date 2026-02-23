@@ -80,6 +80,7 @@ interface ChatState {
     setArtifactPanelOpen: (isOpen: boolean) => void;
     addTerminalLog: (log: string) => void;
     clearTerminalLogs: () => void;
+    syncUser: () => Promise<void>;
 }
 
 export const useChatStore = create<ChatState>()(

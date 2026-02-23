@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import NexaSidebar from '@/components/layout/NexaSidebar';
 import { Menu } from 'lucide-react';
