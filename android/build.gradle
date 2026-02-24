@@ -7,7 +7,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath 'com.android.tools.build:gradle:9.0.1'
         classpath 'com.google.gms:google-services:4.4.2'
 
         // NOTE: Do not place your application dependencies here; they belong
@@ -31,6 +31,19 @@ subprojects {
                 compileOptions {
                     sourceCompatibility JavaVersion.VERSION_21
                     targetCompatibility JavaVersion.VERSION_21
+                }
+                // Fix deprecated proguard-android.txt → proguard-android-optimize.txt
+                buildTypes.each { buildType ->
+                    def newFiles = []
+                    buildType.proguardFiles.each { file ->
+                        if (file.name == 'proguard-android.txt') {
+                            newFiles.add(getDefaultProguardFile('proguard-android-optimize.txt'))
+                        } else {
+                            newFiles.add(file)
+                        }
+                    }
+                    buildType.proguardFiles.clear()
+                    newFiles.each { buildType.proguardFiles.add(it) }
                 }
             }
         }
