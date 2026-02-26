@@ -13,7 +13,8 @@
     "validate": "node scripts/validate.js",
     "prepare": "husky",
     "update": "powershell -ExecutionPolicy Bypass -File ./scripts/auto_update.ps1",
-    "test": "vitest"
+    "test": "vitest",
+    "deploy:all": "npm run build && git add . && git commit -m \"chore: auto deploy platforms\" || echo \"No changes to commit\" && git push origin main && npx vercel --prod"
   },
   "workspaces": [
     "apps/*",
