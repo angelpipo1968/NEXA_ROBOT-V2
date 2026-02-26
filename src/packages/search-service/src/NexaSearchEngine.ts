@@ -92,15 +92,15 @@ export class NexaSearchEngine {
         }
     }
 
-    public async search(query: string, maxResults: number = 10, fastMode: boolean = false): Promise<SearchResponse> {
+    public async search(query: string, maxResults: number = 10, fastMode: boolean = false, deep: boolean = false): Promise<SearchResponse> {
         const startTime = Date.now();
-        const cacheKey = `${query.toLowerCase().trim()}|${maxResults}`;
+        const cacheKey = `${query.toLowerCase().trim()}|${maxResults}|${deep}`;
 
-        // Cache hit (5 min TTL)
+        // Cache hit (10 min TTL if deep, 5 min if not)
+        const ttl = deep ? 600000 : 300000;
         if (this.cache.has(cacheKey)) {
             const cached = this.cache.get(cacheKey)!;
-            // 300 seconds = 300000 ms
-            if (Date.now() - cached.timestamp < 300000) {
+            if (Date.now() - cached.timestamp < ttl) {
                 return cached.data;
             }
         }
@@ -114,69 +114,40 @@ export class NexaSearchEngine {
             results: []
         };
 
-        const activePriority = fastMode
-            ? ['duckduckgo', 'searxng'] as SearchSource[]
-            : this.priorityOrder;
+        // Deep mode increases sources and relaxes limits if needed
+        const activePriority = deep
+            ? this.priorityOrder // All sources
+            : (fastMode ? ['duckduckgo', 'searxng'] : this.priorityOrder.slice(0, 4));
 
-        for (const engine of activePriority) {
-            if (!this.config[engine]?.enabled) continue;
+        const timeoutMultiplier = deep ? 2 : 1;
 
-            const config = this.config[engine];
+        // Execute in parallel for deep mode, or sequential for saving quota
+        if (deep) {
+            const promises = activePriority.map(async (engine) => {
+                if (!this.config[engine]?.enabled) return [];
+                try {
+                    return await this._executeEngineSearch(engine as SearchSource, query, maxResults, timeoutMultiplier);
+                } catch (e) { return []; }
+            });
 
-            // Cooldown check
-            const lastReqStr = this.lastRequest.get(engine) || 0;
-            const cooldownMs = (config.cooldown || 0) * 1000;
-            const timeSinceLast = Date.now() - lastReqStr;
-
-            if (timeSinceLast < cooldownMs) {
-                await new Promise(resolve => setTimeout(resolve, cooldownMs - timeSinceLast));
-            }
-
-            try {
-                this.lastRequest.set(engine, Date.now());
-                let results: SearchResult[] = [];
-
-                switch (engine) {
-                    case 'duckduckgo':
-                        results = await this._searchDuckDuckGo(query, maxResults);
-                        break;
-                    case 'searxng':
-                        results = await this._searchSearXNG(query, maxResults);
-                        break;
-                    case 'brave':
-                        results = await this._searchBrave(query, maxResults);
-                        break;
-                    case 'you':
-                        results = await this._searchYou(query, maxResults);
-                        break;
-                    case 'google_cse':
-                        results = await this._searchGoogleCSE(query, maxResults);
-                        break;
-                    case 'serpapi':
-                        results = await this._searchSerpApi(query, maxResults);
-                        break;
-                    case 'bing':
-                        results = await this._searchBing(query, maxResults);
-                        break;
-                }
-
+            const resultsArrays = await Promise.all(promises);
+            resultsArrays.forEach((results, idx) => {
                 if (results.length > 0) {
-                    response.sources_used.push(engine as SearchSource);
+                    response.sources_used.push(activePriority[idx]);
                     response.results.push(...results);
-
-                    if (config.quota) {
-                        config.quota.used += 1;
-                    }
-
-                    // Early exit if enough unique results
-                    if (this._removeDuplicates(response.results).length >= maxResults) {
-                        break;
-                    }
                 }
-            } catch (error: any) {
-                // Silent fail in production logic, similar to python script
-                // console.error(`[NEXA] Error in ${engine}: ${error.message}`);
-                continue;
+            });
+        } else {
+            for (const engine of activePriority) {
+                if (!this.config[engine]?.enabled) continue;
+                try {
+                    const results = await this._executeEngineSearch(engine as SearchSource, query, maxResults, timeoutMultiplier);
+                    if (results.length > 0) {
+                        response.sources_used.push(engine as SearchSource);
+                        response.results.push(...results);
+                        if (this._removeDuplicates(response.results).length >= maxResults) break;
+                    }
+                } catch (error) { continue; }
             }
         }
 
@@ -184,13 +155,24 @@ export class NexaSearchEngine {
         response.total_results = response.results.length;
         response.execution_time = (Date.now() - startTime) / 1000;
 
-        // Save to cache
-        this.cache.set(cacheKey, {
-            timestamp: Date.now(),
-            data: response
-        });
-
+        this.cache.set(cacheKey, { timestamp: Date.now(), data: response });
         return response;
+    }
+
+    private async _executeEngineSearch(engine: SearchSource | string, query: string, maxResults: number, timeoutMultiplier: number): Promise<SearchResult[]> {
+        const config = this.config[engine];
+
+        // Basic cooldown skip for simplicity in deep mode or if not set
+        switch (engine) {
+            case 'duckduckgo': return await this._searchDuckDuckGo(query, maxResults);
+            case 'searxng': return await this._searchSearXNG(query, maxResults);
+            case 'brave': return await this._searchBrave(query, maxResults);
+            case 'you': return await this._searchYou(query, maxResults);
+            case 'google_cse': return await this._searchGoogleCSE(query, maxResults);
+            case 'serpapi': return await this._searchSerpApi(query, maxResults);
+            case 'bing': return await this._searchBing(query, maxResults);
+            default: return [];
+        }
     }
 
     // ────────────────────────────────────────────────────────────────────

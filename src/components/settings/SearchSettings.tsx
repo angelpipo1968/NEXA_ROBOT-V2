@@ -73,7 +73,7 @@ export function SearchSettings() {
                             <span className="label-text">Cache Statistics</span>
                         </div>
                         <p className="setting-description">
-                            {stats.size} / {stats.maxSize} entries cached • {stats.ttl / 1000}s TTL
+                            {stats.size} / {stats.maxSize} entries cached • {stats.ttlConfig.search / 1000}s TTL
                         </p>
                     </div>
                     <button

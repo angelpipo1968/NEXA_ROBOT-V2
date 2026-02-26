@@ -9,10 +9,12 @@
     },
     "dependencies": {
         "@hono/node-server": "^1.0.0",
+        "@modelcontextprotocol/sdk": "^1.27.1",
         "@nexa/audit": "^0.0.0",
         "@nexa/core": "*",
         "@nexa/memory": "*",
         "@nexa/models": "*",
+        "@nexa/search-service": "*",
         "@nexa/tools": "*",
         "@nexa/writing": "*",
         "dotenv": "^16.0.0",

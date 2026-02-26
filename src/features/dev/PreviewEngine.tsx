@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useChatStore } from '@/store/useChatStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { Loader2, RefreshCw, Smartphone, Monitor, Tablet } from 'lucide-react';
 
 interface PreviewEngineProps {
@@ -8,7 +8,8 @@ interface PreviewEngineProps {
 
 export const PreviewEngine: React.FC<PreviewEngineProps> = ({ className }) => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
-    const { activeProject, activeFile, mockNetworkLayer } = useChatStore();
+    const { activeProject, activeFile } = useProjectStore();
+    const mockNetworkLayer = {};
     const [viewport, setViewport] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
     const [key, setKey] = useState(0); // To force reload
 
@@ -19,7 +20,7 @@ export const PreviewEngine: React.FC<PreviewEngineProps> = ({ className }) => {
         if (!doc) return;
 
         // 1. Get Entry Point (index.html)
-        const indexHtml = activeProject.files.find(f => f.name === 'index.html')?.content || '<h1>No index.html found</h1>';
+        const indexHtml = activeProject.files.find((f: any) => f.name === 'index.html')?.content || '<h1>No index.html found</h1>';
 
         // 2. Transpile/Bundle Logic (Simplified for Browser)
         // In a real generic webcontainer, we'd use something heavier.
@@ -69,7 +70,7 @@ export const PreviewEngine: React.FC<PreviewEngineProps> = ({ className }) => {
         doc.write(finalContent);
         doc.close();
 
-    }, [activeProject, activeProject?.files, key, mockNetworkLayer]);
+    }, [activeProject, activeProject?.files, key]);
 
     const handleReload = () => setKey(prev => prev + 1);
 
@@ -118,8 +119,8 @@ export const PreviewEngine: React.FC<PreviewEngineProps> = ({ className }) => {
             <div className="flex-1 flex items-center justify-center bg-gray-200 overflow-hidden p-4">
                 <div
                     className={`bg-white shadow-2xl transition-all duration-300 overflow-hidden ${viewport === 'mobile' ? 'w-[375px] h-[667px] rounded-3xl border-8 border-gray-800' :
-                            viewport === 'tablet' ? 'w-[768px] h-[1024px] rounded-xl border-4 border-gray-800' :
-                                'w-full h-full rounded-none border-0'
+                        viewport === 'tablet' ? 'w-[768px] h-[1024px] rounded-xl border-4 border-gray-800' :
+                            'w-full h-full rounded-none border-0'
                         }`}
                 >
                     <iframe

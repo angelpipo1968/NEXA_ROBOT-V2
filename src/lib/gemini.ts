@@ -4,6 +4,7 @@ export interface GeminiRequest {
     attachments?: Array<{ type: string, data: string, name: string }>;
     context?: { role: 'user' | 'model' | 'assistant' | 'function'; parts: any }[];
     temperature?: number;
+    systemInstruction?: string;
 }
 
 export const geminiClient = {
@@ -136,7 +137,7 @@ YOU RESPOND:
                     const body: any = {
                         contents,
                         system_instruction: {
-                            parts: [{ text: systemPrompt }]
+                            parts: [{ text: payload.systemInstruction || systemPrompt }]
                         },
                         generationConfig: {
                             temperature: payload.temperature || 0.7,

@@ -6,7 +6,7 @@ interface ThoughtNode { id: string; label: string; status: 'pending' | 'active' 
 interface ThoughtLink { source: string; target: string; type: 'reason' | 'action' | 'memory'; }
 
 export const ThoughtGraph = ({ jobId }: { jobId: string }) => {
-    const graphRef = useRef<any>();
+    const graphRef = useRef<any>(null);
 
     // Conexión WebSocket al kernel para recibir actualizaciones
     useEffect(() => {
@@ -52,10 +52,10 @@ export const ThoughtGraph = ({ jobId }: { jobId: string }) => {
                 nodeLabel="label"
                 nodeColor={(n: any) => ({
                     pending: '#4b5563', active: '#00f3ff', done: '#00ff9d', error: '#ff3366'
-                }[n.status] || '#4b5563')}
+                }[n.status as 'pending' | 'active' | 'done' | 'error'] || '#4b5563')}
                 linkColor={(l: any) => ({
                     reason: '#8b5cf6', action: '#06b6d4', memory: '#f59e0b'
-                }[l.type] || '#374151')}
+                }[l.type as 'reason' | 'action' | 'memory'] || '#374151')}
                 backgroundColor="transparent"
                 cooldownTicks={100}
                 showNavInfo={false}

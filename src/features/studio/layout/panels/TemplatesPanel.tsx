@@ -1,6 +1,6 @@
 import React from 'react';
-import { useNexa } from '../../../context/NexaContext';
-import { WRITING_TEMPLATES } from '../../../data/writing-templates';
+import { useNexa } from '@/context/NexaContext';
+import { WRITING_TEMPLATES } from '@/data/writing-templates';
 
 export default function TemplatesPanel() {
     const { updateProjectContent, updateTitle, switchPanel } = useNexa();

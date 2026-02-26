@@ -168,10 +168,11 @@ ${memoryContext}
 - Mantén respuestas CONCISAS (2-4 párrafos máximo) a menos que pidan más`;
 
             // @ts-ignore - The Gemini types might be slightly outdated in the current project context
-            const response = await geminiClient.chat({
+            const requestPayload: any = {
                 message: contentToSend,
                 systemInstruction: systemPrompt
-            });
+            };
+            const response = await geminiClient.chat(requestPayload);
 
             if (!response.ok) throw new Error('Error de conexión con Nexa Brain');
 

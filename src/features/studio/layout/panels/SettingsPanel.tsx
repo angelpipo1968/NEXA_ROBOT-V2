@@ -2,7 +2,7 @@
 "use client";
 
 import React from 'react';
-import { useNexa } from '../../../context/NexaContext';
+import { useNexa } from '@/context/NexaContext';
 
 import { MemoryGalaxy } from '@/components/brain/MemoryGalaxy';
 

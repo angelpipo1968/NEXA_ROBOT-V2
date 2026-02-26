@@ -15,6 +15,7 @@ import SettingsPanel from './panels/SettingsPanel'; // Re-using existing, stylin
 import TemplatesPanel from './panels/TemplatesPanel';
 import VoicePanel from './panels/VoicePanel';
 import BookWizardPanel from './panels/BookWizardPanel';
+import CharacterPanel from './panels/CharacterPanel';
 
 export default function NexaStudioLayout() {
     const { activePanel } = useNexa();
@@ -33,6 +34,7 @@ export default function NexaStudioLayout() {
                 {activePanel === 'plantillas' && <TemplatesPanel />}
                 {activePanel === 'voz' && <VoicePanel />}
                 {activePanel === 'nuevo-libro' && <BookWizardPanel />}
+                {activePanel === 'personajes' && <CharacterPanel />}
 
                 {/* Placeholder for others */}
                 {activePanel === 'ia' && (

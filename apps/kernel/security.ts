@@ -36,10 +36,10 @@ export const PERMISSION_RULES: Record<TrustLevel, {
 export function validatePermission(level: TrustLevel, context: { path?: string; command?: string }) {
     const rules = PERMISSION_RULES[level];
 
-    if (context.path && !rules.paths.some(r => r.test(context.path))) {
+    if (context.path && !rules.paths.some(r => r.test(context.path!))) {
         return false;
     }
-    if (context.command && !rules.commands.some(r => r.test(context.command))) {
+    if (context.command && !rules.commands.some(r => r.test(context.command!))) {
         return false;
     }
 

@@ -1,4 +1,6 @@
-import { Redis } from 'ioredis'
+// @ts-ignore
+import IORedis from 'ioredis';
+const Redis = IORedis as any;
 import { TokenBucket, SlidingWindow, FixedWindow, RateLimitAlgorithm, RateLimitResult } from './algorithms'
 
 export interface RateLimitOptions {
@@ -12,13 +14,13 @@ export interface DynamicLimits {
 }
 
 export class AdaptiveRateLimiter {
-    private redis: Redis
+    private redis: any
     private algorithms: Map<string, RateLimitAlgorithm>
 
     constructor() {
         this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
             lazyConnect: true,
-            retryStrategy: (times) => {
+            retryStrategy: (times: number) => {
                 if (times > 3) {
                     console.warn('[Security] Redis connection failed (RateLimiter), continuing without it.');
                     return null;
@@ -27,7 +29,7 @@ export class AdaptiveRateLimiter {
             }
         });
 
-        this.redis.on('error', (err) => {
+        this.redis.on('error', (err: any) => {
             // Suppress unhandled error events
             // console.warn('[Security] Redis error:', err.message);
         });

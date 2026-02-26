@@ -1,5 +1,6 @@
 // src/packages/memory/vector.ts - RAG nativo con pgvector
 import { createClient } from '@supabase/supabase-js';
+// @ts-ignore
 import { HuggingFaceTransformersEmbeddings } from '@langchain/community/embeddings/hf_transformers';
 
 export interface SearchOptions {

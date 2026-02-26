@@ -40,7 +40,7 @@ class NexaSandbox {
 
     async mountFiles(files: Record<string, { file?: { contents: string | Uint8Array }, directory?: Record<string, any> }>) {
         const container = await this.getContainer();
-        await container.mount(files);
+        await container.mount(files as any);
         console.log('[SANDBOX] Files mounted.');
     }
 

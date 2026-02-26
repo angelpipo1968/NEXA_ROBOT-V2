@@ -1,5 +1,5 @@
 import React from 'react';
-import { VoiceStudio } from '../../voice/VoiceStudio';
+import { VoiceStudio } from '@/components/voice/VoiceStudio';
 
 export default function VoicePanel() {
     return (

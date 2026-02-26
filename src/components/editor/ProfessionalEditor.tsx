@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 // import { AICorrector } from '@/lib/ai/Corrector';
-import { VoiceSynthesisEngine } from '../../../../../packages/studio/src/voice/VoiceSynthesisEngine';
-import { AIWritingEngine } from '../../../../../packages/studio/src/ai/WritingEngine';
-import { BookResearchCore } from '../../../../../packages/search-service/src/BookResearchCore';
-import { ExpandirPanel } from './ExpandirPanel';
+import { VoiceSynthesisEngine } from '../../packages/studio/src/voice/VoiceSynthesisEngine';
+import { AIWritingEngine } from '../../packages/studio/src/ai/WritingEngine';
+import { BookResearchCore } from '../../packages/search-service/src/BookResearchCore';
+import { ExpandirPanel } from '../../features/studio/components/ExpandirPanel';
 
 
 
@@ -374,7 +374,7 @@ export function ProfessionalEditor() {
                             <ExpandirPanel
                                 initialContext={selectedContext}
                                 onClose={() => setShowExpandirPanel(false)}
-                                onApplySuggestion={(suggestion) => {
+                                onApplySuggestion={(suggestion: any) => {
                                     useSuggestion(suggestion.contenido);
                                     setShowExpandirPanel(false);
                                 }}

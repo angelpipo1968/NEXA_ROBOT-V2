@@ -46,6 +46,7 @@ export interface Database {
                     created_at?: string
                     updated_at?: string
                 }
+                Relationships: any[]
             }
             conversations: {
                 Row: {
@@ -84,6 +85,7 @@ export interface Database {
                     created_at?: string
                     updated_at?: string
                 }
+                Relationships: any[]
             }
             messages: {
                 Row: {
@@ -113,7 +115,92 @@ export interface Database {
                     metadata?: Json
                     created_at?: string
                 }
+                Relationships: any[]
             }
+            documents: {
+                Row: {
+                    id: string
+                    user_id: string
+                    filename: string
+                    file_type: string
+                    file_size: number
+                    content: string
+                    metadata: Json
+                    processed: boolean
+                    chunks: string[] | null
+                    summary: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    filename: string
+                    file_type: string
+                    file_size: number
+                    content: string
+                    metadata?: Json
+                    processed?: boolean
+                    chunks?: string[] | null
+                    summary?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    filename?: string
+                    file_type?: string
+                    file_size?: number
+                    content?: string
+                    metadata?: Json
+                    processed?: boolean
+                    chunks?: string[] | null
+                    summary?: string | null
+                    created_at?: string
+                }
+                Relationships: any[]
+            }
+            memory_vectors: {
+                Row: {
+                    id: string
+                    user_id: string
+                    content: string
+                    embedding: unknown // pgvector doesn't map perfectly in json unless defined specific
+                    collection: string
+                    metadata: Json
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    content: string
+                    embedding: unknown
+                    collection?: string
+                    metadata?: Json
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    content?: string
+                    embedding?: unknown
+                    collection?: string
+                    metadata?: Json
+                    created_at?: string
+                }
+                Relationships: any[]
+            }
+        },
+        Views: {
+            [_ in never]: never
+        },
+        Functions: {
+            [_ in never]: never
+        },
+        Enums: {
+            [_ in never]: never
+        },
+        CompositeTypes: {
+            [_ in never]: never
         }
     }
 }

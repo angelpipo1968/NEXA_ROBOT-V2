@@ -144,7 +144,10 @@ app.post('/api/studio/complete', async (c) => {
 });
 
 import embeddingsRoute from './routes/embeddings'
+import aiRoute from './routes/ai'
+
 app.route('/', embeddingsRoute)
+app.route('/', aiRoute)
 
 const port = 3001
 console.log(`Server is running on port ${port}`)
