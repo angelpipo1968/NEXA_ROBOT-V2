@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>NEXA Interface v3.0</title>
+    <style>
+        body { margin: 0; background: #050505; color: #00f3ff; font-family: 'Courier New', monospace; overflow: hidden; }
+        #container { display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        
+        /* Avatar Holográfico */
+        .hologram {
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,243,255,0.2) 0%, rgba(0,0,0,0) 70%);
+            box-shadow: 0 0 20px #00f3ff, inset 0 0 20px #00f3ff;
+            animation: float 3s ease-in-out infinite;
+            position: relative;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .core {
+            width: 50px; height: 50px; background: #fff; border-radius: 50%;
+            box-shadow: 0 0 30px #fff; animation: pulse 1s infinite alternate;
+        }
+        
+        /* Partículas */
+        .particle {
+            position: absolute; background: #7b2cff; width: 2px; height: 2px;
+            animation: rise 5s infinite linear; opacity: 0;
+        }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes pulse { from { opacity: 0.5; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
+        @keyframes rise { 0% { bottom: -10px; opacity: 0; } 50% { opacity: 1; } 100% { bottom: 100vh; opacity: 0; } }
+        
+        #status { margin-top: 20px; font-size: 1.2rem; text-shadow: 0 0 10px #00f3ff; }
+        button {
+            margin-top: 20px; padding: 10px 20px; background: transparent;
+            border: 1px solid #00f3ff; color: #00f3ff; cursor: pointer;
+            font-family: inherit; font-weight: bold; transition: 0.3s;
+        }
+        button:hover { background: #00f3ff; color: #000; box-shadow: 0 0 15px #00f3ff; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div class="hologram" id="avatar">
+            <div class="core"></div>
+        </div>
+        <div id="status">NEXA EN LÍNEA - ESPERANDO COMANDO...</div>
+        <button onclick="speak()">🗣️ ACTIVAR VOZ</button>
+    </div>
+
+    <script>
+        // Generar partículas
+        for(let i=0; i<50; i++) {
+            let p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            p.style.animationDelay = Math.random() * 5 + 's';
+            document.body.appendChild(p);
+        }
+
+        function speak() {
+            const msg = "Sistemas en línea. Protocolo Fénix activo. ¿En qué puedo ayudarte, Comandante?";
+            const utterance = new SpeechSynthesisUtterance(msg);
+            utterance.lang = 'es-ES';
+            utterance.pitch = 0.9;
+            utterance.rate = 1.1;
+            window.speechSynthesis.speak(utterance);
+            
+            document.getElementById('status').innerText = "HABLANDO...";
+            document.getElementById('avatar').style.boxShadow = "0 0 40px #ff0055, inset 0 0 40px #ff0055";
+            setTimeout(() => {
+                document.getElementById('status').innerText = "NEXA EN LÍNEA";
+                document.getElementById('avatar').style.boxShadow = "0 0 20px #00f3ff, inset 0 0 20px #00f3ff";
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

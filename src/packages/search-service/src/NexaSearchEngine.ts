@@ -133,7 +133,7 @@ export class NexaSearchEngine {
             const resultsArrays = await Promise.all(promises);
             resultsArrays.forEach((results, idx) => {
                 if (results.length > 0) {
-                    response.sources_used.push(activePriority[idx]);
+                    response.sources_used.push(activePriority[idx] as SearchSource);
                     response.results.push(...results);
                 }
             });

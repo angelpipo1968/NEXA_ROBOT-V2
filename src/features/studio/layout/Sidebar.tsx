@@ -1,10 +1,15 @@
+import { useProjectStore } from '@/store/projectStore';
+import { useUiStore } from '@/store/uiStore';
+import { useVoiceStore } from '@/store/voiceStore';
 "use client";
 
 import React from 'react';
-import { useNexa } from '@/context/NexaContext';
+
 
 export default function Sidebar() {
-    const { activePanel, switchPanel, createNewProject, saveProject, voiceActive, isSpeaking } = useNexa();
+        const { createNewProject, saveProject } = useProjectStore();
+    const { activePanel, switchPanel } = useUiStore();
+    const { isSpeaking } = useVoiceStore();
 
     return (
         <aside className="sidebar">

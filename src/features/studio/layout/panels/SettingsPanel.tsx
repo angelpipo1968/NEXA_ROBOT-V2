@@ -1,13 +1,16 @@
+import { useVoiceStore } from '@/store/voiceStore';
+import { useAiStore } from '@/store/aiStore';
 
 "use client";
 
 import React from 'react';
-import { useNexa } from '@/context/NexaContext';
+
 
 import { MemoryGalaxy } from '@/components/brain/MemoryGalaxy';
 
 export default function SettingsPanel() {
-    const { aiConfig, voiceConfig, updateVoiceConfig } = useNexa();
+        const { voiceConfig, updateVoiceConfig } = useVoiceStore();
+    const { aiConfig } = useAiStore();
 
     return (
         <div className="panel-content">

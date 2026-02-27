@@ -1,8 +1,9 @@
+import { useProjectStore } from '@/store/projectStore';
 
 "use client";
 
 import React, { useState } from 'react';
-import { useNexa } from '@/context/NexaContext';
+
 import ReactMarkdown from 'react-markdown';
 
 interface ChatMessage {
@@ -11,7 +12,7 @@ interface ChatMessage {
 }
 
 export default function AIPanel() {
-    const { projectData } = useNexa();
+        const { projectData } = useProjectStore();
     const [messages, setMessages] = useState<ChatMessage[]>([{
         sender: 'ai',
         content: '¡Hola! Soy Nexa, tu asistente de escritura con IA. ¿En qué puedo ayudarte hoy?'

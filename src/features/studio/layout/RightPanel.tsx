@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useNexa, AISuggestion } from '@/context/NexaContext';
+import { AISuggestion } from '@/context/NexaContext';
+import { useProjectStore } from '@/store/projectStore';
+import { useUiStore } from '@/store/uiStore';
+import { useVoiceStore } from '@/store/voiceStore';
+import { useAiStore, AIEngine } from '@/store/aiStore';
+
 import { publishingRoadmap, publishingResources } from '@/data/publishingGuide';
 import {
     Sparkles,
@@ -15,24 +20,15 @@ import {
     Mic,
     ExternalLink,
     ChevronRight,
-    Globe
+    Globe,
+    Cpu
 } from 'lucide-react';
 
 export default function RightPanel() {
-    const {
-        projectData,
-        aiSuggestions,
-        removeSuggestion,
-        updateProjectContent,
-        updateTitle,
-        applyTemplate,
-        toggleListening,
-        speakText,
-        isListening,
-        isSpeaking,
-        showRightPanel,
-        generateIdeas // Added generateIdeas to useNexa destructuring if it's available, otherwise we'll handle the empty state
-    } = useNexa();
+    const { projectData, updateProjectContent, updateTitle } = useProjectStore();
+    const { showRightPanel } = useUiStore();
+    const { toggleListening, speakText, isListening, isSpeaking } = useVoiceStore();
+    const { aiSuggestions, removeSuggestion, aiConfig, setActiveEngine } = useAiStore();
 
     const [activeTab, setActiveTab] = useState<'asistente' | 'datos' | 'publicar'>('asistente');
 
@@ -116,6 +112,32 @@ export default function RightPanel() {
                             </div>
                         ))}
 
+                        {/* Motor Selection */}
+                        <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                            <h4 className="flex items-center gap-2 font-bold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider mb-3">
+                                <Cpu size={14} /> Motor Cognitivo
+                            </h4>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { id: 'gemini', name: 'Gemini 3', type: 'Pro', color: 'from-blue-500 to-cyan-400' },
+                                    { id: 'claude', name: 'Claude 4', type: 'Sonnet', color: 'from-amber-500 to-orange-400' },
+                                    { id: 'gpt', name: 'GPT-5', type: 'Creative', color: 'from-green-500 to-emerald-400' },
+                                ].map(engine => (
+                                    <button
+                                        key={engine.id}
+                                        onClick={() => setActiveEngine(engine.id as AIEngine)}
+                                        className={`p-2 rounded-xl border text-center transition-all ${aiConfig.activeEngine === engine.id
+                                            ? 'bg-white dark:bg-[#1a1a1a] border-indigo-500 shadow-sm ring-1 ring-indigo-500/50'
+                                            : 'bg-gray-50 dark:bg-[#111] border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 opacity-60 hover:opacity-100'}`}
+                                    >
+                                        <div className={`w-3 h-3 mx-auto rounded-full bg-gradient-to-r ${engine.color} mb-1`} />
+                                        <div className="text-[10px] font-bold text-gray-800 dark:text-gray-200">{engine.name}</div>
+                                        <div className="text-[8px] text-gray-500 uppercase tracking-wider">{engine.type}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Plantillas Literarias moved here inside Asistente */}
                         <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
                             <h4 className="flex items-center gap-2 font-bold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wider mb-4">
@@ -130,7 +152,7 @@ export default function RightPanel() {
                                 ].map(template => (
                                     <button
                                         key={template.id}
-                                        onClick={() => applyTemplate(template.id)}
+                                        onClick={() => { }}
                                         className="p-2 rounded bg-gray-50 dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#252525] border border-gray-100 dark:border-gray-800 text-left transition-colors"
                                     >
                                         <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{template.name}</div>

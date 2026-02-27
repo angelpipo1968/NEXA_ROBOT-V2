@@ -21,6 +21,8 @@ import { museMemory } from '@/lib/museMemory';
 import { BOOK_TEMPLATES, BookTemplate } from '@/lib/studio/BookTemplates';
 import { AcousticEngine } from './features/AcousticEngine';
 import { MuseChat } from './features/MuseChat';
+import CharacterPanel from './layout/panels/CharacterPanel';
+import { Users } from 'lucide-react';
 
 interface BookStudioProps {
     onToggleZen: () => void;
@@ -43,6 +45,7 @@ export function BookStudio({ onToggleZen }: BookStudioProps) {
     const [selectedTemplate, setSelectedTemplate] = useState<BookTemplate | null>(null);
     const [isResizing, setIsResizing] = useState(false);
     const [isMuseOpen, setIsMuseOpen] = useState(false);
+    const [leftTab, setLeftTab] = useState<'estructura' | 'personajes'>('estructura');
 
     // Ref for the main editor textarea to handle insertions
     const editorRef = useRef<HTMLTextAreaElement>(null);
@@ -183,92 +186,101 @@ export function BookStudio({ onToggleZen }: BookStudioProps) {
                     />
 
                     <div className="flex gap-2">
-                        <button className="flex-1 py-2 px-3 bg-[var(--bg-tertiary)] hover:bg-white/10 rounded-lg text-xs font-bold text-[var(--text-secondary)] border border-[var(--border-color)] flex items-center justify-center gap-2">
+                        <button
+                            onClick={() => setLeftTab('estructura')}
+                            className={`flex-1 py-2 px-3 hover:bg-white/10 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-2 ${leftTab === 'estructura' ? 'bg-[var(--vp-accent-purple)]/20 border-[var(--vp-accent-purple)] text-[var(--vp-accent-purple)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border-[var(--border-color)]'}`}
+                        >
                             <BookOpen size={14} /> Estructura
                         </button>
-                        <button className="flex-1 py-2 px-3 bg-[var(--bg-tertiary)] hover:bg-white/10 rounded-lg text-xs font-bold text-[var(--text-secondary)] border border-[var(--border-color)] flex items-center justify-center gap-2">
-                            <Type size={14} /> Formato
-                        </button>
-                        <button className="flex-1 py-2 px-3 bg-[var(--bg-tertiary)] hover:bg-white/10 rounded-lg text-xs font-bold text-[var(--text-secondary)] border border-[var(--border-color)] flex items-center justify-center gap-2">
-                            <FileEdit size={14} /> Notas
+                        <button
+                            onClick={() => setLeftTab('personajes')}
+                            className={`flex-1 py-2 px-3 hover:bg-white/10 rounded-lg text-xs font-bold border transition-colors flex items-center justify-center gap-2 ${leftTab === 'personajes' ? 'bg-[var(--vp-accent-purple)]/20 border-[var(--vp-accent-purple)] text-[var(--vp-accent-purple)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] border-[var(--border-color)]'}`}
+                        >
+                            <Users size={14} /> Personajes
                         </button>
                     </div>
                 </div>
 
-                {/* Templates & Chapters */}
+                {/* Left Panel Body */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                    {/* Templates Section */}
-                    <div>
-                        <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3 px-2 flex items-center gap-2">
-                            <Wand2 size={12} /> Plantillas Maestras
-                        </h3>
-                        <div className="grid grid-cols-2 gap-2">
-                            {BOOK_TEMPLATES.map(template => (
-                                <button
-                                    key={template.id}
-                                    onClick={() => applyTemplate(template)}
-                                    className={`p-3 rounded-xl border text-left transition-all ${selectedTemplate?.id === template.id
-                                        ? 'bg-[var(--vp-accent-purple)]/10 border-[var(--vp-accent-purple)] text-[var(--vp-accent-purple)]'
-                                        : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] hover:border-[var(--text-muted)] text-[var(--text-secondary)]'
-                                        }`}
-                                >
-                                    <div className="text-xl mb-1">{template.icon}</div>
-                                    <div className="font-bold text-xs truncate">{template.name}</div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Chapters List */}
-                    <div>
-                        <div className="flex items-center justify-between mb-3 px-2">
-                            <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-2">
-                                <Layers size={12} /> Capítulos
-                            </h3>
-                            <button onClick={addNewChapter} className="p-1 hover:bg-white/10 rounded-lg text-[var(--text-secondary)]">
-                                <Plus size={14} />
-                            </button>
-                        </div>
-                        <div className="space-y-1">
-                            {chapters.map((chapter, index) => (
-                                <div
-                                    key={chapter.id}
-                                    onClick={() => setActiveChapterId(chapter.id)}
-                                    className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all border ${activeChapterId === chapter.id
-                                        ? 'bg-[var(--vp-accent-purple)] text-white border-[var(--vp-accent-purple)] shadow-lg shadow-purple-500/20'
-                                        : 'hover:bg-white/5 text-[var(--text-secondary)] border-transparent'
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3 overflow-hidden">
-                                        <Book size={14} className={activeChapterId === chapter.id ? 'text-white' : 'text-[var(--text-muted)]'} />
-                                        <span className="text-sm font-medium truncate">{chapter.title}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {leftTab === 'personajes' ? (
+                        <CharacterPanel />
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Templates Section */}
+                            <div>
+                                <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3 px-2 flex items-center gap-2">
+                                    <Wand2 size={12} /> Plantillas Maestras
+                                </h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {BOOK_TEMPLATES.map(template => (
                                         <button
-                                            onClick={(e) => moveChapter(index, 'up', e)}
-                                            disabled={index === 0}
-                                            className="p-1 hover:bg-white/20 rounded disabled:opacity-30"
+                                            key={template.id}
+                                            onClick={() => applyTemplate(template)}
+                                            className={`p-3 rounded-xl border text-left transition-all ${selectedTemplate?.id === template.id
+                                                ? 'bg-[var(--vp-accent-purple)]/10 border-[var(--vp-accent-purple)] text-[var(--vp-accent-purple)]'
+                                                : 'bg-[var(--bg-tertiary)] border-[var(--border-color)] hover:border-[var(--text-muted)] text-[var(--text-secondary)]'
+                                                }`}
                                         >
-                                            <ArrowUp size={10} />
+                                            <div className="text-xl mb-1">{template.icon}</div>
+                                            <div className="font-bold text-xs truncate">{template.name}</div>
                                         </button>
-                                        <button
-                                            onClick={(e) => moveChapter(index, 'down', e)}
-                                            disabled={index === chapters.length - 1}
-                                            className="p-1 hover:bg-white/20 rounded disabled:opacity-30"
-                                        >
-                                            <ArrowDown size={10} />
-                                        </button>
-                                        <button
-                                            onClick={(e) => deleteChapter(chapter.id, e)}
-                                            className={`p-1 rounded hover:bg-red-500/20 hover:text-red-500 transition-all ${activeChapterId === chapter.id ? 'text-white/70' : 'text-[var(--text-muted)]'}`}
-                                        >
-                                            <Trash2 size={12} />
-                                        </button>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
+                            </div>
+
+                            {/* Chapters List */}
+                            <div>
+                                <div className="flex items-center justify-between mb-3 px-2">
+                                    <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-2">
+                                        <Layers size={12} /> Capítulos
+                                    </h3>
+                                    <button onClick={addNewChapter} className="p-1 hover:bg-white/10 rounded-lg text-[var(--text-secondary)]">
+                                        <Plus size={14} />
+                                    </button>
+                                </div>
+                                <div className="space-y-1">
+                                    {chapters.map((chapter, index) => (
+                                        <div
+                                            key={chapter.id}
+                                            onClick={() => setActiveChapterId(chapter.id)}
+                                            className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all border ${activeChapterId === chapter.id
+                                                ? 'bg-[var(--vp-accent-purple)] text-white border-[var(--vp-accent-purple)] shadow-lg shadow-purple-500/20'
+                                                : 'hover:bg-white/5 text-[var(--text-secondary)] border-transparent'
+                                                }`}
+                                        >
+                                            <div className="flex items-center gap-3 overflow-hidden">
+                                                <Book size={14} className={activeChapterId === chapter.id ? 'text-white' : 'text-[var(--text-muted)]'} />
+                                                <span className="text-sm font-medium truncate">{chapter.title}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => moveChapter(index, 'up', e)}
+                                                    disabled={index === 0}
+                                                    className="p-1 hover:bg-white/20 rounded disabled:opacity-30"
+                                                >
+                                                    <ArrowUp size={10} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => moveChapter(index, 'down', e)}
+                                                    disabled={index === chapters.length - 1}
+                                                    className="p-1 hover:bg-white/20 rounded disabled:opacity-30"
+                                                >
+                                                    <ArrowDown size={10} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => deleteChapter(chapter.id, e)}
+                                                    className={`p-1 rounded hover:bg-red-500/20 hover:text-red-500 transition-all ${activeChapterId === chapter.id ? 'text-white/70' : 'text-[var(--text-muted)]'}`}
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Footer Tools */}

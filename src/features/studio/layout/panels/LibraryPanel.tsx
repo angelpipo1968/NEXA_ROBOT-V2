@@ -1,8 +1,11 @@
+import { useProjectStore } from '@/store/projectStore';
+import { useUiStore } from '@/store/uiStore';
 import React from 'react';
-import { useNexa } from '@/context/NexaContext';
+
 
 export default function LibraryPanel() {
-    const { switchPanel, createNewProject } = useNexa();
+        const { createNewProject } = useProjectStore();
+    const { switchPanel } = useUiStore();
 
     // Mock data for library
     const books = [

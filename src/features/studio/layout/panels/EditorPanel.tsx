@@ -1,7 +1,8 @@
+import { useProjectStore } from '@/store/projectStore';
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useNexa } from '@/context/NexaContext';
+
 import { VoiceSynthesisEngine } from '@/packages/studio/src/voice/VoiceSynthesisEngine';
 import { AIWritingEngine } from '@/packages/studio/src/ai/WritingEngine';
 import { BookResearchCore } from '@/packages/search-service/src/BookResearchCore';
@@ -26,7 +27,7 @@ class AICorrectorWrapper {
 }
 
 export default function EditorPanel() {
-    const { projectData, updateProjectContent } = useNexa();
+        const { projectData, updateProjectContent } = useProjectStore();
     const [content, setContent] = useState(projectData.content || '');
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [corrections, setCorrections] = useState<any[]>([]);

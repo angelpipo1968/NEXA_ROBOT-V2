@@ -1,0 +1,42 @@
+src/components/editor/ProfessionalEditor.tsx(5,38): error TS2307: Cannot find module '../../../../../packages/studio/src/voice/VoiceSynthesisEngine' or its corresponding type declarations.
+src/components/editor/ProfessionalEditor.tsx(6,33): error TS2307: Cannot find module '../../../../../packages/studio/src/ai/WritingEngine' or its corresponding type declarations.
+src/components/editor/ProfessionalEditor.tsx(7,34): error TS2307: Cannot find module '../../../../../packages/search-service/src/BookResearchCore' or its corresponding type declarations.
+src/components/editor/ProfessionalEditor.tsx(8,31): error TS2307: Cannot find module './ExpandirPanel' or its corresponding type declarations.
+src/components/editor/ProfessionalEditor.tsx(377,53): error TS7006: Parameter 'suggestion' implicitly has an 'any' type.
+src/features/studio/features/MuseChat.tsx(173,17): error TS2353: Object literal may only specify known properties, and 'systemInstruction' does not exist in type 'GeminiRequest'.
+src/features/studio/layout/panels/SettingsPanel.tsx(5,25): error TS2307: Cannot find module '../../../context/NexaContext' or its corresponding type declarations.
+src/features/studio/layout/panels/TemplatesPanel.tsx(2,25): error TS2307: Cannot find module '../../../context/NexaContext' or its corresponding type declarations.
+src/features/studio/layout/panels/TemplatesPanel.tsx(3,35): error TS2307: Cannot find module '../../../data/writing-templates' or its corresponding type declarations.
+src/features/studio/layout/panels/TemplatesPanel.tsx(34,41): error TS7006: Parameter 'template' implicitly has an 'any' type.
+src/features/studio/layout/panels/VoicePanel.tsx(2,29): error TS2307: Cannot find module '../../voice/VoiceStudio' or its corresponding type declarations.
+src/packages/memory/vector.ts(3,51): error TS2307: Cannot find module '@langchain/community/embeddings/hf_transformers' or its corresponding type declarations.
+src/packages/security/src/rate-limiter.ts(19,26): error TS2693: 'Redis' only refers to a type, but is being used as a value here.
+src/packages/security/src/rate-limiter.ts(21,29): error TS7006: Parameter 'times' implicitly has an 'any' type.
+src/services/chat/supabase-chat.service.ts(15,14): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "conversations", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; title: string; message_count: number; tokens_used: number; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "conversations", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/services/chat/supabase-chat.service.ts(39,14): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "messages", never, "POST">', gave the following error.
+    Argument of type '{ conversation_id: string; role: "user" | "assistant"; content: string; tokens: number; metadata: any; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "messages", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'conversation_id' does not exist in type 'never[]'.
+src/services/chat/supabase-chat.service.ts(76,25): error TS2345: Argument of type '{ message_count: any; tokens_used: any; }' is not assignable to parameter of type 'never'.
+src/services/chat/supabase-chat.service.ts(77,42): error TS2339: Property 'message_count' does not exist on type 'never'.
+src/services/chat/supabase-chat.service.ts(78,40): error TS2339: Property 'tokens_used' does not exist on type 'never'.
+src/services/chat/supabase-chat.service.ts(133,21): error TS2345: Argument of type '{ is_archived: boolean; }' is not assignable to parameter of type 'never'.
+src/services/memory/vector-store.service.ts(24,14): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "memory_vectors", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; content: string; embedding: number[]; collection: string; metadata: any; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "memory_vectors", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/services/memory/vector-store.service.ts(35,21): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/storage/document.service.ts(33,14): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "documents", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; filename: string; file_type: string; file_size: number; content: string; metadata: { storage_path: string; original_name: string; }; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "documents", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/services/storage/document.service.ts(50,41): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/storage/document.service.ts(52,21): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/storage/document.service.ts(93,21): error TS2345: Argument of type '{ processed: boolean; chunks: string[]; summary: string; }' is not assignable to parameter of type 'never'.

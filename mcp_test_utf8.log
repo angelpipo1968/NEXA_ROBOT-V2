@@ -1,0 +1,11 @@
+﻿[HTTP] zapier uses serverUrl, skipping spawn test
+Testing supabase-mcp-server...
+node : (node:11796) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only 
+concatenated.
+At line:1 char:1
++ node c:\nexa\validate_mcps.cjs > c:\nexa\mcp_test.log 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo              : NotSpecified: ((node:1    1796) [D...y concatenate    d.:String) [], RemoteExc    eption
+    + FullyQualifiedErrorId     : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)

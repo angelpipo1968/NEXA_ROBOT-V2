@@ -5,15 +5,7 @@ import { geminiClient } from '@/lib/gemini';
 
 type PanelType = 'editor' | 'biblioteca' | 'ia' | 'voz' | 'configuracion' | 'plantillas' | 'nuevo-libro' | 'personajes';
 
-export interface Character {
-    id: string;
-    name: string;
-    role: string;
-    description: string;
-    traits: string[];
-    evolution?: string;
-    imageUrl?: string;
-}
+// Character type and state moved to src/store/characterStore.ts
 
 interface ProjectStats {
     words: number;
@@ -79,12 +71,7 @@ interface NexaContextType {
     voiceConfig: VoiceConfig;
     updateVoiceConfig: (config: Partial<VoiceConfig>) => void;
 
-    // Characters
-    characters: Character[];
-    addCharacter: (char: Character) => void;
-    updateCharacter: (id: string, char: Partial<Character>) => void;
-    removeCharacter: (id: string) => void;
-    analyzeCharactersInStory: () => Promise<void>;
+    // Characters moved to Zustand
 
     // UI
     showRightPanel: boolean;
@@ -106,7 +93,7 @@ export function NexaProvider({ children }: { children: React.ReactNode }) {
     });
 
     const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
-    const [characters, setCharacters] = useState<Character[]>([]);
+    // Characters state moved to useCharacterStore
 
     // Config State
     const [voiceConfig, setVoiceConfig] = useState<VoiceConfig>({
@@ -374,60 +361,7 @@ export function NexaProvider({ children }: { children: React.ReactNode }) {
         setVoiceConfig(prev => ({ ...prev, ...config }));
     };
 
-    // Characters Logic
-    const addCharacter = (char: Character) => {
-        setCharacters(prev => [char, ...prev]);
-    };
-
-    const updateCharacter = (id: string, updates: Partial<Character>) => {
-        setCharacters(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
-    };
-
-    const removeCharacter = (id: string) => {
-        setCharacters(prev => prev.filter(c => c.id !== id));
-    };
-
-    const analyzeCharactersInStory = async () => {
-        if (!projectData.content) return;
-
-        try {
-            const prompt = `Analiza el siguiente texto literario y extrae los personajes principales. 
-            Para cada personaje, identifica: nombre, rol (protagonista, antagonista, secundario), una descripción breve y Rasgos de personalidad.
-            
-            Texto: "${projectData.content.substring(0, 4000)}"
-            
-            Responde ÚNICAMENTE en formato JSON: 
-            { "characters": [ { "name": "...", "role": "...", "description": "...", "traits": ["rasgo1", "rasgo2"] } ] }`;
-
-            const response = await fetch('/api/ai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt,
-                    engine: 'ollama'
-                })
-            });
-            const data = await response.json();
-            const rawText = data.reply || "{}";
-            const content = rawText.replace(/```json|```/g, '').trim();
-            const parsed = JSON.parse(content);
-
-            if (parsed.characters) {
-                const newChars = parsed.characters.map((c: any) => ({
-                    id: Math.random().toString(36).substr(2, 9),
-                    ...c
-                }));
-
-                setCharacters(prev => {
-                    const existingNames = new Set(prev.map(pc => pc.name.toLowerCase()));
-                    const uniqueNew = newChars.filter((nc: any) => !existingNames.has(nc.name.toLowerCase()));
-                    return [...prev, ...uniqueNew];
-                });
-            }
-        } catch (error) {
-            console.error("Error analyzing characters:", error);
-        }
-    };
+    // Characters Logic moved to useCharacterStore
 
     return (
         <NexaContext.Provider value={{
@@ -453,11 +387,7 @@ export function NexaProvider({ children }: { children: React.ReactNode }) {
             speakText,
             voiceConfig,
             updateVoiceConfig,
-            characters,
-            addCharacter,
-            updateCharacter,
-            removeCharacter,
-            analyzeCharactersInStory,
+            // characters logic removed
             showRightPanel,
             toggleRightPanel
         }}>

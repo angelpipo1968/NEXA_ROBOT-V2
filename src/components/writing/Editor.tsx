@@ -1,7 +1,8 @@
+import { useAiStore } from '@/store/aiStore';
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useNexa } from '@/context/NexaContext';
+
 import { Sparkles, PenLine, Lightbulb, Wand2, ArrowRight } from 'lucide-react';
 
 interface EditorProps {
@@ -18,7 +19,7 @@ export function Editor({ initialContent = '', bookId, onContentChange }: EditorP
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // Connect to real context if available
-    const { generateIdeas } = useNexa();
+        const { generateIdeas } = useAiStore();
 
     useEffect(() => {
         setWordCount(content.trim().split(/\s+/).filter(w => w.length > 0).length);

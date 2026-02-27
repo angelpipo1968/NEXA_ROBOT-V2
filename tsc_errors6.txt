@@ -1,0 +1,2 @@
+src/packages/security/src/rate-limiter.ts(19,26): error TS2351: This expression is not constructable.
+  Type '{ default: RedisStatic; Cluster: ClusterStatic; Command: typeof Command; }' has no construct signatures.

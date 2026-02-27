@@ -1,3 +1,6 @@
+import { useProjectStore } from '@/store/projectStore';
+import { useVoiceStore } from '@/store/voiceStore';
+import { useAiStore } from '@/store/aiStore';
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -14,7 +17,7 @@ import { DirectorMode } from '@/features/studio/modes/DirectorMode';
 
 import { QuickStart } from '@/components/writing/QuickStart';
 import { WritingTemplate } from '@/data/writing-templates';
-import { useNexa } from '@/context/NexaContext';
+
 import RightPanel from './layout/RightPanel';
 
 
@@ -39,14 +42,9 @@ const LibraryViewMock = () => (
 type StudioView = 'editor' | 'library' | 'templates' | 'voice' | 'settings' | 'wizard' | 'vision';
 
 export function ModernStudio() {
-    const {
-        projectData,
-        updateProjectContent,
-        aiSuggestions,
-        toggleListening,
-        isListening,
-        generateIdeas // Assuming this exists or we trigger it via right panel
-    } = useNexa();
+        const { projectData, updateProjectContent } = useProjectStore();
+    const { toggleListening, isListening } = useVoiceStore();
+    const { aiSuggestions } = useAiStore();
 
     const [activeView, setActiveView] = useState<StudioView>('editor');
 

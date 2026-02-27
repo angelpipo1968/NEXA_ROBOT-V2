@@ -1,8 +1,11 @@
+import { useProjectStore } from '@/store/projectStore';
+import { useUiStore } from '@/store/uiStore';
 import React, { useState } from 'react';
-import { useNexa } from '@/context/NexaContext';
+
 
 export default function BookWizardPanel() {
-    const { updateTitle, updateProjectContent, switchPanel, createNewProject } = useNexa();
+        const { updateTitle, updateProjectContent, createNewProject } = useProjectStore();
+    const { switchPanel } = useUiStore();
     const [step, setStep] = useState(1);
     const [bookData, setBookData] = useState({
         title: '',

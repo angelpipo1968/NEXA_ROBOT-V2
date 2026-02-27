@@ -1,7 +1,8 @@
+import { useUiStore } from '@/store/uiStore';
 "use client";
 
 import React from 'react';
-import { useNexa } from '@/context/NexaContext';
+
 import Sidebar from './Sidebar';
 import MainHeader from './MainHeader';
 import RightPanel from './RightPanel';
@@ -18,7 +19,7 @@ import BookWizardPanel from './panels/BookWizardPanel';
 import CharacterPanel from './panels/CharacterPanel';
 
 export default function NexaStudioLayout() {
-    const { activePanel } = useNexa();
+        const { activePanel } = useUiStore();
 
     return (
         <div className="app-container">
