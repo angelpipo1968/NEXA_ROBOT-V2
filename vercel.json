@@ -4,6 +4,26 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/anthropic-api/(.*)",
+      "destination": "https://api.anthropic.com/$1"
+    },
+    {
+      "source": "/openai-api/(.*)",
+      "destination": "https://api.openai.com/$1"
+    },
+    {
+      "source": "/deepseek-api/(.*)",
+      "destination": "https://api.deepseek.com/$1"
+    },
+    {
+      "source": "/tavily-api/(.*)",
+      "destination": "https://api.tavily.com/$1"
+    },
+    {
+      "source": "/groq-api/(.*)",
+      "destination": "https://api.groq.com/openai/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

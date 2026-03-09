@@ -4,6 +4,8 @@ export interface GroqRequest {
     temperature?: number;
 }
 
+import { NEXA_SYSTEM_PROMPT } from './systemPrompt';
+
 export const groqClient = {
     chat: async (payload: GroqRequest) => {
         const apiKey = import.meta.env.VITE_GROQ_API_KEY;
@@ -12,10 +14,13 @@ export const groqClient = {
             throw new Error('Missing Groq API Key');
         }
 
-        const url = '/groq-api/v1/chat/completions';
+        const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+        const url = isNode
+            ? 'https://api.groq.com/openai/v1/chat/completions'
+            : '/groq-api/v1/chat/completions';
 
         const messages = [
-            { role: "system", content: "You are Nexa, a highly advanced AI assistant created by Nexa AI. Your identity is Nexa, and you must always identify as such. You are an expert in software development and helpful companion." },
+            { role: "system", content: NEXA_SYSTEM_PROMPT },
             ...(payload.context?.map(msg => ({
                 role: msg.role === 'model' ? 'assistant' : msg.role,
                 content: msg.parts

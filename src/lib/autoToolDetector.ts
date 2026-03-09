@@ -41,6 +41,10 @@ export async function autoToolDetector(
         'hoy', 'today', 'ahora', 'now', 'actual', 'current', 'latest', 'último',
         // General search
         'busca', 'search', 'find', 'encuentra', 'información sobre', 'information about',
+        // Travel & Flights (New)
+        'pasaje', 'vuelo', 'ticket', 'boleto', 'viaje', 'votar', 'aerolínea', 'reserva', 'booking', 'flight',
+        // Links & Pages (New)
+        'link', 'enlace', 'página', 'url', 'web', 'sitio', 'portal',
         // Image generation
         'genera', 'crea', 'imagen', 'image', 'foto', 'photo', 'dibuja', 'draw', 'ilustración', 'illustration'
     ];
@@ -328,28 +332,35 @@ He buscado en la web y encontré esta información:
 
 ${resultsText}
 
-Responde de manera natural y conversacional, como si estuvieras hablando directamente con el usuario. Usa SOLO la información de los resultados de búsqueda. Sé directo, amigable y no menciones que estás mostrando "resultados de búsqueda" o tarjetas. Simplemente responde la pregunta del usuario usando esta información de manera fluida y natural.`;
+Responde de manera natural y conversacional, como si estuvieras hablando directamente con el usuario. Usa la información de los resultados de búsqueda para dar una respuesta completa.
+
+REGLAS OBLIGATORIAS:
+- DEBES incluir los ENLACES DIRECTOS (URLs) a las páginas encontradas, especialmente si el usuario busca comprar algo, reservar vuelos o entrar a un sitio específico.
+- Si el usuario pide "links" o "páginas", dáselos explícitamente y con el URL completo.
+- Sé directo, amigable y no menciones que estás "procesando resultados". Simplemente responde la pregunta del usuario usando esta información de manera fluida y natural.`;
 
             const geminiResponse = await geminiClient.chat({
                 message: formattingPrompt,
                 context: context,
-                temperature: 0.7 // Natural conversational tone
+                temperature: 0.7
             });
 
             const data = await geminiResponse.json();
-            finalText = data.candidates?.[0]?.content?.parts?.[0]?.text ||
-                `Encontré esta información: ${searchResults[0]?.content || toolResult.substring(0, 500)}`;
+            const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (textResult) {
+                finalText = textResult;
+            } else {
+                throw new Error('Empty response from Gemini');
+            }
         } catch (error) {
-            console.error('[AUTO-TOOL] ⚠️ Failed to generate conversational response, using fallback:', error);
-            // Fallback: create a simple conversational response from the first result
+            console.error('[AUTO-TOOL] ⚠️ Fallback triggered:', error);
+            // Enhanced Fallback: Always include the link
             const firstResult = searchResults[0];
             if (firstResult) {
-                finalText = `${firstResult.content}`;
-                if (firstResult.title && !finalText.includes(firstResult.title)) {
-                    finalText = `${firstResult.title}. ${finalText}`;
-                }
+                finalText = `${firstResult.content}\n\n[Ver página oficial de ${firstResult.title}](${firstResult.url})`;
             } else {
-                finalText = `Encontré esta información: ${toolResult.substring(0, 500)}`;
+                finalText = `Lo siento, encontré información pero no pude cargar el enlace directo. Intenta buscar de nuevo.`;
             }
         }
 

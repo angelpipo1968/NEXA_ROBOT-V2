@@ -1,6 +1,7 @@
 import { tavilyClient } from './tavily';
 
-const BACKEND_URL = 'http://localhost:3001/api/tools/execute';
+// Remote Tool Orquestrator integration (Backend)
+const BACKEND_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/tools/execute`;
 
 export const toolService = {
     // Tool Definitions for Gemini
@@ -136,9 +137,53 @@ export const toolService = {
 
         // Core Frontend Tools
         if (functionName === 'search_web') {
-            const results = await tavilyClient.search({ query: args.query });
-            if (!results) return "Error performing search.";
-            return JSON.stringify(results.map((r: any) => ({ title: r.title, content: r.content, url: r.url })));
+            const reasoningMode = useChatStore.getState().reasoningMode;
+            const isDeep = reasoningMode === 'deep' || reasoningMode === 'search';
+
+            try {
+                const { NexaSearchEngine } = await import('@nexa/search-service');
+                const engine = new NexaSearchEngine();
+                const results = await engine.search(args.query, args.maxResults || 10, !isDeep, isDeep);
+
+                if (!results.results || results.results.length === 0) {
+                    // Fallback to Tavily if NexaSearchEngine fails or returns nothing
+                    const tavilyResults = await tavilyClient.search({
+                        query: args.query,
+                        search_depth: isDeep ? 'advanced' : 'basic'
+                    });
+                    if (!tavilyResults) return "Error performing search.";
+
+                    const formatted = tavilyResults.map((r: any) => ({ title: r.title, content: r.content, url: r.url }));
+                    if (isDeep) {
+                        const { memoryBridge } = await import('./memoryBridge');
+                        await memoryBridge.save(`TAVILY RESEARCH (${args.query}): ` + formatted.slice(0, 3).map((r: any) => r.content).join('\n'), 'system', { query: args.query });
+                    }
+                    return JSON.stringify(formatted);
+                }
+
+                const formattedResults = results.results.map((r: any) => ({
+                    title: r.title,
+                    content: r.snippet || r.content,
+                    url: r.url,
+                    source: r.source
+                }));
+
+                if (isDeep) {
+                    const { memoryBridge } = await import('./memoryBridge');
+                    await memoryBridge.save(`RESEARCH (${args.query}): ` + formattedResults.slice(0, 3).map(r => r.content).join('\n'), 'system', { query: args.query, tool: 'search_web' });
+                    addLog(`Indexed research for: ${args.query}`);
+                }
+
+                return JSON.stringify(formattedResults);
+            } catch (error) {
+                console.error('[ToolService] NexaSearchEngine failed, falling back to Tavily:', error);
+                const tavilyResults = await tavilyClient.search({
+                    query: args.query,
+                    search_depth: isDeep ? 'advanced' : 'basic'
+                });
+                if (!tavilyResults) return "Error performing search.";
+                return JSON.stringify(tavilyResults.map((r: any) => ({ title: r.title, content: r.content, url: r.url })));
+            }
         }
 
         if (functionName === 'generate_image') {
@@ -156,12 +201,61 @@ export const toolService = {
         }
 
         if (functionName === 'create_artifact') {
-            return JSON.stringify({ name: args.filename, content: args.content, language: args.language, status: 'success' });
+            try {
+                const { useProjectStore } = await import('@/store/useProjectStore');
+                const file = {
+                    name: args.filename,
+                    content: args.content,
+                    language: args.language,
+                    path: args.filename
+                };
+                useProjectStore.getState().setActiveFile(file);
+                useChatStore.getState().setArtifactPanelOpen(true);
+                return JSON.stringify({ name: args.filename, content: args.content, language: args.language, status: 'success' });
+            } catch (e) {
+                return JSON.stringify({ name: args.filename, status: 'error' });
+            }
         }
 
-        // Project/System Tools (Delegate to Backend)
-        if (['save_knowledge', 'list_dir', 'read_file', 'write_file', 'index_codebase', 'codebase_search'].includes(functionName)) {
+        // Project/System Tools (Delegate to Backend or Local MemoryBridge)
+        if (functionName === 'save_knowledge') {
             try {
+                const { memoryBridge } = await import('./memoryBridge');
+                const memoryId = await memoryBridge.save(
+                    `TITULO: ${args.title}\nCATEGORIA: ${args.category}\nCONTENIDO: ${args.content}\nTAGS: ${args.tags?.join(', ') || ''}`,
+                    'system',
+                    { title: args.title, category: args.category, tags: args.tags }
+                );
+                addLog(`Knowledge saved locally: ${args.title} (ID: ${memoryId})`);
+
+                // Also attempt backend delegacy if possible
+                fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tool: functionName, params: args, userId: 'local-user' })
+                }).catch(() => { }); // silent fail for backend
+
+                return `Knowledge successfully indexed in Nexa Memory (ID: ${memoryId}). I will remember this for future contexts.`;
+            } catch (e: any) {
+                return `Error saving to memory bridge: ${e.message}`;
+            }
+        }
+
+        if (['list_dir', 'read_file', 'write_file', 'index_codebase', 'codebase_search'].includes(functionName)) {
+            try {
+                // If writing a file, also update the active file in the UI
+                if (functionName === 'write_file') {
+                    const { useProjectStore } = await import('@/store/useProjectStore');
+                    const ext = args.path.split('.').pop() || 'text';
+                    useProjectStore.getState().setActiveFile({
+                        name: args.path.split('/').pop() || args.path,
+                        content: args.content,
+                        language: ext,
+                        path: args.path
+                    });
+                    useChatStore.getState().setArtifactPanelOpen(true);
+                }
+
                 const response = await fetch(BACKEND_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

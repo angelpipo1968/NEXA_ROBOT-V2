@@ -3,7 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Fallback mock client if credentials are missing
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+
+// Fallback mock client for seamless demo experience
 const mockSupabase = {
     auth: {
         getUser: async () => ({
@@ -16,24 +18,77 @@ const mockSupabase = {
             },
             error: null
         }),
+        getSession: async () => ({ data: { session: null }, error: null }),
+        signUp: async (credentials: any) => {
+            console.warn('[MockSupabase] Attempting signUp with:', credentials.email);
+            return { data: { user: { id: 'mock-id', email: credentials.email }, session: null }, error: null };
+        },
+        signInWithPassword: async (credentials: any) => {
+            console.warn('[MockSupabase] Attempting signIn with:', credentials.email);
+            return { data: { user: { id: 'mock-id', email: credentials.email }, session: {} }, error: null };
+        },
+        signInWithOAuth: async (options: any) => {
+            console.warn('[MockSupabase] Attempting OAuth with:', options.provider);
+            alert(`Simulación: Redirigiendo a login de ${options.provider}... (Configura las llaves de Supabase para login real)`);
+            return { data: { url: '#' }, error: null };
+        },
+        resetPasswordForEmail: async (email: string) => {
+            console.warn('[MockSupabase] Reset password requested for:', email);
+            alert(`Simulación: Correo de recuperación enviado a ${email}.`);
+            return { data: {}, error: null };
+        },
+        updateUser: async (data: any) => {
+            console.warn('[MockSupabase] Updating user with:', data);
+            return { data: { user: { id: 'mock-id' } }, error: null };
+        },
         signOut: async () => ({ error: null }),
-        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } })
+        onAuthStateChange: (callback: any) => {
+            // Simulate initial state
+            setTimeout(() => callback('INITIAL_SESSION', null), 0);
+            return { data: { subscription: { unsubscribe: () => { } } } };
+        }
     },
-    from: () => ({
+    from: (table: string) => ({
         select: () => ({
             eq: () => ({
                 single: () => ({ data: null, error: null }),
                 order: () => ({ data: [], error: null }),
             }),
             order: () => ({ data: [], error: null }),
+        }),
+        insert: () => ({
+            select: () => ({
+                single: () => ({ data: {}, error: null })
+            })
+        }),
+        update: () => ({
+            eq: () => ({
+                select: () => ({
+                    single: () => ({ data: {}, error: null })
+                })
+            })
+        }),
+        upsert: () => ({ data: {}, error: null }),
+        delete: () => ({
+            eq: () => ({ data: null, error: null })
         })
-    })
+    }),
+    rpc: (name: string, args: any) => {
+        console.warn(`[MockSupabase] RPC Call: ${name}`, args);
+        return { data: null, error: null };
+    }
 };
 
-export const supabase = (supabaseUrl && supabaseAnonKey)
-    ? createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = isSupabaseConfigured
+    ? createClient(supabaseUrl!, supabaseAnonKey!, {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+        }
+    })
     : (mockSupabase as any);
 
-if (!supabaseUrl) {
-    console.warn('Supabase credentials missing. Utilizing mock client.');
+if (!isSupabaseConfigured) {
+    console.warn('⚡ NEXA: Supabase credentials missing. Running in DEMO MODE.');
 }

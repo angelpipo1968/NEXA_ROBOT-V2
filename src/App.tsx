@@ -17,6 +17,7 @@ const StudioPage = React.lazy(() => import('./pages/Studio'));
 const AuthPage = React.lazy(() => import('./pages/Auth'));
 const AuthCallback = React.lazy(() => import('./components/auth/AuthCallback'));
 const MediaGeneratorPage = React.lazy(() => import('./pages/Generator'));
+const FuturisticDashboard = React.lazy(() => import('./components/dev/FuturisticDashboard'));
 
 import { MobileTopBar } from '@/components/layout/MobileTopBar';
 
@@ -69,9 +70,6 @@ function Layout({ children }: { children: React.ReactNode }) {
                 if (!isGuest) {
                     navigate('/auth');
                 }
-            }
-            if (event === 'PASSWORD_RECOVERY') {
-                navigate('/auth?mode=reset');
             }
         });
 
@@ -130,6 +128,7 @@ function App() {
                             <Route path="/generator" element={<MediaGeneratorPage />} />
                             <Route path="/auth" element={<AuthPage />} />
                             <Route path="/auth/callback" element={<AuthCallback />} />
+                            <Route path="/dashboard" element={<FuturisticDashboard />} />
                         </Routes>
                     </Layout>
                 </HashRouter>

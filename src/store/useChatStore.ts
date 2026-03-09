@@ -8,12 +8,14 @@ import { geminiClient } from '@/lib/gemini';
 import { anthropicClient } from '@/lib/anthropic';
 import { openaiClient } from '@/lib/openai';
 import { deepseekClient } from '@/lib/deepseek';
+import { memoryBridge } from '@/lib/memoryBridge';
 import { groqClient } from '@/lib/groq';
 import { elevenlabsClient } from '@/lib/elevenlabs';
 import { autoToolDetector } from '@/lib/autoToolDetector';
 import { modelService, ModelMessage } from '@/services/ModelService';
 import { useVoiceStore } from './useVoiceStore';
 import { useProjectStore } from './useProjectStore';
+import { syncService } from '@/lib/services/syncService';
 
 // Store definition
 
@@ -103,15 +105,23 @@ export const useChatStore = create<ChatState>()(
 
             setMessages: (messages) => set({ messages }),
 
-            addMessage: (message) => set((state) => ({
-                messages: [...state.messages, message]
-            })),
+            addMessage: (message) => {
+                set((state) => ({
+                    messages: [...state.messages, message]
+                }));
+                // CRDT Sync
+                const sharedMessages = syncService.getSharedArray('chat-messages');
+                sharedMessages.push([message]);
+            },
 
-            updateMessage: (id, updates) => set((state) => ({
-                messages: state.messages.map((msg) =>
-                    msg.id === id ? { ...msg, ...updates } : msg
-                ),
-            })),
+            updateMessage: (id, updates) => {
+                set((state) => ({
+                    messages: state.messages.map((msg) =>
+                        msg.id === id ? { ...msg, ...updates } : msg
+                    ),
+                }));
+                // Actualizar CRDT si es necesario (más complejo con arrays, por ahora local)
+            },
 
             toggleThinking: () => set((state) => ({ isThinking: !state.isThinking })),
 
@@ -208,13 +218,17 @@ export const useChatStore = create<ChatState>()(
                 }));
 
                 // AUTO-TOOL DETECTION: Try to handle search queries directly
-                const autoToolResult = await autoToolDetector(
-                    content,
-                    assistantMsgId,
-                    get().updateMessage,
-                    (searching) => set({ isSearching: searching }),
-                    () => get().messages
-                );
+                // Skip auto-tool in deep mode to allow thorough and structured analysis
+                let autoToolResult = null;
+                if (get().reasoningMode !== 'deep') {
+                    autoToolResult = await autoToolDetector(
+                        content,
+                        assistantMsgId,
+                        get().updateMessage,
+                        (searching: boolean) => set({ isSearching: searching }),
+                        () => get().messages
+                    );
+                }
 
                 if (autoToolResult) {
                     get().updateMessage(assistantMsgId, { content: autoToolResult, isStreaming: false });
@@ -238,8 +252,8 @@ export const useChatStore = create<ChatState>()(
                 }
 
                 try {
-                    // 1. Retrieve relevant memories (RAG)
-                    const memories = await memoryService.searchMemories(content);
+                    // 1. Retrieve relevant memories (RAG) using the new Bridge
+                    const memories = await memoryBridge.search(content);
                     const memoryContext = memories.length > 0
                         ? `\n\nContexto relevante de memoria:\n${memories.join('\n')}`
                         : '';
@@ -253,12 +267,13 @@ export const useChatStore = create<ChatState>()(
                     const finalPrompt = contentWithMode + memoryContext;
                     history.push({ role: 'user', content: finalPrompt });
 
-                    // 2. Save User Memory asynchronously
-                    memoryService.addMemory(content, 'user');
+                    // 2. Save User Memory via Bridge
+                    await memoryBridge.save(content, 'user');
 
                     // 3. Call Unified Model Service
                     const finalResponse = await modelService.generateResponse(history, {
-                        temperature: get().reasoningMode === 'deep' ? 0.3 : 0.7
+                        temperature: get().reasoningMode === 'deep' ? 0.3 : 0.7,
+                        reasoningMode: get().reasoningMode
                     });
 
                     // Update UI with Final Response
@@ -270,8 +285,8 @@ export const useChatStore = create<ChatState>()(
 
                     if (onResponse) onResponse(finalResponse);
 
-                    // 4. Save Assistant Memory
-                    memoryService.addMemory(finalResponse, 'assistant');
+                    // 4. Save Assistant Memory via Bridge
+                    await memoryBridge.save(finalResponse, 'assistant');
 
                     set({ isThinking: false, isStreaming: false, isSearching: false });
 

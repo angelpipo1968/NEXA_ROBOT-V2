@@ -6,13 +6,16 @@ export interface AnthropicRequest {
 
 export const anthropicClient = {
     chat: async (payload: AnthropicRequest) => {
-        const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+        const apiKey = (import.meta.env.VITE_ANTHROPIC_API_KEY || '').trim();
 
         if (!apiKey) {
             throw new Error('Missing Anthropic API Key');
         }
 
-        const url = '/anthropic-api/v1/messages';
+        const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+        const url = isNode
+            ? 'https://api.anthropic.com/v1/messages'
+            : '/anthropic-api/v1/messages';
 
         // Convert context to Anthropic format
         // Anthropic roles: 'user', 'assistant' (not 'model')
@@ -36,7 +39,7 @@ export const anthropicClient = {
                     'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
-                    model: 'claude-3-5-sonnet-20240620',
+                    model: 'claude-3-haiku-20240307',
                     max_tokens: 1024,
                     messages: messages,
                     temperature: payload.temperature || 0.7
@@ -45,7 +48,7 @@ export const anthropicClient = {
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
-                console.error('Anthropic API Error:', errData);
+                console.error('Anthropic API Error:', JSON.stringify(errData, null, 2));
                 throw new Error(errData.error?.message || `Anthropic Error: ${response.status}`);
             }
 

@@ -4,6 +4,8 @@ export interface OpenAIRequest {
     temperature?: number;
 }
 
+import { NEXA_SYSTEM_PROMPT } from './systemPrompt';
+
 export const openaiClient = {
     chat: async (payload: OpenAIRequest) => {
         const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -14,9 +16,13 @@ export const openaiClient = {
 
         // Use proxy path if configured, otherwise direct (risk of CORS)
         // Ideally we update vite.config.js to proxy /openai-api -> https://api.openai.com
-        const url = '/openai-api/v1/chat/completions';
+        const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
+        const url = isNode
+            ? 'https://api.openai.com/v1/chat/completions'
+            : '/openai-api/v1/chat/completions';
 
         const messages = [
+            { role: "system", content: NEXA_SYSTEM_PROMPT },
             ...(payload.context?.map(msg => ({
                 role: msg.role === 'model' ? 'assistant' : msg.role,
                 content: msg.parts

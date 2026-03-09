@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { syncService } from '@/lib/services/syncService';
+import * as Y from 'yjs';
 
 export interface ProjectStats {
     words: number;
@@ -39,6 +41,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         const charCount = content.length;
         const pageCount = Math.max(1, Math.ceil(wordCount / 300));
         const chapterCount = (content.match(/(?:cap[íi]tulo|chapter)\s+\d+/gi) || []).length + 1;
+
+        // CRDT Sync
+        const ytext = syncService.getSharedMap('project-data').get('content') as Y.Text;
+        if (ytext) {
+            // Basic replacement for now (real collaborative usage would use an actual Yjs editor binding)
+            ytext.delete(0, ytext.length);
+            ytext.insert(0, content);
+        }
 
         set((state) => ({
             projectData: {

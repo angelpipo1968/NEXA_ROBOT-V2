@@ -1,6 +1,6 @@
 import { Tool } from '../base-tool'
 import { ExecutionContext, ToolResult, SearchResult, VerifiedResult } from '../types'
-import { searchWeb, searchAcademic, searchNews } from './stubs'
+import { NexaSearchEngine } from '@nexa/search-service'
 
 export class WebSearchTool extends Tool {
     name = 'web_search'
@@ -19,28 +19,14 @@ export class WebSearchTool extends Tool {
     async execute(params: any, context: ExecutionContext): Promise<ToolResult> {
         const { query, sources, maxResults, timeRange } = params
 
-        // Búsqueda paralela en múltiples fuentes
-        const searches: Promise<SearchResult>[] = []
-
-        if (sources.includes('web')) {
-            searches.push(searchWeb(query, { maxResults, timeRange }))
-        }
-
-        if (sources.includes('academic')) {
-            searches.push(searchAcademic(query, { maxResults }))
-        }
-
-        if (sources.includes('news')) {
-            searches.push(searchNews(query, { maxResults, timeRange }))
-        }
-
-        const results = await Promise.allSettled(searches)
+        const engine = new NexaSearchEngine()
+        const searchResponse = await engine.search(query, maxResults, false, sources.includes('academic'))
 
         // Procesar y unificar resultados
-        const unifiedResults = this.unifyResults(results)
+        const unifiedResults = searchResponse.results
 
         // Verificar factualidad
-        const verified = await this.verifyResults(unifiedResults)
+        const verified = await this.verifyResults(unifiedResults as any)
 
         // Generar resumen
         const summary = this.generateSummary(verified)
@@ -95,10 +81,20 @@ export class WebSearchTool extends Tool {
     private async checkSourceCredibility(result: SearchResult): Promise<boolean> { return true; }
 
     private generateSummary(results: VerifiedResult[]): string {
-        return "Summary of search results...";
+        if (results.length === 0) return "No se encontraron resultados relevantes.";
+        return `Se han encontrado ${results.length} fuentes de información. Los puntos clave incluyen datos de ${Array.from(new Set(results.map(r => r.source))).join(', ')}.`;
     }
 
     private getSourceBreakdown(results: VerifiedResult[]): any {
-        return { web: results.filter(r => r.source === 'web').length };
+        const breakdown: Record<string, number> = {};
+        results.forEach(r => {
+            breakdown[r.source] = (breakdown[r.source] || 0) + 1;
+        });
+        return breakdown;
+    }
+
+    protected calculateConfidence(verifications: boolean[]): number {
+        const trueCount = verifications.filter(v => v).length;
+        return trueCount / verifications.length;
     }
 }

@@ -16,6 +16,27 @@ export default function ChatInput() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { transcript, isListening, startListening, stopListening, resetTranscript, isSupported } = useSpeechToText();
     const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastClickTimeRef = useRef(0);
+    const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const handleMicClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        const now = Date.now();
+        const diff = now - lastClickTimeRef.current;
+
+        if (diff < 300) {
+            // DOUBLE CLICK detected
+            if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+            toggleContinuousListening();
+            lastClickTimeRef.current = 0; // Reset
+        } else {
+            lastClickTimeRef.current = now;
+            clickTimeoutRef.current = setTimeout(() => {
+                toggleListening();
+                clickTimeoutRef.current = null;
+            }, 300);
+        }
+    };
 
     useEffect(() => {
         if (transcript) {
@@ -27,6 +48,25 @@ export default function ChatInput() {
             }, 2000);
         }
     }, [transcript]);
+
+    // Logic for hands-free (continuous listening)
+    useEffect(() => {
+        if (isContinuousListening) {
+            if (!voiceEnabled) toggleVoice();
+
+            if (!isSpeaking && !isThinking && !isListening) {
+                const timer = setTimeout(() => {
+                    if (!isSpeaking && !isThinking && !isListening) {
+                        startListening();
+                    }
+                }, 800);
+                return () => clearTimeout(timer);
+            }
+        } else if (isListening && !isContinuousListening) {
+            // Optional: stop if we switched off hands-free? 
+            // Better to leave it to the user's manual toggle for the mic icon.
+        }
+    }, [isContinuousListening, isSpeaking, isThinking, isListening, voiceEnabled, toggleVoice, startListening]);
 
     const toggleListening = () => {
         if (!isSupported) {
@@ -198,12 +238,13 @@ export default function ChatInput() {
                                 <Atom size={20} className={reasoningMode === 'deep' ? 'animate-pulse' : ''} />
                             </button>
 
-                            {/* VOICE MODE TOGGLE */}
+                            {/* VOICE MODE TOGGLE (Mobile) */}
                             <button
-                                onClick={toggleListening}
-                                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-95 ${isListening ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 animate-pulse' : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'}`}
+                                onClick={handleMicClick}
+                                className={`w-10 h-10 flex items-center justify-center rounded-full transition-all active:scale-95 ${isContinuousListening ? 'bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400' : (isListening ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 animate-pulse' : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5')}`}
+                                title="Click: Dictado | Doble Click: Manos Libres"
                             >
-                                <Mic size={20} />
+                                {isContinuousListening ? <AudioWaveform size={20} /> : <Mic size={20} />}
                             </button>
 
                         </div>
@@ -299,19 +340,11 @@ export default function ChatInput() {
                             </button>
                             <div className="w-px h-5 bg-[var(--border-color)] mx-1"></div>
                             <button
-                                onClick={toggleContinuousListening}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isContinuousListening ? 'bg-green-500/20 text-green-400' : 'text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]'}`}
-                                title="Modo manos libres"
+                                onClick={handleMicClick}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isContinuousListening ? 'bg-green-500/20 text-green-400 shadow-[0_0_10px_rgba(34,197,94,0.2)]' : (isListening ? 'bg-red-500 text-white animate-pulse' : 'text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]')}`}
+                                title="Click: Dictado | Doble Click: Manos Libres"
                             >
-                                <AudioWaveform size={18} />
-                            </button>
-                            <div className="w-px h-5 bg-[var(--border-color)] mx-1"></div>
-                            <button
-                                onClick={toggleListening}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-[var(--text-tertiary)] hover:bg-white/5 hover:text-[var(--text-primary)]'}`}
-                                title="Dictado por voz"
-                            >
-                                <Mic size={18} />
+                                {isContinuousListening ? <AudioWaveform size={18} /> : <Mic size={18} />}
                             </button>
                         </div>
                     </div>

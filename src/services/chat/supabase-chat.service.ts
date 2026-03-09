@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { ChatMessage, Conversation } from '@/types/chat';
 
 export class SupabaseChatService {

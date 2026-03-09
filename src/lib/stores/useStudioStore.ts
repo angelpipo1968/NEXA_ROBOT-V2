@@ -40,6 +40,14 @@ interface StudioState {
     selectedAsset: GeneratedAsset | null;
     setSelectedAsset: (asset: GeneratedAsset | null) => void;
 
+    // Story State
+    stories: Array<{
+        id: string;
+        title: string;
+        scenes: GeneratedAsset[];
+    }>;
+    addStory: (story: { id: string; title: string; scenes: GeneratedAsset[] }) => void;
+
     // UI State
     leftPanelWidth: number;
     setLeftPanelWidth: (width: number) => void;
@@ -73,6 +81,9 @@ export const useStudioStore = create<StudioState>((set) => ({
     addAsset: (asset) => set((state) => ({ assets: [asset, ...state.assets] })),
     selectedAsset: null,
     setSelectedAsset: (selectedAsset) => set({ selectedAsset }),
+
+    stories: [],
+    addStory: (story) => set((state) => ({ stories: [story, ...state.stories] })),
 
     leftPanelWidth: 400,
     setLeftPanelWidth: (leftPanelWidth) => set({ leftPanelWidth }),

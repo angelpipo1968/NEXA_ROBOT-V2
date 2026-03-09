@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Copy, Trash2, Volume2, Edit2, GitFork, ThumbsUp, ThumbsDown, Share2, RotateCw, MoreHorizontal, Settings, ChevronLeft, Check } from 'lucide-react';
 import ThinkingCard from './ThinkingCard';
 import ArtifactCard from './ArtifactCard';
@@ -329,7 +330,22 @@ export default function MessageBubble({ role, content, id, deleteMessage, forkCh
                             return (
                                 <div className="prose prose-invert dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-[var(--bg-tertiary)] prose-pre:border prose-pre:border-[var(--border-color)] prose-pre:p-0 text-[var(--text-primary)]">
                                     <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
                                         components={{
+                                            a({ node, children, href, ...props }: any) {
+                                                return (
+                                                    <a
+                                                        href={href}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30 hover:decoration-blue-400 transition-all inline-flex items-center gap-1 font-medium group/link"
+                                                        {...props}
+                                                    >
+                                                        {children}
+                                                        <ExternalLink size={12} className="opacity-50 group-hover/link:opacity-100 transition-opacity" />
+                                                    </a>
+                                                );
+                                            },
                                             code({ node, inline, className, children, ...props }: any) {
                                                 const match = /language-(\w+)/.exec(className || '');
                                                 const code = String(children).replace(/\n$/, '');

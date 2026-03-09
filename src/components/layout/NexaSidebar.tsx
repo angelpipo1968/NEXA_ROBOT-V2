@@ -75,15 +75,16 @@ export default function NexaSidebar() {
     const [isGuest, setIsGuest] = useState(false);
 
     const handleSignOut = async () => {
-        if (isGuest) {
+        try {
             localStorage.removeItem('nexa_guest');
-            navigate('/auth');
-        } else {
             const { error } = await supabase.auth.signOut();
-            if (error) alert(error.message);
-            else {
-                navigate('/auth');
+            if (error) {
+                console.error('Logout error:', error);
+                // Even on error, we redirect to force a fresh state
             }
+        } finally {
+            window.location.href = '#/auth';
+            window.location.reload(); // Force complete reset
         }
     };
 
@@ -200,6 +201,13 @@ export default function NexaSidebar() {
                             onClick={() => handleNavigation('/generator')}
                             collapsed={!isSidebarOpen}
                         />
+                        <NavItem
+                            icon={Layout}
+                            label="Dashboard"
+                            active={location.pathname === '/dashboard'}
+                            onClick={() => handleNavigation('/dashboard')}
+                            collapsed={!isSidebarOpen}
+                        />
                     </div>
 
                     {isSidebarOpen && (
@@ -305,7 +313,7 @@ export default function NexaSidebar() {
                                 />
                                 <MenuItem icon={Archive} label="Archived Chats" />
                                 <div className="h-px bg-white/5 my-1" />
-                                <MenuItem icon={LogOut} label="Log out" onClick={handleSignOut} />
+                                <MenuItem icon={LogOut} label="Cerrar Sesión" onClick={handleSignOut} />
                             </div>
                         </div>
                     )}

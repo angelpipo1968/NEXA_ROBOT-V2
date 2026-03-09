@@ -1,6 +1,6 @@
 import React from 'react';
-import { useChatStore } from '@/store/useChatStore';
 import { motion } from 'framer-motion';
+import { selfHealing } from '@/lib/selfHealing';
 
 interface Props {
     children: React.ReactNode;
@@ -12,6 +12,8 @@ interface State {
     errorInfo: React.ErrorInfo | null;
     isNexaRecovering: boolean;
     nexaFixLog: string[];
+    diagnosis?: string;
+    suggestedPatch?: string;
 }
 
 export class NexaErrorBoundary extends React.Component<Props, State> {
@@ -26,6 +28,25 @@ export class NexaErrorBoundary extends React.Component<Props, State> {
         };
     }
 
+    componentDidMount() {
+        window.addEventListener('nexa-immune-patch', this.handleImmunePatch as any);
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('nexa-immune-patch', this.handleImmunePatch as any);
+    }
+
+    handleImmunePatch = (event: CustomEvent) => {
+        const { diagnosis, patch } = event.detail;
+        this.setState({
+            diagnosis,
+            suggestedPatch: patch,
+            isNexaRecovering: false
+        });
+        this.addLog(`🛡️ PARCHE INMUNITARIO DISPONIBLE`);
+        this.addLog(`Diagnóstico: ${diagnosis.substring(0, 100)}...`);
+    }
+
     static getDerivedStateFromError(error: Error) {
         return { hasError: true, error };
     }
@@ -38,25 +59,19 @@ export class NexaErrorBoundary extends React.Component<Props, State> {
     async initiateSelfHealing(error: Error, info: React.ErrorInfo) {
         this.setState({ isNexaRecovering: true });
         this.addLog('🛑 Error detectado en el Kernel UI.');
-        this.addLog(`Trace: ${error.message.substring(0, 100)}...`);
-        this.addLog('🧠 Consultando Memoria RAG para soluciones similares...');
+        this.addLog('🧠 Activando Sistema Inmunitario...');
 
-        // Simulate Nexa thinking about the error
-        setTimeout(() => {
-            this.addLog('⚙️ Diagnosticando archivo problemático...');
-            setTimeout(() => {
-                this.addLog('✨ Parche temporal aislado. Listo para regenerar Render Tree.');
-                this.setState({ isNexaRecovering: false });
-            }, 3000);
-        }, 2000);
-
-        // In a real scenario, this would post the error to `useChatStore.getState().generateAIResponse` 
-        // telling the model to find a fix, but without showing it in the chat yet.
         try {
-            const errorPrompt = `SISTEMA: La interfaz UI se ha quebrado. Error: ${error.message}. Stack: ${info.componentStack}`;
-            console.error('[SELF-HEAL SENSOR]', errorPrompt);
-            // useChatStore.getState().addTerminalLog(`[CRASH SENSOR] Interceptando: ${error.message}`);
-        } catch (e) { }
+            await selfHealing.handleError({
+                message: error.message,
+                stack: info.componentStack,
+                error: error,
+                source: 'UI_BOUNDARY'
+            });
+        } catch (e) {
+            this.addLog('⚠️ El Sistema Inmunitario offline.');
+            this.setState({ isNexaRecovering: false });
+        }
     }
 
     addLog(msg: string) {
@@ -64,59 +79,106 @@ export class NexaErrorBoundary extends React.Component<Props, State> {
     }
 
     resetError = () => {
-        this.setState({ hasError: false, error: null, errorInfo: null, nexaFixLog: [], isNexaRecovering: false });
+        this.setState({
+            hasError: false,
+            error: null,
+            errorInfo: null,
+            nexaFixLog: [],
+            isNexaRecovering: false,
+            diagnosis: undefined,
+            suggestedPatch: undefined
+        });
     }
 
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen bg-[#05060a] flex flex-col items-center justify-center p-8 font-mono text-cyan-400">
-                    <div className="max-w-xl w-full bg-black/50 border border-red-500/30 p-8 rounded-2xl shadow-[0_0_50px_rgba(255,0,0,0.1)] relative overflow-hidden backdrop-blur-xl">
+                <div className="min-h-screen bg-[#05060a] flex flex-col items-center justify-center p-8 font-mono text-cyan-400 overflow-y-auto">
+                    <div className="max-w-2xl w-full bg-black/50 border border-red-500/30 p-8 rounded-3xl shadow-[0_0_100px_rgba(255,0,0,0.15)] relative overflow-hidden backdrop-blur-2xl">
 
-                        {/* Red warning glow */}
-                        <div className="absolute -top-10 -right-10 w-32 h-32 bg-red-500/20 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute -top-10 -right-10 w-48 h-48 bg-red-600/10 rounded-full blur-[80px] pointer-events-none" />
+                        <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-cyan-600/10 rounded-full blur-[80px] pointer-events-none" />
 
-                        <h1 className="text-2xl font-bold text-red-400 mb-4 flex items-center gap-2">
-                            <span className="animate-pulse">⚠️</span> KERNEL PANIC
-                        </h1>
-
-                        <p className="text-sm text-gray-400 mb-6 font-sans">
-                            Nexa OS ha interceptado un fallo estructural. El Sistema Inmunitario está activo.
-                        </p>
-
-                        <div className="bg-[#0a0f1a] rounded-lg p-4 border border-white/5 mb-6 text-xs text-red-300/80 overflow-auto max-h-32">
-                            <code>{this.state.error?.toString()}</code>
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h1 className="text-3xl font-black text-red-500 tracking-tighter flex items-center gap-3">
+                                    <span className="animate-ping w-2 h-2 bg-red-500 rounded-full inline-block" />
+                                    KERNEL PANIC
+                                </h1>
+                                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Nexa Security Protocol #404-IMMUNE</p>
+                            </div>
+                            <div className="px-3 py-1 bg-red-900/30 border border-red-500/30 rounded-full text-[9px] font-bold text-red-400 uppercase">
+                                UI Subsystem Fault
+                            </div>
                         </div>
 
-                        <div className="space-y-2 mb-8">
+                        {/* Error Report */}
+                        <div className="bg-red-900/10 rounded-2xl p-6 border border-red-500/10 mb-8">
+                            <p className="text-xs text-red-400/80 mb-2 font-black uppercase tracking-wider">Exception Details</p>
+                            <code className="text-xs text-red-200 block break-all leading-relaxed">
+                                {this.state.error?.toString()}
+                            </code>
+                        </div>
+
+                        {/* Healing Log */}
+                        <div className="space-y-3 mb-8 bg-black/40 rounded-2xl p-6 border border-white/5 max-h-48 overflow-y-auto custom-scrollbar">
                             {this.state.nexaFixLog.map((log, i) => (
                                 <motion.div
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     key={i}
-                                    className="text-xs text-cyan-300"
+                                    className="text-[10px] flex items-start gap-4"
                                 >
-                                    <span className="text-gray-500 mr-2">[{new Date().toLocaleTimeString()}]</span>
-                                    {log}
+                                    <span className="text-gray-600 font-mono shrink-0">{new Date().toLocaleTimeString()}</span>
+                                    <span className={log.includes('🛡️') ? 'text-green-400 font-bold' : 'text-cyan-400/80'}>{log}</span>
                                 </motion.div>
                             ))}
                             {this.state.isNexaRecovering && (
-                                <div className="text-xs text-fuchsia-400 animate-pulse mt-2">
-                                    Analizando vectores de fallo vía WebLLM...
+                                <div className="flex items-center gap-3 text-[10px] text-fuchsia-400 animate-pulse mt-4">
+                                    <div className="w-4 h-4 border-2 border-fuchsia-400 border-t-transparent rounded-full animate-spin" />
+                                    Generando parche inmunológico vía RAG...
                                 </div>
                             )}
                         </div>
 
-                        <button
-                            onClick={this.resetError}
-                            disabled={this.state.isNexaRecovering}
-                            className={`w-full py-3 rounded-lg font-bold tracking-widest text-sm transition-all duration-300 ${this.state.isNexaRecovering
-                                    ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-cyan-600 to-fuchsia-600 hover:from-cyan-500 hover:to-fuchsia-500 text-white shadow-[0_0_20px_rgba(0,243,255,0.3)]'
-                                }`}
-                        >
-                            {this.state.isNexaRecovering ? 'PARCHEANDO...' : 'RECARGAR HOLOCUBIERTA'}
-                        </button>
+                        {/* Diagnosis and Patch */}
+                        {this.state.diagnosis && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mb-8 p-6 bg-cyan-950/20 border border-cyan-500/20 rounded-2xl"
+                            >
+                                <h4 className="text-xs font-black text-cyan-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <span className="text-cyan-500">🛡️</span> NEXA DIAGNOSIS
+                                </h4>
+                                <p className="text-xs text-cyan-100/80 leading-relaxed mb-4">{this.state.diagnosis}</p>
+
+                                {this.state.suggestedPatch && (
+                                    <div className="mt-4">
+                                        <p className="text-[9px] text-cyan-500 font-black uppercase mb-2">Patch Sugerido (Diff)</p>
+                                        <pre className="text-[10px] bg-black/60 p-4 rounded-xl border border-white/5 text-green-400 overflow-x-auto">
+                                            {this.state.suggestedPatch}
+                                        </pre>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={this.resetError}
+                                className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black text-gray-400 hover:text-white hover:bg-white/10 transition-all uppercase tracking-widest"
+                            >
+                                Ignorar y Reiniciar
+                            </button>
+                            <button
+                                onClick={() => alert("Solicitud de Parche enviada al Agente de Nexa OS.")}
+                                disabled={!this.state.suggestedPatch}
+                                className="flex-[2] py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-cyan-500/20 active:scale-95 disabled:opacity-50 disabled:grayscale transition-all"
+                            >
+                                Aplicar Auto-Fix
+                            </button>
+                        </div>
                     </div>
                 </div>
             );

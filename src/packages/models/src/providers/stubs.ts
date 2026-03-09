@@ -196,15 +196,59 @@ export class AnthropicProvider implements ModelProvider {
     }
 }
 
-export class LocalProvider implements ModelProvider {
-    id = 'local';
+export class NexaProvider implements ModelProvider {
+    id = 'nexa';
+    private baseUrl = 'http://localhost:3002/v1';
+
     getModels(): Model[] {
-        return [];
+        return [
+            { id: 'nexa-local-qwen', name: 'Nexa Qwen 0.5B (Local)', provider: 'nexa', capabilities: { contextLength: 4096, streaming: true, functionCalling: false } },
+            { id: 'nexa-local-llama', name: 'Nexa Llama 1B (Local)', provider: 'nexa', capabilities: { contextLength: 4096, streaming: true, functionCalling: false } }
+        ];
     }
+
     async execute(request: ModelRequest): Promise<ModelResponse> {
-        return { text: "Stubbed Local response", latency: 10, cost: 0 };
+        const start = Date.now();
+        try {
+            const response = await fetch(`${this.baseUrl}/chat/completions`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: request.requirements?.modelId || 'gpt-3.5-turbo', // SDK handles internal mapping
+                    messages: [
+                        ...(request.context || []),
+                        { role: 'user', content: request.message }
+                    ],
+                    stream: false
+                })
+            });
+
+            if (!response.ok) throw new Error(`Nexa SDK error: ${response.status}`);
+            const data = await response.json();
+
+            return {
+                text: data.choices[0].message.content,
+                latency: Date.now() - start,
+                usage: {
+                    promptTokens: data.usage?.prompt_tokens || 0,
+                    completionTokens: data.usage?.completion_tokens || 0,
+                    totalTokens: data.usage?.total_tokens || 0
+                },
+                cost: 0
+            };
+        } catch (error: any) {
+            return {
+                text: `Nexa Local Engine Error: ${error.message}`,
+                latency: Date.now() - start,
+                cost: 0
+            };
+        }
     }
+
     async *streamExecute(request: ModelRequest): AsyncIterable<StreamChunk> {
-        yield { text: "Stubbed Local stream", done: true };
+        // Nexa SDK is OpenAI compatible, so we could implement streaming here
+        // For now, let's yield a simple response
+        const res = await this.execute(request);
+        yield { text: res.text, done: true };
     }
 }

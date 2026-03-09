@@ -7,13 +7,31 @@ import {
     SearchStats,
     CacheEntry
 } from './types';
-import { URL } from 'url';
+// Browser-compatible URL is global
 
 export class NexaSearchEngine {
     public config: Record<SearchSource | string, SearchProviderConfig>;
     public priorityOrder: SearchSource[];
     private cache: Map<string, CacheEntry>;
     private lastRequest: Map<string, number>;
+
+    private getEnv(key: string): string | undefined {
+        try {
+            // @ts-ignore
+            if (typeof import.meta !== 'undefined' && import.meta.env) {
+                // @ts-ignore
+                return import.meta.env[`VITE_${key}`] || import.meta.env[key];
+            }
+        } catch (e) { }
+
+        try {
+            if (typeof process !== 'undefined' && process.env) {
+                return process.env[key];
+            }
+        } catch (e) { }
+
+        return undefined;
+    }
 
     constructor() {
         this.cache = new Map();
@@ -42,42 +60,42 @@ export class NexaSearchEngine {
                 cooldown: 1
             },
             brave: {
-                enabled: !!process.env.BRAVE_SEARCH_API_KEY,
+                enabled: !!this.getEnv('BRAVE_SEARCH_API_KEY'),
                 type: 'official',
-                key: process.env.BRAVE_SEARCH_API_KEY,
+                key: this.getEnv('BRAVE_SEARCH_API_KEY'),
                 url: 'https://api.search.brave.com/res/v1/web/search',
                 timeout: 4,
                 quota: { daily: 2000, used: 0, reset: null }
             },
             you: {
-                enabled: !!process.env.YOU_API_KEY,
+                enabled: !!this.getEnv('YOU_API_KEY'),
                 type: 'official',
-                key: process.env.YOU_API_KEY,
+                key: this.getEnv('YOU_API_KEY'),
                 url: 'https://api.you.com/search/web',
                 timeout: 4,
                 quota: { daily: 1000, used: 0, reset: null }
             },
             google_cse: {
-                enabled: !!(process.env.GOOGLE_CSE_KEY && process.env.GOOGLE_CSE_CX),
+                enabled: !!(this.getEnv('GOOGLE_CSE_KEY') && this.getEnv('GOOGLE_CSE_CX')),
                 type: 'official',
-                key: process.env.GOOGLE_CSE_KEY,
-                cx: process.env.GOOGLE_CSE_CX,
+                key: this.getEnv('GOOGLE_CSE_KEY'),
+                cx: this.getEnv('GOOGLE_CSE_CX'),
                 url: 'https://www.googleapis.com/customsearch/v1',
                 timeout: 4,
                 quota: { daily: 100, used: 0, reset: null }
             },
             serpapi: {
-                enabled: !!process.env.SERPAPI_KEY,
+                enabled: !!this.getEnv('SERPAPI_KEY'),
                 type: 'official',
-                key: process.env.SERPAPI_KEY,
+                key: this.getEnv('SERPAPI_KEY'),
                 url: 'https://serpapi.com/search',
                 timeout: 4,
                 quota: { monthly: 100, used: 0, reset: null }
             },
             bing: {
-                enabled: !!process.env.BING_API_KEY,
+                enabled: !!this.getEnv('BING_API_KEY'),
                 type: 'official',
-                key: process.env.BING_API_KEY,
+                key: this.getEnv('BING_API_KEY'),
                 url: 'https://api.bing.microsoft.com/v7.0/search',
                 timeout: 4,
                 quota: { monthly: 1000, used: 0, reset: null }

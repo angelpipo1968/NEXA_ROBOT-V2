@@ -10,24 +10,26 @@ Para que Nexa no solo responda, sino que "piense" antes de actuar.
 
 ## 2. Orquestador de Herramientas Pro (Tooling) 🏗️
 Expandir el poder de acción de Nexa.
-- [x] **File System Access**: Implementadas herramientas `list_dir`, `read_file` y `write_file` con puente Frontend-Backend.
-- [ ] **Universal MCP Connector**: Finalizar la conexión dinámica con los procesos de MCP servers.
+- [x] **Universal MCP Connector**: Puente dinámico para conectar herramientas externas (Google, Slack, Notion) completado y dinámico.
+- [x] **Dominio y Producción**: Configuración para `https://nexa-ai.dev/` aplicada a través de variables de entorno y Capacitor.
 - [x] **Codebase Search**: Nexa ahora puede explorar el código usando `list_dir` y `read_file`.
 
-## 3. Memoria Evolutiva (Memory & RAG) 🧠
+## 3. Memoria Evolutiva (Memory & RAG) ✅
 Nexa debe aprender de cada conversación.
-- [ ] **Knowledge Items (KIs)**: Integrar base de datos de vectores activa.
-- [ ] **Auto-Indexación**: Sistema de lecciones aprendidas.
+- [x] **Knowledge Items (KIs)**: Integrada persistencia local vía `MemoryBridge`.
+- [x] **Auto-Indexación**: Sistema de lecciones aprendidas y auto-indexación de búsquedas profundas.
 
-## 4. Frontend de Agente Premium (UI/UX) ✨
+## 4. Frontend de Agente Premium (UI/UX) ✅
 Hacer que la experiencia se sienta futurista y útil.
-- [x] **Visualización de Pensamiento**: `ThinkingCard` actualizado con iconos dinámicos y progreso de pasos.
-- [ ] **Renderizado de Artefactos Lateral**: Side panel para `DevStudio` sincronizado con `write_file`.
-- [ ] **Terminal Integrada**: Panel de logs de herramientas.
+- [x] **Visualización de Pensamiento**: `ThinkingCard` premium con barras de progreso y jerarquía visual.
+- [x] **Renderizado de Artefactos Lateral**: Side panel sincronizado con `write_file` y `create_artifact`.
+- [x] **Terminal Integrada**: Panel de logs de herramientas integrado en el visor de artefactos.
 
 ---
 ## Estado Actual:
 - [x] Configuración MCP Corregida.
 - [x] Sequential Thinking Loop funcional.
 - [x] Nexa tiene CONTROL sobre el sistema de archivos local.
-- [ ] Próximo Paso: Implementación de **Knowledge Store** para memoria persistente.
+- [x] **Memoria Persistente y Aprendizaje Autónomo activos**.
+- [x] **Layout Pro de Artefactos y Logs funcional**.
+- [ ] Próximo Paso: Conexión dinámica con MCP Servers externos.

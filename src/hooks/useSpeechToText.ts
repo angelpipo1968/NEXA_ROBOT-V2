@@ -31,32 +31,48 @@ export const useSpeechToText = (language: string = 'es-ES'): UseSpeechToTextRetu
         recognitionRef.current.lang = language;
 
         recognitionRef.current.onresult = (event: any) => {
-            let finalTranscript = '';
+            let currentTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const result = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
+                    setTranscript(prev => prev + ' ' + result);
+                } else {
+                    currentTranscript += result;
                 }
             }
-            if (finalTranscript) {
-                setTranscript(prev => prev + ' ' + finalTranscript);
+            if (currentTranscript) {
+                // For interim results, we could set a separate state, 
+                // but let's just make sure final results are captured correctly.
             }
         };
 
         recognitionRef.current.onend = () => {
             if (isListening) {
-                try {
-                    recognitionRef.current.start();
-                } catch (e) {
-                    console.error('Failed to restart speech recognition:', e);
-                }
+                // Use a small timeout to prevent rapid-fire restart loops
+                setTimeout(() => {
+                    if (isListening) {
+                        try {
+                            recognitionRef.current.start();
+                        } catch (e) {
+                            console.error('Failed to restart speech recognition:', e);
+                        }
+                    }
+                }, 500);
             }
         };
 
         recognitionRef.current.onerror = (event: any) => {
             console.error('Speech Recognition Error:', event.error);
-            if (event.error === 'no-speech') {
-                // Silently ignore or handle
+
+            if (event.error === 'not-allowed') {
+                alert("🎤 ACCESO DENEGADO: El navegador bloqueó el micrófono. Por favor, actívalo en los ajustes de tu navegador o barra de direcciones.");
+                setIsListening(false);
+            } else if (event.error === 'no-speech' || event.error === 'network' || event.error === 'aborted') {
+                console.warn(`[VOICE] Transient error (${event.error}), maintaining state for auto-restart.`);
+                // We keep isListening=true so onend() can restart it automatically
+                // but we add a small delay in onend to avoid CPU spikes.
             } else {
+                console.warn(`[VOICE] Critical Speech Error: ${event.error}`);
                 setIsListening(false);
             }
         };

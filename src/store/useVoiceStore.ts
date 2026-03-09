@@ -65,7 +65,28 @@ export const useVoiceStore = create<VoiceState>()(
             },
 
             speak: async (text: string, onEnd?: () => void) => {
-                // if (!get().voiceEnabled) return; // Allow clear explicit speak requests (e.g. "Read aloud")
+                // Sanitize text to remove markdown, symbols and avoid reading punctuation literally
+                const sanitizeTextForSpeech = (input: string): string => {
+                    return input
+                        // Remove URLs to avoid character-by-character reading of dots/slashes
+                        .replace(/https?:\/\/\S+/g, 'enlace')
+                        // Remove markdown symbols (asterisks, underscores, headers, etc)
+                        .replace(/\*{1,3}/g, '')
+                        .replace(/_{1,3}/g, '')
+                        .replace(/#{1,6}\s/g, '')
+                        .replace(/`{1,3}[\s\S]*?`{1,3}/g, 'un bloque de código')
+                        .replace(/>\s/g, '')
+                        // Remove grouping symbols that might be read literally
+                        .replace(/[()\[\]{}|\\\/]/g, ' ')
+                        // Remove dashes used as bullets but keep them for negative numbers/hyphenated words
+                        .replace(/^\s*[-•]\s+/gm, '')
+                        // Replace multiple spaces with a single one
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                };
+
+                const cleanText = sanitizeTextForSpeech(text);
+                if (!cleanText) return;
 
                 // Stop any current speaking
                 get().stopSpeaking();
@@ -74,7 +95,7 @@ export const useVoiceStore = create<VoiceState>()(
                     if (Capacitor.isNativePlatform()) {
                         try {
                             await TextToSpeech.speak({
-                                text,
+                                text: cleanText,
                                 lang: 'es-ES',
                                 rate: 1.0,
                                 pitch: 1.0,
@@ -104,7 +125,7 @@ export const useVoiceStore = create<VoiceState>()(
                         return;
                     }
 
-                    const utterance = new SpeechSynthesisUtterance(text);
+                    const utterance = new SpeechSynthesisUtterance(cleanText);
 
                     const getVoicesLoaded = (): Promise<SpeechSynthesisVoice[]> => {
                         return new Promise((resolve) => {
@@ -176,7 +197,7 @@ export const useVoiceStore = create<VoiceState>()(
                     const selectedName = get().selectedVoice;
                     const voiceId = voiceIdMap[selectedName] || voiceIdMap['Katerina'];
 
-                    const audioData = await elevenlabsClient.speakText(text);
+                    const audioData = await elevenlabsClient.speakText(cleanText);
                     if (audioData) {
                         const blob = new Blob([audioData], { type: 'audio/mpeg' });
                         const url = URL.createObjectURL(blob);

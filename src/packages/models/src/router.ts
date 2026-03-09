@@ -1,5 +1,5 @@
 import { Model, ModelCapabilities, ModelResponse, ModelRequest, RoutingOptions, SelectedModel, SwitchResult, StreamChunk, ModelCapabilities as MC } from './types'
-import { OllamaProvider, OpenAICloud, AnthropicProvider, LocalProvider, ModelProvider } from './providers/stubs'
+import { OllamaProvider, OpenAICloud, AnthropicProvider, NexaProvider, ModelProvider } from './providers/stubs'
 import { PerformanceMonitor } from './monitor'
 import { ModelCache } from './cache'
 import { StreamingCache } from './cache/stream-cache'
@@ -46,8 +46,8 @@ export class ModelRouter {
         this.providers.set('openai', new OpenAICloud())
         this.providers.set('anthropic', new AnthropicProvider())
 
-        // Modelos locales optimizados
-        this.providers.set('local', new LocalProvider())
+        // Modelos Nexa optimizados (NPU/GPU)
+        this.providers.set('nexa', new NexaProvider())
     }
 
     async route(
@@ -170,18 +170,17 @@ export class ModelRouter {
     private async selectOptimalModel(
         criteria: SelectionCriteria
     ): Promise<SelectedModel> {
-        // Análisis multi-factor stub
-        const factors = {
-            complexity: 0.5,
-            budget: true,
-            preferences: {},
-            history: {}
-        };
-
-        // Scoring de modelos disponibles - STUB logic getting first available
         const models = await this.getAvailableModels(criteria.userId);
-        const model = models[0];
 
+        // If specific model is requested, prioritize it
+        const requestedId = criteria.requirements?.modelId;
+        if (requestedId) {
+            const model = models.find(m => m.id === requestedId);
+            if (model) return { model, score: 1.0 };
+        }
+
+        // Default analysis multi-factor stub
+        const model = models[0];
         return { model, score: 0.9 };
     }
 

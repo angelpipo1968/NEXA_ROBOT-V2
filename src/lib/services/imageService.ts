@@ -17,8 +17,12 @@ export const imageService = {
         try {
             const systemMsg = `You are a professional Prompt Engineer for ${type === 'image' ? 'Flux 1.1' : 'AI Video Generation'}. 
             Transform the following simple prompt into a high-fidelity, world-class artistic instruction. 
-            Focus on lighting, textures, cinematic composition, and technical details. 
-            Output ONLY the enhanced prompt in English.`;
+            Rules:
+            1. Focus on hyper-realistic textures (skin pores, fabric weave, metal oxidation).
+            2. Specify cinematic lighting (volumetric god rays, ray-traced reflections, sub-surface scattering).
+            3. Define professional camera gear (f/1.8, 85mm lens, Kodachrome film stock if applicable).
+            4. Include artistic movement or atmosphere (floating particles, ethereal mist, dynamic energy).
+            5. Output ONLY the enhanced prompt in English. Keep it under 200 words.`;
 
             const response = await geminiClient.chat({
                 message: `${systemMsg}\n\nUser prompt: "${userPrompt}"`
@@ -71,6 +75,40 @@ export const imageService = {
         } catch (error) {
             console.error('[ImageService] Error generating Flux image:', error);
             throw error;
+        }
+    },
+
+    /**
+     * Generates a structural storyboard (narrative frames) from a single prompt.
+     */
+    async generateStoryBoard(basePrompt: string): Promise<Array<{ title: string; prompt: string }>> {
+        try {
+            const systemMsg = `You are a cinematic director for Nexa Studio.
+            Break down the following story concept into exactly 3 key visual scenes (Beginning, Middle, End).
+            For each scene, provide a title and a detailed visual prompt for Flux 1.1.
+            Output ONLY a JSON array: [{ "title": "...", "prompt": "..." }]`;
+
+            const response = await geminiClient.chat({
+                message: `${systemMsg}\n\nConcept: "${basePrompt}"`
+            });
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+            // Extract JSON from potential markdown
+            const jsonMatch = text.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+                return JSON.parse(jsonMatch[0]);
+            }
+
+            throw new Error("Invalid format from AI");
+        } catch (error) {
+            console.error('[ImageService] Error generating storyboard:', error);
+            return [
+                { title: 'Escena 1', prompt: basePrompt },
+                { title: 'Escena 2', prompt: basePrompt },
+                { title: 'Escena 3', prompt: basePrompt }
+            ];
         }
     },
 

@@ -8,6 +8,7 @@ import { ToolOrchestrator } from '@nexa/tools'
 import { ModelRouter } from '@nexa/models'
 import { NexaWritingStudio } from '@nexa/writing'
 import { RealTimeMetrics } from './metrics'
+import { nexaLocalBridge } from './services/NexaLocalBridge'
 
 const app = new Hono()
 
@@ -103,6 +104,12 @@ app.post('/api/tools/execute', async (c) => {
   }
 });
 
+// List All Available Tools (including dynamic MCP tools)
+app.get('/api/tools/list', (c) => {
+  const tools = toolOrchestrator.getToolsDefinitions();
+  return c.json({ success: true, tools });
+});
+
 // Model Switching Endpoint
 app.post('/api/models/switch', async (c) => {
   const body = await c.req.json();
@@ -114,6 +121,76 @@ app.post('/api/models/switch', async (c) => {
     return c.json({ success: true, result });
   } catch (e: any) {
     return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+// --- Local Core Control (Nexa SDK integration) ---
+app.get('/api/local/status', (c) => {
+  const id = c.req.query('id') || 'llm';
+  return c.json({ success: true, id, ...nexaLocalBridge.getStatus(id) });
+});
+
+app.post('/api/local/start', async (c) => {
+  const { id = 'llm', modelId, port = 3002 } = await c.req.json();
+  nexaLocalBridge.start(id, modelId, port);
+  return c.json({ success: true, message: `Starting ${id} core with ${modelId}...` });
+});
+
+app.post('/api/local/stop', async (c) => {
+  const { id = 'llm' } = await c.req.json();
+  nexaLocalBridge.stop(id);
+  return c.json({ success: true, message: `Stopping ${id} core...` });
+});
+
+app.post('/api/local/vision/analyze', async (c) => {
+  const { prompt = "Describe what is on the screen" } = await c.req.json();
+
+  try {
+    // 1. Capture screen
+    const { execSync } = await import('node:child_process');
+    execSync('powershell -ExecutionPolicy Bypass -File c:\\nexa\\scripts\\capture.ps1');
+
+    // 2. Read image
+    const { readFileSync } = await import('node:fs');
+    const imageBase64 = readFileSync('c:\\nexa\\temp\\screen.png', 'base64');
+
+    // 3. Call local VLM server (port 3003)
+    const response = await fetch('http://localhost:3003/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: "qwen-vl", // SDK mapping
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              { type: "image_url", image_url: { url: `data:image/png;base64,${imageBase64}` } }
+            ]
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
+    return c.json({ success: true, analysis: data.choices[0].message.content });
+
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+app.post('/api/local/system/focus', async (c) => {
+  const { enabled } = await c.req.json();
+  try {
+    const { execSync } = await import('node:child_process');
+    // Registry hack to disable/enable Toast Notifications on Windows
+    const value = enabled ? 0 : 1;
+    const psCmd = `Set-ItemProperty -Path "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings" -Name "NOC_GLOBAL_SETTING_TOASTS_ENABLED" -Value ${value}`;
+    execSync(`powershell -ExecutionPolicy Bypass -Command "${psCmd}"`);
+    return c.json({ success: true, focusMode: enabled });
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500);
   }
 });
 

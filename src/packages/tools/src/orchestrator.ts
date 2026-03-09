@@ -54,7 +54,15 @@ export class ToolOrchestrator {
         this.tools.set(tool.name, tool);
     }
 
-    private loadMCPServers() {
+    getToolsDefinitions() {
+        return Array.from(this.tools.values()).map(tool => ({
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.parameters
+        }));
+    }
+
+    private async loadMCPServers() {
         try {
             const configPath = path.join(process.cwd(), 'mcp_config.json');
             if (fs.existsSync(configPath)) {
@@ -64,14 +72,33 @@ export class ToolOrchestrator {
                 for (const [serverName, serverConfig] of Object.entries(servers)) {
                     if ((serverConfig as any).disabled) continue;
 
-                    // Note: In a real implementation, we would call 'tools/list'
-                    // to discover available tools. For now, we'll register the server
-                    // as a placeholder or list known tools.
-                    console.log(`[ToolOrchestrator] 🌐 MCP Server indexed: ${serverName}`);
+                    try {
+                        console.log(`[ToolOrchestrator] 🌐 Discovering tools on MCP Server: ${serverName}...`);
+                        // In a real scenario, we would use JSON-RPC over the transport.
+                        // Here we use the client to list tools.
+                        const response: any = await this.mcpClient.callTool(serverName, serverConfig as any, 'tools/list', {});
+
+                        if (response?.result?.tools) {
+                            for (const toolDef of response.result.tools) {
+                                const mcpTool = new GenericMCPTool(
+                                    serverName,
+                                    toolDef.name,
+                                    toolDef.description,
+                                    toolDef.inputSchema,
+                                    serverConfig as any,
+                                    this.mcpClient
+                                );
+                                this.registerTool(mcpTool);
+                                console.log(`[ToolOrchestrator] ✅ Registered MCP Tool: ${mcpTool.name}`);
+                            }
+                        }
+                    } catch (err) {
+                        console.warn(`[ToolOrchestrator] ⚠️ Could not load tools from ${serverName}:`, err);
+                    }
                 }
             }
         } catch (e) {
-            console.error('[ToolOrchestrator] Error loading MCP servers:', e);
+            console.error('[ToolOrchestrator] Error loading MCP configuration:', e);
         }
     }
 

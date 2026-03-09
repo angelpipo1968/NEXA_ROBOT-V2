@@ -30,7 +30,8 @@ export class CodebaseSearchTool extends Tool {
 
             // 1. Get embedding for the query
             // We'll call the local API for this
-            const embeddingResponse = await fetch('http://localhost:3001/api/embeddings', {
+            const backendUrl = process.env.VITE_BACKEND_URL || 'http://localhost:3001';
+            const embeddingResponse = await fetch(`${backendUrl}/api/embeddings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: query })
@@ -106,7 +107,8 @@ export class IndexCodebaseTool extends Tool {
                 const batch = files.slice(i, i + batchSize);
                 const contents = await Promise.all(batch.map(f => fs.readFile(f, 'utf-8')));
 
-                const response = await fetch('http://localhost:3001/api/embeddings/batch', {
+                const backendUrl = process.env.VITE_BACKEND_URL || 'http://localhost:3001';
+                const response = await fetch(`${backendUrl}/api/embeddings/batch`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ texts: contents })

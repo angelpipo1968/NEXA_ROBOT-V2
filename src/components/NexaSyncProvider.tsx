@@ -26,23 +26,38 @@ export const NexaSyncProvider = ({ children }: { children: React.ReactNode }) =>
         console.log('[SWARM] Inicializando Mente Enjambre via CRDT (Yjs)...');
         setStatus('connecting');
 
-        // URL provisional (Webrtc o websocket relay). En producción usar api.nexa.os/sync
+        // URL de sincronización (Websocket). Editable en .env (VITE_WS_SYNC_SERVER)
+        const wsServer = import.meta.env.VITE_WS_SYNC_SERVER || 'wss://demos.yjs.dev';
         const wsProvider = new WebsocketProvider(
-            'wss://demos.yjs.dev', // Default Yjs public demo server for rapid local testing
+            wsServer,
             'nexa-swarm-kernel-v1',
             doc,
             { connect: true }
         );
 
-        wsProvider.on('status', (event: { status: 'connecting' | 'connected' | 'disconnected' }) => {
+        const handleStatus = (event: { status: 'connecting' | 'connected' | 'disconnected' }) => {
             console.log(`[SWARM] Estado: ${event.status}`);
             setStatus(event.status);
 
-            // Emitimos log de terminal al store si cambia el status
+            // Si falla el servidor público tras 5s, marcamos como local-only para no estorbar
+            if (event.status === 'connecting') {
+                setTimeout(() => {
+                    setStatus(currentStatus => {
+                        if (currentStatus === 'connecting') {
+                            console.warn('[SWARM] Servidor de sincronización lento. Continuando en modo local.');
+                            return 'disconnected';
+                        }
+                        return currentStatus;
+                    });
+                }, 5000);
+            }
+
             try {
-                useChatStore.getState().addTerminalLog(`[CRDT SYNC] Enjambre ${event.status === 'connected' ? 'Enlazado' : 'Perdido'}`);
+                useChatStore.getState().addTerminalLog(`[CRDT SYNC] Enjambre ${event.status === 'connected' ? 'Enlazado' : 'Modo Offline'}`);
             } catch (e) { }
-        });
+        };
+
+        wsProvider.on('status', handleStatus);
 
         const yMessages = doc.getArray('shared-messages');
 

@@ -21,18 +21,20 @@ import {
     Shield, // For password management icon
     Trash2,
     LogOut,
-    KeyRound
+    KeyRound,
+    Activity
 } from 'lucide-react';
 import { MCPExplorer } from './MCPExplorer';
 import { SearchSettings } from './SearchSettings';
 import { MemoryPanel } from './MemoryPanel';
+import { CrashSimulator } from '../debug/CrashSimulator';
 
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-type Tab = 'general' | 'interface' | 'models' | 'chats' | 'personalization' | 'account' | 'about';
+type Tab = 'general' | 'interface' | 'models' | 'chats' | 'personalization' | 'account' | 'about' | 'diagnostics';
 
 // Simple theme hook replacement for Vite (assuming Tailwind dark mode class strategy)
 function useTheme() {
@@ -91,6 +93,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         { id: 'chats', label: 'Chats', icon: <MessageSquare size={18} /> },
         { id: 'personalization', label: 'Personalization', icon: <Palette size={18} /> },
         { id: 'account', label: 'Account', icon: <User size={18} /> },
+        { id: 'diagnostics', label: 'Diagnostics', icon: <Activity size={18} /> },
         { id: 'about', label: 'About', icon: <Info size={18} /> },
     ];
 
@@ -527,22 +530,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                         </div>
                                         <button
                                             onClick={async () => {
-                                                if (isGuest) {
+                                                try {
                                                     localStorage.removeItem('nexa_guest');
+                                                    await supabase.auth.signOut();
+                                                } finally {
                                                     onClose();
-                                                    navigate('/auth');
-                                                } else {
-                                                    const { error } = await supabase.auth.signOut();
-                                                    if (error) alert(error.message);
-                                                    else {
-                                                        onClose();
-                                                        navigate('/auth');
-                                                    }
+                                                    window.location.href = '#/auth';
+                                                    window.location.reload();
                                                 }
                                             }}
                                             className="px-6 py-2 rounded-full border border-zinc-200 dark:border-white/10 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
                                         >
-                                            Sign Out
+                                            Cerrar Sesión
                                         </button>
                                     </div>
                                 )}
@@ -586,6 +585,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     </p>
                                 </div>
                                 <MCPExplorer />
+                            </div>
+                        )}
+
+                        {/* DIAGNOSTICS TAB */}
+                        {activeTab === 'diagnostics' && (
+                            <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <CrashSimulator />
                             </div>
                         )}
 

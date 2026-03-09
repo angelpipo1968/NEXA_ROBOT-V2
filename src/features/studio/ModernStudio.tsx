@@ -1,25 +1,25 @@
-import { useProjectStore } from '@/store/projectStore';
-import { useVoiceStore } from '@/store/voiceStore';
-import { useAiStore } from '@/store/aiStore';
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styles from './StudioLayout.module.css';
 import {
     PenTool, Save, FileUp, Book, Layout, Mic, Settings,
-    FileText, CheckCircle, Lightbulb,
-    Search, BatteryCharging, Wand2, Image as ImageIcon
+    FileText, ImageIcon, Share2, Sparkles, Box, ShoppingBag, Zap
 } from 'lucide-react';
+
+import { useProjectStore } from '@/store/projectStore';
+import { useVoiceStore } from '@/store/voiceStore';
 import { Editor } from '@/components/writing/Editor';
 import { VoiceStudio } from '@/components/voice/VoiceStudio';
 import { BookWizard } from '@/components/writing/BookWizard';
 import { DirectorMode } from '@/features/studio/modes/DirectorMode';
-
+import { ThoughtStream } from '@/components/thought/ThoughtStream';
+import { SandboxLab } from '@/components/sandbox/SandboxLab';
+import { ToolMarketplace } from '@/components/marketplace/ToolMarketplace';
 import { QuickStart } from '@/components/writing/QuickStart';
+import { useNeuralBridge } from '@/hooks/useNeuralBridge';
 import { WritingTemplate } from '@/data/writing-templates';
-
 import RightPanel from './layout/RightPanel';
-
 
 // --- Mocked Subcomponents ---
 const LibraryViewMock = () => (
@@ -39,18 +39,22 @@ const LibraryViewMock = () => (
     </div>
 );
 
-type StudioView = 'editor' | 'library' | 'templates' | 'voice' | 'settings' | 'wizard' | 'vision';
+type StudioView = 'editor' | 'library' | 'templates' | 'voice' | 'settings' | 'wizard' | 'vision' | 'cognition' | 'lab' | 'marketplace';
 
 export function ModernStudio() {
-        const { projectData, updateProjectContent } = useProjectStore();
-    const { toggleListening, isListening } = useVoiceStore();
-    const { aiSuggestions } = useAiStore();
-
+    const { projectData, updateProjectContent } = useProjectStore();
+    const { isListening } = useVoiceStore();
     const [activeView, setActiveView] = useState<StudioView>('editor');
+    const [neuralOverlay, setNeuralOverlay] = useState(false);
+    const [zenMode, setZenMode] = useState(false);
 
-    // Use projectData from context instead of local state
+    useNeuralBridge();
+
+    React.useEffect(() => {
+        import('@/lib/services/proactiveAgent').then(m => m.proactiveAgent.start());
+    }, []);
+
     const content = projectData.content;
-    const stats = projectData.stats;
     const activeBook = projectData.title ? { title: projectData.title } : null;
 
     const handleUseTemplate = (template: WritingTemplate) => {
@@ -59,9 +63,7 @@ export function ModernStudio() {
         setActiveView('editor');
     };
 
-    const handleBookCreated = (book: any) => {
-        // BookWizard inside context already handles creation, we just switch view or refresh
-        // For now, assume BookWizardPanel handles the update
+    const handleBookCreated = () => {
         setActiveView('editor');
     };
 
@@ -80,64 +82,88 @@ export function ModernStudio() {
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 dark:bg-gray-800/50 rounded-full border border-gray-100 dark:border-gray-800">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Live Sync</span>
+                            <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`} />
+                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                {isListening ? 'Escuchando...' : 'Live Sync Active'}
+                            </span>
                         </div>
+                        <button
+                            onClick={() => setNeuralOverlay(!neuralOverlay)}
+                            className={`p-2 rounded-lg border transition-all ${neuralOverlay ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white/5 border-white/10 text-gray-500'}`}
+                            title="Neural Overlay Mode"
+                        >
+                            <Share2 size={16} />
+                        </button>
+                        <button
+                            onClick={() => setZenMode(!zenMode)}
+                            className={`p-2 rounded-lg border transition-all ${zenMode ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-gray-500'}`}
+                            title="Zen Mode"
+                        >
+                            <Zap size={16} />
+                        </button>
                     </div>
                 </header>
 
-                <div className={styles.mainLayout}>
+                <div className={`${styles.mainLayout} ${zenMode ? 'justify-center bg-[#050508]' : ''}`}>
                     {/* Sidebar */}
-                    <aside className={styles.sidebar}>
-                        <h2 className={styles.sectionTitle}>
-                            <PenTool size={16} className={styles.sectionTitleIcon} /> Studio
-                        </h2>
-                        <nav className="flex flex-col gap-1">
-                            {[
-                                { id: 'editor', icon: PenTool, label: 'Editor' },
-                                { id: 'vision', icon: ImageIcon, label: 'Vision Board' }, // NEW
-                                { id: 'library', icon: Book, label: 'Biblioteca' },
-                                { id: 'templates', icon: Layout, label: 'Plantillas' },
-                                { id: 'wizard', icon: FileText, label: 'Nuevo Libro' },
-                                { id: 'voice', icon: Mic, label: 'Voz' },
-                                { id: 'settings', icon: Settings, label: 'Configuración' },
-                            ].map((item) => (
-                                <button
-                                    key={item.id}
-                                    className={`${styles.btn} ${activeView === item.id ? styles.btnActive : ''}`}
-                                    onClick={() => setActiveView(item.id as StudioView)}
-                                >
-                                    <item.icon size={16} /> {item.label}
+                    {!zenMode && (
+                        <aside className={styles.sidebar}>
+                            <h2 className={styles.sectionTitle}>
+                                <Sparkles size={16} className={styles.sectionTitleIcon} /> Studio
+                            </h2>
+                            <nav className="flex flex-col gap-1">
+                                {[
+                                    { id: 'editor', icon: PenTool, label: 'Editor' },
+                                    { id: 'vision', icon: ImageIcon, label: 'Vision Board' },
+                                    { id: 'cognition', icon: Share2, label: 'Cognition 3D' },
+                                    { id: 'lab', icon: Box, label: 'Sandbox Lab' },
+                                    { id: 'marketplace', icon: ShoppingBag, label: 'Marketplace' },
+                                    { id: 'library', icon: Book, label: 'Biblioteca' },
+                                    { id: 'templates', icon: Layout, label: 'Plantillas' },
+                                    { id: 'wizard', icon: FileText, label: 'Nuevo Libro' },
+                                    { id: 'voice', icon: Mic, label: 'Voz' },
+                                    { id: 'settings', icon: Settings, label: 'Configuración' },
+                                ].map((item) => (
+                                    <button
+                                        key={item.id}
+                                        className={`${styles.btn} ${activeView === item.id ? styles.btnActive : ''}`}
+                                        onClick={() => setActiveView(item.id as StudioView)}
+                                    >
+                                        <item.icon size={16} /> {item.label}
+                                    </button>
+                                ))}
+                            </nav>
+
+                            <div className="mt-auto pt-6 border-t border-gray-100 dark:border-gray-800">
+                                <button className={`${styles.btn} ${styles.btnPrimary} w-full mb-2`}>
+                                    <Save size={16} /> Guardar
                                 </button>
-                            ))}
-                        </nav>
+                                <button className={`${styles.btn} ${styles.btnOutline} w-full`}>
+                                    <FileUp size={16} /> Exportar
+                                </button>
+                            </div>
+                        </aside>
+                    )}
 
-                        <div className="mt-auto pt-6 border-t border-gray-100 dark:border-gray-800">
-                            <button className={`${styles.btn} ${styles.btnPrimary} w-full mb-2`}>
-                                <Save size={16} /> Guardar
-                            </button>
-                            <button className={`${styles.btn} ${styles.btnOutline} w-full`}>
-                                <FileUp size={16} /> Exportar
-                            </button>
-                        </div>
-                    </aside>
-
-                    {/* Content Area */}
-                    <main className={styles.editorSection} style={{ padding: activeView === 'editor' ? '0' : '0' }}>
+                    <main className={styles.editorSection + " relative"}>
+                        {neuralOverlay && activeView === 'editor' && (
+                            <div className="absolute inset-0 opacity-20 pointer-events-none grayscale blur-[2px]">
+                                <ThoughtStream />
+                            </div>
+                        )}
                         {activeView === 'editor' && (
-                            <div className="h-full pt-6 px-5">
+                            <div className="h-full pt-6 px-5 overflow-hidden">
                                 <Editor
                                     initialContent={content}
-                                    bookId={projectData.id.toString() || 'draft'}
+                                    bookId={projectData.id?.toString() || 'draft'}
                                     onContentChange={updateProjectContent}
                                 />
                             </div>
                         )}
-                        {activeView === 'vision' && (
-                            <div className="h-full w-full">
-                                <DirectorMode />
-                            </div>
-                        )}
+                        {activeView === 'vision' && <DirectorMode />}
+                        {activeView === 'cognition' && <ThoughtStream />}
+                        {activeView === 'lab' && <SandboxLab />}
+                        {activeView === 'marketplace' && <ToolMarketplace />}
                         {activeView === 'voice' && <VoiceStudio />}
                         {activeView === 'wizard' && (
                             <div className="flex justify-center items-center h-full overflow-y-auto p-5">
@@ -158,10 +184,12 @@ export function ModernStudio() {
                         )}
                     </main>
 
-                    {/* Right Stats & AI Assistant - Replaced with functional component */}
-                    <div className="w-80 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-[#0a0a0a] flex flex-col">
-                        <RightPanel />
-                    </div>
+                    {/* Right Panel */}
+                    {!zenMode && (
+                        <div className="w-80 border-l border-gray-100 dark:border-gray-800 bg-white dark:bg-[#0a0a0a] flex flex-col">
+                            <RightPanel />
+                        </div>
+                    )}
                 </div>
 
                 <footer className={styles.footer}>
