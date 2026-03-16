@@ -109,7 +109,7 @@ export default function FuturisticDashboard() {
     const { currentToolCalls, unlockAllAchievements } = useAchievementStore();
 
     return (
-        <div className="min-h-screen bg-[#05060f] text-slate-200 p-6 font-sans selection:bg-purple-500/30">
+        <div className="min-h-[100dvh] bg-[#05060f] text-slate-200 p-6 font-sans selection:bg-purple-500/30">
             {/* Top Navigation */}
             <nav className="flex items-center justify-between mb-10 bg-white/5 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/10 shadow-2xl">
                 <div className="flex items-center gap-3">

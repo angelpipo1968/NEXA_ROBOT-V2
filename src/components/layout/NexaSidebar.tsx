@@ -116,7 +116,7 @@ export default function NexaSidebar() {
             )}
 
             <aside
-                className={`fixed left-0 top-0 h-screen transition-all duration-300 z-50 flex flex-col border-r shadow-xl bg-[var(--bg-secondary)] border-[var(--border-color)]
+                className={`fixed left-0 top-0 h-[100dvh] transition-all duration-300 z-50 flex flex-col border-r shadow-xl bg-[var(--bg-secondary)] border-[var(--border-color)]
                 /* Mobile Styles */
                 ${isSidebarOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full w-[280px]'}
                 /* Desktop Styles */

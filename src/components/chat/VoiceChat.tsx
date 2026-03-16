@@ -227,7 +227,7 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
     };
 
     return (
-        <div className="flex flex-col h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-500">
+        <div className="flex flex-col h-[100dvh] bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-500">
             <header className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-secondary)]/50 backdrop-blur-md">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold text-[var(--text-primary)]">

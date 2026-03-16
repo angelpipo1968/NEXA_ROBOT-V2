@@ -38,7 +38,8 @@ function Layout({ children }: { children: React.ReactNode }) {
         if (Capacitor.isNativePlatform()) {
             StatusBar.setOverlaysWebView({ overlay: true }).catch(() => { });
             StatusBar.setStyle({ style: Style.Dark }).catch(() => { });
-            Keyboard.setResizeMode({ mode: KeyboardResize.None }).catch(() => { });
+            // KeyboardResize.Native ensures the view shrinks when typing
+            Keyboard.setResizeMode({ mode: KeyboardResize.Native }).catch(() => { });
         }
 
         setIsGuest(localStorage.getItem('nexa_guest') === 'true');
@@ -76,7 +77,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         return () => subscription.unsubscribe();
     }, [syncUser, navigate]);
     return (
-        <div className="vp-app flex h-screen w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
+        <div className="vp-app flex h-[100dvh] w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
             {/* Global Visual Effects */}
             <CyberpunkParticles />
             <div className="cyber-overlay" />
@@ -93,7 +94,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Main Content - Adjusted padding for wider sidebar */}
             <main
-                className={`vp-main flex-1 relative h-full overflow-hidden transition-all duration-300 w-full pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 ${isSidebarOpen ? 'md:pl-[280px]' : 'pl-[0px] md:pl-[80px]'
+                className={`vp-main flex-1 relative h-full overflow-hidden transition-all duration-300 w-full pt-[calc(3.5rem)] md:pt-0 ${isSidebarOpen ? 'md:pl-[280px]' : 'pl-[0px] md:pl-[80px]'
                     }`}
             >
                 <Suspense fallback={<LoadingSpinner />}>

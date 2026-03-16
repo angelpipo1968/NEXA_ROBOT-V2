@@ -3,7 +3,7 @@ import { Shield } from 'lucide-react';
 
 export default function AuthPage() {
     return (
-        <div className="h-screen w-full bg-[#0a0a0f] flex flex-col items-center justify-center p-2 relative overflow-hidden">
+        <div className="h-[100dvh] w-full bg-[#0a0a0f] flex flex-col items-center justify-center p-2 relative overflow-hidden">
             {/* Background blur effects */}
             <div className="absolute top-[-5%] left-[-5%] w-[30%] h-[30%] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-purple-600/5 rounded-full blur-[100px] pointer-events-none" />
