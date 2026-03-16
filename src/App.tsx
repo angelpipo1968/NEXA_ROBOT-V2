@@ -22,6 +22,7 @@ const FuturisticDashboard = React.lazy(() => import('./components/dev/Futuristic
 import { MobileTopBar } from '@/components/layout/MobileTopBar';
 
 import CyberpunkParticles from '@/components/ui/CyberpunkParticles';
+import { dreamResearchService } from '@/lib/services/dreamResearch';
 
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -73,6 +74,9 @@ function Layout({ children }: { children: React.ReactNode }) {
                 }
             }
         });
+
+        // Start El Sueño Indexador (Dream Research REM Phase)
+        dreamResearchService.startMonitoring();
 
         return () => subscription.unsubscribe();
     }, [syncUser, navigate]);
