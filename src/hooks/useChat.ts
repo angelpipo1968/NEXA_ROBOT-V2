@@ -12,7 +12,7 @@ export function useChat() {
 
     useEffect(() => {
         // Verificar sesión al cargar
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session } }: any) => {
             setUser(session?.user || null);
             if (session?.user) {
                 loadConversations(session.user.id);
@@ -22,7 +22,7 @@ export function useChat() {
 
         // Escuchar cambios en auth
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            (event, session) => {
+            (event: any, session: any) => {
                 setUser(session?.user || null);
                 if (session?.user) {
                     // Only reload if user changed or was null

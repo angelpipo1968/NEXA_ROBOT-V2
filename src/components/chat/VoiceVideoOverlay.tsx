@@ -2,11 +2,12 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useChatStore } from '@/store/useChatStore';
+import { useUIStore } from '@/store/useUIStore';
 import { X, Settings2, Mic, MicOff } from 'lucide-react';
 import { VoiceSettingsModal } from '../voice/VoiceSettingsModal';
 
 export function VoiceVideoOverlay() {
-    const { isVideoMode, toggleVideoMode } = useChatStore();
+    const { isVideoMode, toggleVideoMode } = useUIStore();
     const videoRef = useRef<HTMLVideoElement>(null);
     const [currentTime, setCurrentTime] = useState(0);
     const [isMuted, setIsMuted] = useState(false);

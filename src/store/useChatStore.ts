@@ -42,14 +42,9 @@ interface ChatState {
     currentInput: string;
     userName: string;
     hasGreeted: boolean;
-    isVideoMode: boolean;
     reasoningMode: 'normal' | 'search' | 'deep';
-
-    activeModule: 'chat' | 'studio' | 'dev';
     attachments: Array<{ type: string, data: string, name: string }>;
-
     // Nexa Pro Max Features
-    isArtifactPanelOpen: boolean;
     showArtifacts: boolean;
     terminalLogs: string[];
 
@@ -67,7 +62,6 @@ interface ChatState {
     clearAttachments: () => void;
     clearMessages: () => void;
     setHasGreeted: (hasGreeted: boolean) => void;
-    toggleVideoMode: () => void;
     uploadFile: (type: 'video' | 'pdf' | 'image' | 'audio') => Promise<void>;
 
     deleteMessage: (id: string) => void;
@@ -75,11 +69,9 @@ interface ChatState {
     regenerateResponse: () => Promise<void>;
 
     // Logic
-    setActiveModule: (module: 'chat' | 'studio' | 'dev') => void;
     sendMessage: (content: string, onResponse?: (text: string) => void) => Promise<void>;
     generateAIResponse: (content: string, onResponse?: (text: string) => void) => Promise<void>;
     // Pro Max Actions
-    setArtifactPanelOpen: (isOpen: boolean) => void;
     addTerminalLog: (log: string) => void;
     clearTerminalLogs: () => void;
     syncUser: () => Promise<void>;
@@ -95,11 +87,8 @@ export const useChatStore = create<ChatState>()(
             currentInput: '',
             userName: 'Ángel',
             hasGreeted: false,
-            isVideoMode: false,
             reasoningMode: 'normal',
-            activeModule: 'chat',
             attachments: [],
-            isArtifactPanelOpen: false,
             showArtifacts: false,
             terminalLogs: [],
 
@@ -147,8 +136,6 @@ export const useChatStore = create<ChatState>()(
 
             setHasGreeted: (hasGreeted) => set({ hasGreeted }),
 
-            toggleVideoMode: () => set((state) => ({ isVideoMode: !state.isVideoMode })),
-
             syncUser: async () => {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
@@ -192,9 +179,6 @@ export const useChatStore = create<ChatState>()(
                 };
             }),
 
-            setActiveModule: (module) => set({ activeModule: module }),
-
-            setArtifactPanelOpen: (isOpen) => set({ isArtifactPanelOpen: isOpen }),
             addTerminalLog: (log) => set((state) => ({
                 terminalLogs: [...state.terminalLogs.slice(-50), `[${new Date().toLocaleTimeString()}] ${log}`]
             })),

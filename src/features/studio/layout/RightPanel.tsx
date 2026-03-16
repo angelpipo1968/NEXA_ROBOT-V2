@@ -24,6 +24,7 @@ export default function RightPanel() {
     const { showRightPanel } = useUiStore();
     const { aiConfig, setActiveEngine, aiSuggestions } = useAiStore();
     const { activeTab, setActiveTab, systemStatus, wisdomThoughts, lastDiagnosis } = useRightPanelStore();
+    const [isScanning, setIsScanning] = React.useState(false);
 
     if (!showRightPanel) return null;
 
@@ -40,8 +41,8 @@ export default function RightPanel() {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
                         className={`flex-1 py-2 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id
-                                ? 'bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]'
-                                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                            ? 'bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.4)]'
+                            : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
                             }`}
                     >
                         <tab.icon size={12} />
@@ -73,8 +74,8 @@ export default function RightPanel() {
                                             key={engine.id}
                                             onClick={() => setActiveEngine(engine.id as AIEngine)}
                                             className={`p-3 rounded-2xl border transition-all text-left ${aiConfig.activeEngine === engine.id
-                                                    ? 'bg-indigo-600/10 border-indigo-500'
-                                                    : 'bg-white/5 border-white/5 hover:border-white/10'
+                                                ? 'bg-indigo-600/10 border-indigo-500'
+                                                : 'bg-white/5 border-white/5 hover:border-white/10'
                                                 }`}
                                         >
                                             <div className={`w-1.5 h-1.5 rounded-full bg-${engine.color}-500 mb-2 shadow-[0_0_8px_rgba(59,130,246,0.5)]`} />
@@ -86,9 +87,31 @@ export default function RightPanel() {
 
                             {/* Wisdom Stream */}
                             <section>
-                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                    <Brain size={12} /> Wisdom Stream
-                                </h4>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <Brain size={12} /> Wisdom Stream
+                                    </h4>
+                                    <button
+                                        onClick={async () => {
+                                            setIsScanning(true);
+                                            const { proactiveAgent } = await import('@/lib/services/proactiveAgent');
+                                            try {
+                                                await proactiveAgent.forceAnalyze();
+                                            } finally {
+                                                setIsScanning(false);
+                                            }
+                                        }}
+                                        disabled={isScanning}
+                                        className={`text-[8px] flex items-center gap-1 border transition-all rounded-full px-2 py-0.5 ${isScanning
+                                                ? 'border-indigo-500/50 text-indigo-300 bg-indigo-500/10 cursor-not-allowed'
+                                                : 'border-indigo-500/30 text-indigo-400 hover:text-white hover:bg-indigo-600/30'
+                                            }`}
+                                    >
+                                        <Activity size={10} className={isScanning ? 'animate-spin' : ''} />
+                                        {isScanning ? 'SCANNING...' : 'FORCE SCAN'}
+                                    </button>
+                                </div>
+
                                 <div className="space-y-4">
                                     {wisdomThoughts.length === 0 && (
                                         <div className="p-8 text-center border border-dashed border-white/5 rounded-3xl opacity-30">
@@ -99,7 +122,13 @@ export default function RightPanel() {
                                     {wisdomThoughts.map(thought => (
                                         <div key={thought.id} className="p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/[0.07] transition-all cursor-pointer group">
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">{thought.type}</span>
+                                                <span className={`text-[8px] font-black uppercase tracking-widest ${thought.type === 'REFACTOR' ? 'text-amber-400' :
+                                                    thought.type === 'SECURITY' ? 'text-red-400' :
+                                                        thought.type === 'PERF' ? 'text-emerald-400' :
+                                                            thought.type === 'ARCH' ? 'text-indigo-400' : 'text-blue-400'
+                                                    }`}>
+                                                    {thought.type}
+                                                </span>
                                                 <Zap size={10} className="text-amber-500 opacity-0 group-hover:opacity-100 transition-all" />
                                             </div>
                                             <p className="text-xs text-gray-300 leading-relaxed font-light">{thought.text}</p>

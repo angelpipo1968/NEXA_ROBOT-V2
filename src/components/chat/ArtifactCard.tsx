@@ -7,11 +7,11 @@ interface ArtifactCardProps {
     language?: string;
 }
 
-import { useChatStore } from '@/store/useChatStore';
+import { useUIStore } from '@/store/useUIStore';
 import { useProjectStore } from '@/store/useProjectStore';
 
 export default function ArtifactCard({ filename, content, language }: ArtifactCardProps) {
-    const { setArtifactPanelOpen } = useChatStore();
+    const { setArtifactPanelOpen } = useUIStore();
     const { setActiveFile } = useProjectStore();
 
     // Auto-open on mount for new artifacts

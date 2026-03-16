@@ -19,7 +19,7 @@ export function Editor({ initialContent = '', bookId, onContentChange }: EditorP
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // Connect to real context if available
-        const { generateIdeas } = useAiStore();
+    const { generateIdeas } = useAiStore();
 
     useEffect(() => {
         setWordCount(content.trim().split(/\s+/).filter(w => w.length > 0).length);
@@ -106,8 +106,11 @@ export function Editor({ initialContent = '', bookId, onContentChange }: EditorP
                         ref={textareaRef}
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
-                        className="w-full h-full min-h-[700px] bg-transparent resize-none focus:outline-none font-serif text-lg leading-relaxed text-gray-800 dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-700 selection:bg-indigo-100 dark:selection:bg-indigo-900/30"
-                        placeholder="Escribe aquí tu historia... El papel en blanco es el comienzo de todo universo."
+                        className={`w-full h-full min-h-[700px] bg-transparent resize-none focus:outline-none leading-relaxed transition-all ${/function|const|let|var|class|import|export|=>|\{|\}/.test(content)
+                                ? 'font-mono text-[13px] text-indigo-400 dark:text-cyan-300 tracking-tight'
+                                : 'font-serif text-lg text-gray-800 dark:text-gray-200'
+                            } placeholder-gray-300 dark:placeholder-gray-700 selection:bg-indigo-100 dark:selection:bg-indigo-900/30`}
+                        placeholder="Escribe aquí tu historia o pega código para analizar..."
                         spellCheck={false}
                     />
                 </div>

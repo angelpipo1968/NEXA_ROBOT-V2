@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useChatStore, Message } from '@/store/useChatStore'
+import { useUIStore } from '@/store/useUIStore'
 import ChatInput from './ChatInput'
 import MessageBubble from './MessageBubble'
 import { X } from 'lucide-react'
@@ -23,7 +24,8 @@ interface ChatContainerProps {
 }
 
 export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
-    const { messages, activeModule, setActiveModule, addMessage, isVideoMode, deleteMessage, isArtifactPanelOpen, forkChat, regenerateResponse } = useChatStore()
+    const { messages, addMessage, deleteMessage, forkChat, regenerateResponse } = useChatStore()
+    const { activeModule, setActiveModule, isVideoMode, isArtifactPanelOpen } = useUIStore()
     const { isVoiceMode } = useVoiceStore()
     const messagesEndRef = useRef<HTMLDivElement>(null)
 

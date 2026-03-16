@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Mic, Paperclip, Plus, Sparkles, Image as ImageIcon, Code, Globe, Film, FileText, Music, Upload, Square, Wand2, Bot, Video, ChevronDown, Mic2, AudioWaveform, Check, Atom, ArrowUp, Layout, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '@/store/useChatStore';
+import { useUIStore } from '@/store/useUIStore';
 import { useVoiceStore } from '@/store/useVoiceStore';
 import { useSpeechToText } from '@/hooks/useSpeechToText';
 import { AudioVisualizer } from './AudioVisualizer';
@@ -10,7 +11,8 @@ export default function ChatInput() {
     const [input, setInput] = useState('');
     const [showAttachments, setShowAttachments] = useState(false);
     const navigate = useNavigate();
-    const { sendMessage, isThinking, attachments, addAttachment, removeAttachment, clearAttachments, reasoningMode, setReasoningMode, setActiveModule, toggleVideoMode, isArtifactPanelOpen, setArtifactPanelOpen } = useChatStore();
+    const { sendMessage, isThinking, attachments, addAttachment, removeAttachment, clearAttachments, reasoningMode, setReasoningMode } = useChatStore();
+    const { setActiveModule, toggleVideoMode, isArtifactPanelOpen, setArtifactPanelOpen } = useUIStore();
     const { toggleVoice, voiceEnabled, stopSpeaking, currentAudio, isSpeaking, toggleVoiceMode, isContinuousListening, toggleContinuousListening, speak } = useVoiceStore();
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);

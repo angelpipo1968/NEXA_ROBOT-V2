@@ -5,7 +5,7 @@ export type SystemStatus = 'nominal' | 'analyzing' | 'patching' | 'alert';
 interface WisdomThought {
     id: string;
     text: string;
-    type: 'plot' | 'character' | 'world' | 'style';
+    type: 'plot' | 'character' | 'world' | 'style' | 'REFACTOR' | 'SECURITY' | 'PERF' | 'ARCH';
     relevance: number;
 }
 

@@ -210,7 +210,8 @@ export const toolService = {
                     path: args.filename
                 };
                 useProjectStore.getState().setActiveFile(file);
-                useChatStore.getState().setArtifactPanelOpen(true);
+                const { useUIStore } = await import('@/store/useUIStore');
+                useUIStore.getState().setArtifactPanelOpen(true);
                 return JSON.stringify({ name: args.filename, content: args.content, language: args.language, status: 'success' });
             } catch (e) {
                 return JSON.stringify({ name: args.filename, status: 'error' });
@@ -253,7 +254,8 @@ export const toolService = {
                         language: ext,
                         path: args.path
                     });
-                    useChatStore.getState().setArtifactPanelOpen(true);
+                    const { useUIStore } = await import('@/store/useUIStore');
+                    useUIStore.getState().setArtifactPanelOpen(true);
                 }
 
                 const response = await fetch(BACKEND_URL, {

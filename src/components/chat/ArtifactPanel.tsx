@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { X, Code2, Eye, Download, Copy, Check, Terminal, FileCode, Search } from 'lucide-react';
 import { useChatStore } from '@/store/useChatStore';
+import { useUIStore } from '@/store/useUIStore';
 import { useProjectStore } from '@/store/useProjectStore';
 
 export default function ArtifactPanel() {
-    const { isArtifactPanelOpen, setArtifactPanelOpen, terminalLogs } = useChatStore();
+    const { terminalLogs } = useChatStore();
+    const { isArtifactPanelOpen, setArtifactPanelOpen } = useUIStore();
     const { activeFile } = useProjectStore();
     const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'logs'>('code');
     const [copied, setCopied] = useState(false);

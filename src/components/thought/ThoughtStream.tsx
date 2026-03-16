@@ -5,7 +5,7 @@ import { Brain, Trash2, Zap } from 'lucide-react';
 
 export function ThoughtStream() {
     const { nodes, links, clearStream } = useThoughtStore((state) => state);
-    const fgRef = useRef<any>();
+    const fgRef = useRef<any>(null);
 
     const graphData = useMemo(() => ({ nodes, links }), [nodes, links]);
 

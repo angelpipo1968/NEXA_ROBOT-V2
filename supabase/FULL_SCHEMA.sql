@@ -116,4 +116,4 @@ CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON public.messages(conve
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON public.messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_memories_user_id ON public.memories(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON public.conversations(user_id);
-CREATE INDEX IF NOT EXISTS idx_memories_embedding ON public.memories USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+CREATE INDEX IF NOT EXISTS idx_memories_embedding ON public.memories USING hnsw (embedding vector_cosine_ops);

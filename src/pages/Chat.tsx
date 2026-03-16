@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useChatStore } from '@/store/useChatStore';
+import { useUIStore } from '@/store/useUIStore';
 import { ChatContainer } from '@/components/chat/container';
 
 export default function ChatPage() {
     const location = useLocation();
-    const { setActiveModule } = useChatStore();
+    const { setActiveModule } = useUIStore();
 
     useEffect(() => {
         if (location.pathname === '/webdev') {

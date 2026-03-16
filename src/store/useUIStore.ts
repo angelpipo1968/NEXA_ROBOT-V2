@@ -8,6 +8,16 @@ interface UIState {
     isSettingsOpen: boolean;
     setSettingsOpen: (isOpen: boolean) => void;
     toggleSettings: () => void;
+
+    // Extracted from ChatStore
+    activeModule: 'chat' | 'studio' | 'dev';
+    setActiveModule: (module: 'chat' | 'studio' | 'dev') => void;
+
+    isVideoMode: boolean;
+    toggleVideoMode: () => void;
+
+    isArtifactPanelOpen: boolean;
+    setArtifactPanelOpen: (isOpen: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -19,6 +29,15 @@ export const useUIStore = create<UIState>()(
             isSettingsOpen: false,
             setSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
             toggleSettings: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
+
+            activeModule: 'chat',
+            setActiveModule: (module) => set({ activeModule: module }),
+
+            isVideoMode: false,
+            toggleVideoMode: () => set((state) => ({ isVideoMode: !state.isVideoMode })),
+
+            isArtifactPanelOpen: false,
+            setArtifactPanelOpen: (isOpen) => set({ isArtifactPanelOpen: isOpen }),
         }),
         {
             name: 'nexa-ui-storage',

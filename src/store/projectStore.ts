@@ -29,8 +29,25 @@ interface ProjectState {
 export const useProjectStore = create<ProjectState>((set, get) => ({
     projectData: {
         id: Date.now(),
-        title: 'Mi Novela Sin Título',
-        content: '',
+        title: 'Legacy System Core',
+        content: `// Módulo central heredado - Necesita revisión urgente
+function procesarPagos(usuarios) {
+    for(var i=0; i<usuarios.length; i++) {
+        var usr = usuarios[i];
+        if(usr.activo == true) {
+            // Fetch síncrono bloqueante
+            var res = fetchSync("http://api.insegura.com/pago?id=" + usr.id);
+            if(res.status == 200) {
+                console.log("Pago procesado");
+            }
+        }
+    }
+}
+
+// TODO: Alguien revise la seguridad de esta consulta
+const extraerDatos = (id) => {
+    return db.query("SELECT * FROM users WHERE id = '" + id + "'");
+}`,
         stats: { words: 0, chars: 0, chapters: 1, pages: 0 },
         lastSaved: null
     },
@@ -87,8 +104,25 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         set({
             projectData: {
                 id: Date.now(),
-                title: 'Mi Novela Sin Título',
-                content: '',
+                title: 'Legacy System Core',
+                content: `// Módulo central heredado - Necesita revisión urgente
+function procesarPagos(usuarios) {
+    for(var i=0; i<usuarios.length; i++) {
+        var usr = usuarios[i];
+        if(usr.activo == true) {
+            // Fetch síncrono bloqueante
+            var res = fetchSync("http://api.insegura.com/pago?id=" + usr.id);
+            if(res.status == 200) {
+                console.log("Pago procesado");
+            }
+        }
+    }
+}
+
+// TODO: Alguien revise la seguridad de esta consulta
+const extraerDatos = (id) => {
+    return db.query("SELECT * FROM users WHERE id = '" + id + "'");
+}`,
                 stats: { words: 0, chars: 0, chapters: 1, pages: 0 },
                 lastSaved: null
             }
