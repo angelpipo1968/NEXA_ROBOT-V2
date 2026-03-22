@@ -1,3 +1,4 @@
+// NEXA OS SINGULARITY v3.0.1 [STABLE-P2P]
 import React, { Suspense, useEffect } from 'react';
 import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import NexaSidebar from '@/components/layout/NexaSidebar';
