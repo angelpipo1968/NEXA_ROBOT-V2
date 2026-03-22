@@ -89,6 +89,14 @@ const NeuralNode = ({ isActive, isThinking, isListening, color = '#7c3aed' }: Co
             </points>
 
             <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+            
+            {/* Debug: Si nada se ve, este cubo verde debería aparecer */}
+            {process.env.NODE_ENV === 'development' && (
+                <mesh position={[2, 0, 0]}>
+                    <boxGeometry args={[0.2, 0.2, 0.2]} />
+                    <meshStandardMaterial color="green" />
+                </mesh>
+            )}
         </group>
     );
 };
