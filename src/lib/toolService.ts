@@ -145,6 +145,11 @@ export const toolService = {
                         },
                         required: ["filename", "language", "content"]
                     }
+                },
+                {
+                    name: "analyze_vision",
+                    description: "Open the Vision Cortex to analyze images, screenshots, or visual data using the 16GB External Brain.",
+                    parameters: { type: "OBJECT", properties: {} }
                 }
             ]
         }
@@ -238,6 +243,17 @@ export const toolService = {
                 return JSON.stringify({ name: args.filename, content: args.content, language: args.language, status: 'success' });
             } catch (e) {
                 return JSON.stringify({ name: args.filename, status: 'error' });
+            }
+        }
+
+        if (functionName === 'analyze_vision') {
+            try {
+                const { useUIStore } = await import('@/store/useUIStore');
+                useUIStore.getState().setArtifactPanelOpen(true);
+                // We'll need a way to force the 'vision' tab, but for now just opening the panel is a start.
+                return "Vision Cortex opened. Please upload an image for analysis.";
+            } catch (e) {
+                return "Error opening Vision Cortex.";
             }
         }
 

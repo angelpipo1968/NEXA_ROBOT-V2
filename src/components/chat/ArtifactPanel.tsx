@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Code2, Eye, Download, Copy, Check, Terminal, FileCode, Search } from 'lucide-react';
+import { X, Code2, Eye, Download, Copy, Check, Terminal, FileCode, Search, Camera } from 'lucide-react';
+import { VisionModule } from '../vision/VisionModule';
 import { useChatStore } from '@/store/useChatStore';
 import { useUIStore } from '@/store/useUIStore';
 import { useProjectStore } from '@/store/useProjectStore';
@@ -8,7 +9,7 @@ export default function ArtifactPanel() {
     const { terminalLogs } = useChatStore();
     const { isArtifactPanelOpen, setArtifactPanelOpen } = useUIStore();
     const { activeFile } = useProjectStore();
-    const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'logs'>('code');
+    const [activeTab, setActiveTab] = useState<'code' | 'preview' | 'logs' | 'vision'>('code');
     const [copied, setCopied] = useState(false);
 
     if (!isArtifactPanelOpen) return null;
@@ -111,6 +112,12 @@ export default function ArtifactPanel() {
                     icon={<Terminal size={14} />}
                     label="Tool Logs"
                 />
+                <TabButton
+                    active={activeTab === 'vision'}
+                    onClick={() => setActiveTab('vision')}
+                    icon={<Camera size={14} />}
+                    label="Vision"
+                />
             </div>
 
             {/* Content Area */}
@@ -141,6 +148,12 @@ export default function ArtifactPanel() {
                                 </div>
                             ))
                         )}
+                    </div>
+                )}
+
+                {activeTab === 'vision' && (
+                    <div className="h-full bg-[#0d0e12]">
+                        <VisionModule />
                     </div>
                 )}
             </div>
