@@ -17,6 +17,7 @@ import { useVoiceStore } from './useVoiceStore';
 import { useProjectStore } from './useProjectStore';
 import { syncService } from '@/lib/services/syncService';
 import { swarmManager } from '@/lib/swarm/SwarmManager';
+import { externalAIService } from '@/lib/services/externalAIService';
 
 // Store definition
 
@@ -240,10 +241,20 @@ export const useChatStore = create<ChatState>()(
                 // Spawn a sub-agent to analyze context in the background
                 swarmManager.executeTask('ANALYZE_CONTEXT', content).then(result => {
                     if (result.status === 'success') {
-                        console.log('🐝 [SWARM AGENT] Análisis Completado:', result.data);
-                        get().addTerminalLog(`[SWARM] Análisis de entrada completado en 2º plano.`);
+                        console.log('🐝 [SWARM] Análisis Local Completado:', result.data);
                     }
                 }).catch(err => console.error('Swarm Error:', err));
+
+                // 🌐 Asynchronous EXTERNAL BRAIN Analysis (Hugging Face 16GB RAM)
+                // Only for long prompts or if we need extra power
+                if (content.length > 300) {
+                    externalAIService.processTask(content, 'HEAVY_ANALYSIS').then(result => {
+                        if (result) {
+                            console.log('🌌 [EXTERNAL BRAIN] Análisis en la Nube Completado:', result.processed_by);
+                            get().addTerminalLog(`[CORTEX-16GB] Análisis de nube finalizado exitosamente.`);
+                        }
+                    });
+                }
 
                 try {
                     // 1. Retrieve relevant memories (RAG) using the new Bridge
