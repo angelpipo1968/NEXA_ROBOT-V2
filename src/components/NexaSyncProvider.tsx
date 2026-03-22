@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
+import { WebrtcProvider } from 'y-webrtc';
 import { useChatStore } from '@/store/useChatStore';
 
 interface NexaSyncContextType {
     doc: Y.Doc;
-    provider: WebsocketProvider | null;
+    provider: WebrtcProvider | null;
     status: 'connecting' | 'connected' | 'disconnected';
 }
 
@@ -19,45 +19,46 @@ export const useNexaSync = () => {
 
 export const NexaSyncProvider = ({ children }: { children: React.ReactNode }) => {
     const [doc] = useState(() => new Y.Doc());
-    const [provider, setProvider] = useState<WebsocketProvider | null>(null);
+    const [provider, setProvider] = useState<WebrtcProvider | null>(null);
     const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
 
     useEffect(() => {
-        console.log('[SWARM] Inicializando Mente Enjambre via CRDT (Yjs)...');
+        console.log('[SWARM] Inicializando Mente Enjambre via P2P (WebRTC)...');
         setStatus('connecting');
 
-        // URL de sincronización (Websocket). Editable en .env (VITE_WS_SYNC_SERVER)
-        const wsServer = import.meta.env.VITE_WS_SYNC_SERVER || 'wss://demos.yjs.dev';
-        const wsProvider = new WebsocketProvider(
-            wsServer,
+        // Signaling servers para WebRTC (P2P).
+        const signalingServers = [
+            'wss://y-webrtc-signaling-eu.herokuapp.com',
+            'wss://y-webrtc-signaling-us.herokuapp.com'
+        ];
+
+        const webrtcProvider = new WebrtcProvider(
             'nexa-swarm-kernel-v1',
             doc,
-            { connect: true }
+            { 
+                signaling: signalingServers,
+                peerOpts: {
+                    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+                }
+            }
         );
 
-        const handleStatus = (event: { status: 'connecting' | 'connected' | 'disconnected' }) => {
-            console.log(`[SWARM] Estado: ${event.status}`);
-            setStatus(event.status);
-
-            // Si falla el servidor público tras 5s, marcamos como local-only para no estorbar
-            if (event.status === 'connecting') {
-                setTimeout(() => {
-                    setStatus(currentStatus => {
-                        if (currentStatus === 'connecting') {
-                            console.warn('[SWARM] Servidor de sincronización lento. Continuando en modo local.');
-                            return 'disconnected';
-                        }
-                        return currentStatus;
-                    });
-                }, 5000);
-            }
+        const handleStatus = (event: any) => {
+            // webrtc provider peer count access
+            const providerAny = webrtcProvider as any;
+            const peerCount = providerAny.room ? providerAny.room.webrtcConns.size : 0;
+            console.log(`[SWARM] P2P Peers: ${peerCount}`);
+            
+            // For UI simplicity, if we are active, we show as 'connected'
+            setStatus('connected');
 
             try {
-                useChatStore.getState().addTerminalLog(`[CRDT SYNC] Enjambre ${event.status === 'connected' ? 'Enlazado' : 'Modo Offline'}`);
+                useChatStore.getState().addTerminalLog(`[P2P SYNC] Enjambre Online (${peerCount} pares)`);
             } catch (e) { }
         };
 
-        wsProvider.on('status', handleStatus);
+        webrtcProvider.on('status', handleStatus);
+        webrtcProvider.on('peers', handleStatus);
 
         const yMessages = doc.getArray('shared-messages');
 
@@ -66,12 +67,11 @@ export const NexaSyncProvider = ({ children }: { children: React.ReactNode }) =>
             // Future implementation: synchronize React state with distributed state
         });
 
-        setProvider(wsProvider);
+        setProvider(webrtcProvider);
 
         return () => {
-            console.log('[SWARM] Desconectando nodos...');
-            wsProvider.disconnect();
-            wsProvider.destroy();
+            console.log('[SWARM] Desconectando nodos P2P...');
+            webrtcProvider.destroy();
             doc.destroy();
         };
     }, [doc]);

@@ -1,10 +1,10 @@
 import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
+import { WebrtcProvider } from 'y-webrtc';
 
 class SyncService {
     private static instance: SyncService;
     private doc: Y.Doc;
-    private provider: WebsocketProvider | null = null;
+    private provider: WebrtcProvider | null = null;
     private roomName: string = 'nexa-os-global';
 
     private constructor() {
@@ -21,16 +21,19 @@ class SyncService {
 
     private initializeProvider() {
         try {
-            // Local fallback if no env defined or production sync server
-            const wsServer = import.meta.env.VITE_WS_SYNC_SERVER || 'wss://demos.yjs.dev';
-            this.provider = new WebsocketProvider(wsServer, this.roomName, this.doc);
-
-            this.provider.on('status', (event: any) => {
-                console.log(`[SyncService] 🔌 Connection Status: ${event.status}`);
+            const signalingServers = [
+                'wss://y-webrtc-signaling-eu.herokuapp.com',
+                'wss://y-webrtc-signaling-us.herokuapp.com'
+            ];
+            
+            this.provider = new WebrtcProvider(this.roomName, this.doc, {
+                signaling: signalingServers
             });
 
+            console.log('[SyncService] 🔌 WebRTC P2P Sync Hub Initialized');
+
         } catch (error) {
-            console.warn('[SyncService] WebSocket sync unvailable, running in local-only mode.');
+            console.warn('[SyncService] WebRTC sync unvailable, running in local-only mode.');
         }
     }
 
