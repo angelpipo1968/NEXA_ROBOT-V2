@@ -19,11 +19,26 @@ export class WebSearchTool extends Tool {
     async execute(params: any, context: ExecutionContext): Promise<ToolResult> {
         const { query, sources, maxResults, timeRange } = params
 
-        const engine = new NexaSearchEngine()
-        const searchResponse = await engine.search(query, maxResults, false, sources.includes('academic'))
-
-        // Procesar y unificar resultados
-        const unifiedResults = searchResponse.results
+        let unifiedResults: any[] = [];
+        
+        try {
+            // Intento Primario: Usar SearXNG Meta-Search Local (Busca en Google, Bing, DuckDuckGo, Brave TODO junto)
+            const searxRes = await fetch(`http://localhost:8080/search?q=${encodeURIComponent(query)}&format=json`);
+            if (!searxRes.ok) throw new Error('SearXNG not ready');
+            const data = await searxRes.json();
+            unifiedResults = (data.results || []).map((r: any) => ({
+                title: r.title,
+                content: r.content,
+                url: r.url,
+                source: r.engine || 'meta-search'
+            })).slice(0, maxResults * 2);
+        } catch (error) {
+            console.log('[WebSearchTool] SearXNG no detectado o falló, usando el motor fallback NexaSearchEngine...');
+            // Fallback
+            const engine = new NexaSearchEngine()
+            const searchResponse = await engine.search(query, maxResults, false, sources.includes('academic'))
+            unifiedResults = searchResponse.results
+        }
 
         // Verificar factualidad
         const verified = await this.verifyResults(unifiedResults as any)

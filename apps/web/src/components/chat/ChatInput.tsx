@@ -6,12 +6,13 @@ import { useChatStore } from '@/store/useChatStore';
 import { cn } from '@/lib/utils';
 
 export function ChatInput() {
-    const {
-        isThinking, toggleThinking,
-        isStreaming, sendMessage,
-        currentInput, setInput,
-        setActiveModule
-    } = useChatStore();
+    const isThinking = useChatStore(state => state.isThinking);
+    const toggleThinking = useChatStore(state => state.toggleThinking);
+    const isStreaming = useChatStore(state => state.isStreaming);
+    const sendMessage = useChatStore(state => state.sendMessage);
+    const currentInput = useChatStore(state => state.currentInput);
+    const setInput = useChatStore(state => state.setInput);
+    const setActiveModule = useChatStore(state => state.setActiveModule);
 
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);

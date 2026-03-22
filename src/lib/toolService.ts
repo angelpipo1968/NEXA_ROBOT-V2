@@ -111,6 +111,29 @@ export const toolService = {
                     }
                 },
                 {
+                    name: "run_script",
+                    description: "Execute mathematical, analytical, or system scripts locally in a safe environment. Use this to solve complex logic that requires code execution.",
+                    parameters: {
+                        type: "OBJECT",
+                        properties: {
+                            language: { type: "STRING", enum: ["python", "javascript", "bash", "powershell"], description: "The scripting language" },
+                            code: { type: "STRING", description: "The complete script code to execute" }
+                        },
+                        required: ["language", "code"]
+                    }
+                },
+                {
+                    name: "read_url_content",
+                    description: "Fetch and read the raw text content of a specific URL. Useful for deep research when you need to read an entire article instead of just search snippets.",
+                    parameters: {
+                        type: "OBJECT",
+                        properties: {
+                            url: { type: "STRING", description: "The URL to fetch" }
+                        },
+                        required: ["url"]
+                    }
+                },
+                {
                     name: "create_artifact",
                     description: "DEPRECATED: Use write_file for actual project files. Use this ONLY for ephemeral UI previews.",
                     parameters: {
@@ -242,7 +265,7 @@ export const toolService = {
             }
         }
 
-        if (['list_dir', 'read_file', 'write_file', 'index_codebase', 'codebase_search'].includes(functionName)) {
+        if (['read_url_content', 'run_script', 'list_dir', 'read_file', 'write_file', 'index_codebase', 'codebase_search'].includes(functionName)) {
             try {
                 // If writing a file, also update the active file in the UI
                 if (functionName === 'write_file') {

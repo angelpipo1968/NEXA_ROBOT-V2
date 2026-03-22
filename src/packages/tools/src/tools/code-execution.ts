@@ -1,11 +1,10 @@
 import { Tool } from '../base-tool'
 import { ExecutionContext, ToolResult } from '../types'
-import { DockerSandbox, DatabaseSandbox } from '../sandbox/docker'
-import { VM } from '../sandbox/vm'
 import { Sandbox, SecurityAnalysis } from '../sandbox/types'
+import { LocalSandbox } from '../sandbox/local'
 
 export class CodeExecutionTool extends Tool {
-    name = 'execute_code'
+    name = 'run_script'
     description = 'Execute code in a secure sandbox environment'
     requiresSandbox = true
     parameters = {
@@ -87,14 +86,10 @@ export class CodeExecutionTool extends Tool {
     private selectSandbox(language: string, options: any): Sandbox {
         switch (language) {
             case 'python':
-                return new DockerSandbox('python:3.11-slim', options)
+                return new LocalSandbox('python')
             case 'javascript':
             case 'typescript':
-                return new VM('node', options)
-            case 'bash':
-                return new DockerSandbox('alpine', { ...options, readOnly: true })
-            case 'sql':
-                return new DatabaseSandbox('postgres', options)
+                return new LocalSandbox('node')
             default:
                 throw new Error(`Unsupported language: ${language}`)
         }

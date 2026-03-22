@@ -9,6 +9,7 @@ import { ModelRouter } from '@nexa/models'
 import { NexaWritingStudio } from '@nexa/writing'
 import { RealTimeMetrics } from './metrics'
 import { nexaLocalBridge } from './services/NexaLocalBridge'
+import { EvolutionDaemon } from './services/EvolutionDaemon'
 
 const app = new Hono()
 
@@ -16,6 +17,11 @@ const app = new Hono()
 const toolOrchestrator = new ToolOrchestrator();
 const modelRouter = new ModelRouter();
 const studio = new NexaWritingStudio();
+const evolutionDaemon = new EvolutionDaemon(toolOrchestrator);
+
+if (process.env.ENABLE_AUTO_EVOLUTION === 'true') {
+    evolutionDaemon.start(60);
+}
 
 app.use('/*', cors())
 app.use('/api/*', securityMiddleware())
@@ -192,6 +198,18 @@ app.post('/api/local/system/focus', async (c) => {
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500);
   }
+});
+
+app.post('/api/admin/evolution/start', async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const interval = body.interval || 10;
+    evolutionDaemon.start(interval);
+    return c.json({ success: true, message: `Evolution daemon started with ${interval}m interval.` });
+});
+
+app.post('/api/admin/evolution/stop', (c) => {
+    evolutionDaemon.stop();
+    return c.json({ success: true, message: 'Evolution daemon stopped.' });
 });
 
 // Admin Metrics Endpoint

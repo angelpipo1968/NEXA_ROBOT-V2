@@ -9,7 +9,9 @@ import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils'; // Assuming utils exists
 
 export function ChatContainer() {
-    const { activeModule, messages, isThinking } = useChatStore();
+    const activeModule = useChatStore(state => state.activeModule);
+    const messages = useChatStore(state => state.messages);
+    const isThinking = useChatStore(state => state.isThinking);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {

@@ -4,6 +4,7 @@ import { WebSearchTool } from './tools/web-search'
 import { CodeExecutionTool } from './tools/code-execution'
 import { RAGTool } from './tools/rag'
 import { SequentialThinkingTool } from './tools/sequential-thinking'
+import { ReadUrlTool } from './tools/read-url'
 import {
     SandboxManager,
     PermissionManager,
@@ -42,6 +43,7 @@ export class ToolOrchestrator {
         this.registerTool(new BrowserTool())
         this.registerTool(new CalculatorTool())
         this.registerTool(new SequentialThinkingTool())
+        this.registerTool(new ReadUrlTool())
         this.registerTool(new ListDirTool())
         this.registerTool(new ReadFileTool())
         this.registerTool(new WriteFileTool())

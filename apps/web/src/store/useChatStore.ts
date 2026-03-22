@@ -33,7 +33,7 @@ interface ChatState {
     isVoiceMode: boolean;
     isVideoMode: boolean;
 
-    activeModule: 'chat' | 'studio' | 'hologram';
+    activeModule: 'chat' | 'studio' | 'hologram' | 'vision';
     isSpeaking: boolean;
     currentAudio: HTMLAudioElement | null;
     attachment: string | null; // Base64 image
@@ -60,7 +60,7 @@ interface ChatState {
     stopSpeaking: () => void;
 
     // Logic
-    setActiveModule: (module: 'chat' | 'studio' | 'hologram') => void;
+    setActiveModule: (module: 'chat' | 'studio' | 'hologram' | 'vision') => void;
     sendMessage: (content: string) => Promise<void>;
 }
 
@@ -332,6 +332,11 @@ export const useChatStore = create<ChatState>()(
                 // Add memory to the last user message or as a system hint?
                 // Gemini supports context better in previous turns.
                 // We'll append it to the current message content strictly for the API call (not UI).
+                const { DynamicMCPLoader } = await import('@/lib/DynamicMCPLoader');
+                const { NEXA_SYSTEM_PROMPT } = await import('@/lib/systemPrompt');
+                const dynamicToolsPrompt = await DynamicMCPLoader.getSystemPromptWithTools(content, get().activeModule);
+                const fullSystemInstruction = NEXA_SYSTEM_PROMPT + '\n\n' + dynamicToolsPrompt;
+
                 const contentWithMemory = content + memoryContext;
 
                 try {
@@ -341,6 +346,7 @@ export const useChatStore = create<ChatState>()(
                         message: contentWithMemory,
                         image: undefined,
                         context: context,
+                        systemInstruction: fullSystemInstruction,
                         temperature: 0.7
                     });
 
@@ -351,7 +357,7 @@ export const useChatStore = create<ChatState>()(
                     let finalResponse = '';
                     let currentResponse = initialGeminiResponse;
                     let iterationCount = 0;
-                    const MAX_ITERATIONS = 5; // Prevent infinite loops
+                    const MAX_ITERATIONS = 15; // Increased for Deep Research / Agentic loops
 
                     while (iterationCount < MAX_ITERATIONS) {
                         iterationCount++;
@@ -408,16 +414,42 @@ export const useChatStore = create<ChatState>()(
                                 currentResponse = await geminiClient.chat({
                                     message: '',
                                     context: newContext as any,
+                                    systemInstruction: fullSystemInstruction,
                                     temperature: 0.7
                                 });
 
                                 set({ isSearching: false });
                                 continue; // Continue the loop with new response
 
-                            } catch (e) {
+                            } catch (e: any) {
                                 console.error("Failed to parse/execute tool call:", e);
-                                finalResponse = text + "\\n\\n[Error: Tool execution failed]";
-                                break;
+                                
+                                // SELF-CORRECTION PROTOCOL
+                                // Feed the error back to the LLM so it can learn and retry a different approach
+                                const errorContext = [
+                                    ...context,
+                                    { role: 'user', parts: contentWithMemory },
+                                    { role: 'model', parts: [{ text: text }] },
+                                    { role: 'user', parts: [{ text: `:::TOOL_ERROR::: Executing tool failed with error: ${e?.message || 'Unknown error'}. Please analyze WHY it failed and try a different approach, parameter, or tool. Do not simply repeat the same request.` }] }
+                                ];
+                                
+                                set(state => ({
+                                    messages: state.messages.map(msg =>
+                                        msg.id === assistantMsgId
+                                            ? { ...msg, content: `⚠️ Tool failed, self-correcting...` }
+                                            : msg
+                                    )
+                                }));
+
+                                currentResponse = await geminiClient.chat({
+                                    message: '',
+                                    context: errorContext as any,
+                                    systemInstruction: fullSystemInstruction,
+                                    temperature: 0.7
+                                });
+
+                                set({ isSearching: false });
+                                continue;
                             }
                         }
 

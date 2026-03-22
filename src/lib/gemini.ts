@@ -1,3 +1,4 @@
+import { NEXA_SYSTEM_PROMPT } from './systemPrompt';
 
 export interface GeminiRequest {
     message: string;
@@ -7,7 +8,6 @@ export interface GeminiRequest {
     systemInstruction?: string;
 }
 
-import { NEXA_SYSTEM_PROMPT } from './systemPrompt';
 
 export const geminiClient = {
     chat: async (payload: GeminiRequest) => {
@@ -107,7 +107,7 @@ export const geminiClient = {
             });
             const data = await response.json();
             return data.embedding.values;
-        } catch (e) {
+        } catch {
             return [];
         }
     },

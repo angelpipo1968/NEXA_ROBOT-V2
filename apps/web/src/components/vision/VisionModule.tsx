@@ -7,7 +7,8 @@ import { Upload, Camera, X, RefreshCw, Copy, Check, ScanLine, FileText, Sparkles
 import { useChatStore } from '@/store/useChatStore'
 
 export function VisionModule() {
-    const { setActiveModule, addMessage } = useChatStore()
+    const setActiveModule = useChatStore(state => state.setActiveModule)
+    const addMessage = useChatStore(state => state.addMessage)
     const [image, setImage] = useState<string | null>(null)
     const [isScanning, setIsScanning] = useState(false)
     const [result, setResult] = useState<string | null>(null)

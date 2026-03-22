@@ -29,6 +29,15 @@ services:
       - "6379:6379"
     command: redis-server --appendonly yes
 
+  searxng:
+    image: searxng/searxng:latest
+    container_name: nexa-searxng
+    ports:
+      - "8080:8080"
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8080/
+      - SEARXNG_URL=http://localhost:8080/
+
 volumes:
   ollama_data:
   postgres_data:

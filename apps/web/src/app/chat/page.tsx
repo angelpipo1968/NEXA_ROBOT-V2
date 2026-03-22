@@ -5,7 +5,8 @@ import { useChatStore } from '@/store/useChatStore';
 import { ChatInput } from '@/components/chat/ChatInput';
 
 export default function ChatPage() {
-    const { messages, isThinking } = useChatStore();
+    const messages = useChatStore(state => state.messages);
+    const isThinking = useChatStore(state => state.isThinking);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {

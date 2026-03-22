@@ -1,0 +1,121 @@
+#nexa-companion-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 380px;
+    max-height: 85vh;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+    border-radius: 12px;
+    z-index: 2147483647; /* Máximo z-index posible */
+    color: #f8fafc;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: nexaSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes nexaSlideIn {
+    from { transform: translateX(450px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+#nexa-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+#nexa-header span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.5px;
+}
+
+#nexa-close {
+    cursor: pointer;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    font-size: 20px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+#nexa-close:hover {
+    background: rgba(255,255,255,0.4);
+}
+
+#nexa-content {
+    padding: 18px;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Sutil barra de desplazamiento */
+#nexa-content::-webkit-scrollbar {
+    width: 6px;
+}
+#nexa-content::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.2);
+}
+#nexa-content::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+}
+
+.nexa-loading {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: nexaSpin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes nexaSpin {
+    to { transform: rotate(360deg); }
+}
+
+.nexa-thought-process {
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+}
+
+.nexa-markdown strong {
+    color: #e2e8f0;
+    font-weight: 600;
+}
+.nexa-markdown p {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+.nexa-markdown pre {
+    background: rgba(0,0,0,0.5);
+    padding: 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: monospace;
+    font-size: 12px;
+}

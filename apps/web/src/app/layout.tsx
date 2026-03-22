@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import SidebarWrapper from "@/components/layout/SidebarWrapper";
+import { SystemImmunityBoundary } from "@/components/SystemImmunityBoundary";
 
 const poppins = Poppins({
     weight: ['300', '400', '500', '600', '700'],
@@ -23,6 +24,7 @@ export default function RootLayout({
     return (
         <html lang="es">
             <head>
+                <link rel="search" type="application/opensearchdescription+xml" title="Nexa AI" href="/opensearch.xml" />
                 <link
                     rel="stylesheet"
                     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -36,7 +38,9 @@ export default function RootLayout({
                     <SidebarWrapper />
 
                     <main className="vp-main">
-                        {children}
+                        <SystemImmunityBoundary>
+                            {children}
+                        </SystemImmunityBoundary>
                     </main>
                 </div>
             </body>

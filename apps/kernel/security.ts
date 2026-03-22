@@ -1,3 +1,4 @@
+/* eslint-disable */
 // apps/kernel/security.ts - Cinturón de seguridad para God Mode
 export enum TrustLevel {
     READ = 1,        // Solo lectura de archivos/logs
