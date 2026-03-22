@@ -6,7 +6,7 @@
 
 import { supabase } from './supabase';
 import { geminiClient } from './gemini';
-import { localAI } from './services/localAI';
+import { swarmManager } from './swarm/SwarmManager';
 
 export interface NexaMemory {
     id: string;
@@ -61,8 +61,16 @@ class MemoryBridge {
     public async save(content: string, role: NexaMemory['role'], metadata: any = {}) {
         if (content.length < 3) return;
 
-        // Generar embedding local PROACTIVO
-        const localVector = await localAI.getEmbedding(content);
+        // Generar embedding local PROACTIVO vía SWARM (Asíncrono, no bloquea UI)
+        let localVector = undefined;
+        try {
+            const result = await swarmManager.executeTask('GET_EMBEDDING', { text: content });
+            if (result.status === 'success') {
+                localVector = result.data.embedding;
+            }
+        } catch (e) {
+            console.error('[MemoryBridge] Swarm Embedding failed:', e);
+        }
 
         const memory: NexaMemory = {
             id: crypto.randomUUID(),
@@ -120,7 +128,15 @@ class MemoryBridge {
     }
 
     public async search(query: string, limit = 5): Promise<string[]> {
-        const queryVector = await localAI.getEmbedding(query);
+        let queryVector = [];
+        try {
+            const result = await swarmManager.executeTask('GET_EMBEDDING', { text: query });
+            if (result.status === 'success') {
+                queryVector = result.data.embedding;
+            }
+        } catch (e) {
+            console.error('[MemoryBridge] Swarm Query Embedding failed:', e);
+        }
 
         // 1. Búsqueda Local Semántica (IndexedDB + Cosine Similarity)
         const localResults = await this.localSemanticSearch(queryVector, limit);
@@ -151,25 +167,31 @@ class MemoryBridge {
         const store = tx.objectStore(this.storeName);
 
         return new Promise((resolve) => {
-            const topMemories: Array<{ content: string, score: number }> = [];
+            const allMemories: any[] = [];
 
-            store.openCursor().onsuccess = (event: any) => {
+            store.openCursor().onsuccess = async (event: any) => {
                 const cursor = event.target.result;
                 if (cursor) {
-                    const memory = cursor.value;
-                    if (memory.embedding) {
-                        const score = localAI.cosineSimilarity(queryVector, memory.embedding);
-                        if (score > 0.7) {
-                            topMemories.push({ content: memory.content, score });
-                        }
-                    }
+                    allMemories.push(cursor.value);
                     cursor.continue();
                 } else {
-                    const sorted = topMemories
-                        .sort((a, b) => b.score - a.score)
-                        .slice(0, limit)
-                        .map(m => m.content);
-                    resolve(sorted);
+                    // All memories loaded, send to SWARM for off-thread cosine similarity
+                    try {
+                        const result = await swarmManager.executeTask('SEMANTIC_SEARCH', {
+                            queryEmbedding: queryVector,
+                            memories: allMemories,
+                            limit
+                        });
+                        
+                        if (result.status === 'success') {
+                            resolve(result.data);
+                        } else {
+                            resolve([]);
+                        }
+                    } catch (e) {
+                        console.error('[MemoryBridge] Swarm Search failed:', e);
+                        resolve([]);
+                    }
                 }
             };
         });

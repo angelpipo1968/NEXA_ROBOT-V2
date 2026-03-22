@@ -16,6 +16,7 @@ import { modelService, ModelMessage } from '@/services/ModelService';
 import { useVoiceStore } from './useVoiceStore';
 import { useProjectStore } from './useProjectStore';
 import { syncService } from '@/lib/services/syncService';
+import { swarmManager } from '@/lib/swarm/SwarmManager';
 
 // Store definition
 
@@ -234,6 +235,15 @@ export const useChatStore = create<ChatState>()(
                 } else if (get().reasoningMode === 'deep') {
                     contentWithMode = `🧠 MODO PENSAMIENTO PROFUNDO: Analiza este problema paso a paso con máximo detalle, considerando todas las posibilidades y ramificaciones antes de dar una respuesta final.\n\n${content}`;
                 }
+
+                // 🌟 Asynchronous SWARM Analysis (Non-blocking)
+                // Spawn a sub-agent to analyze context in the background
+                swarmManager.executeTask('ANALYZE_CONTEXT', content).then(result => {
+                    if (result.status === 'success') {
+                        console.log('🐝 [SWARM AGENT] Análisis Completado:', result.data);
+                        get().addTerminalLog(`[SWARM] Análisis de entrada completado en 2º plano.`);
+                    }
+                }).catch(err => console.error('Swarm Error:', err));
 
                 try {
                     // 1. Retrieve relevant memories (RAG) using the new Bridge

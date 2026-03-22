@@ -37,10 +37,11 @@ function Layout({ children }: { children: React.ReactNode }) {
     React.useEffect(() => {
         // Initialize native platform features
         if (Capacitor.isNativePlatform()) {
-            StatusBar.setOverlaysWebView({ overlay: true }).catch(() => { });
+            StatusBar.setOverlaysWebView({ overlay: false }).catch(() => { });
+            StatusBar.setBackgroundColor({ color: '#030305' }).catch(() => { });
             StatusBar.setStyle({ style: Style.Dark }).catch(() => { });
-            // KeyboardResize.Native ensures the view shrinks when typing
-            Keyboard.setResizeMode({ mode: KeyboardResize.Native }).catch(() => { });
+            // KeyboardResize.Body ensures the view shrinks correctly on Samsung WebViews
+            Keyboard.setResizeMode({ mode: KeyboardResize.Body }).catch(() => { });
         }
 
         setIsGuest(localStorage.getItem('nexa_guest') === 'true');
@@ -81,7 +82,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         return () => subscription.unsubscribe();
     }, [syncUser, navigate]);
     return (
-        <div className="vp-app flex h-[100dvh] w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
+        <div className="vp-app flex w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
             {/* Global Visual Effects */}
             <CyberpunkParticles />
             <div className="cyber-overlay" />
@@ -98,7 +99,7 @@ function Layout({ children }: { children: React.ReactNode }) {
 
             {/* Main Content - Adjusted padding for wider sidebar */}
             <main
-                className={`vp-main flex-1 relative h-full overflow-hidden transition-all duration-300 w-full pt-[calc(3.5rem+max(env(safe-area-inset-top),40px))] md:pt-0 ${isSidebarOpen ? 'md:pl-[280px]' : 'pl-[0px] md:pl-[80px]'
+                className={`vp-main flex-1 relative h-full overflow-hidden transition-all duration-300 w-full pt-[3.5rem] md:pt-0 ${isSidebarOpen ? 'md:pl-[280px]' : 'pl-[0px] md:pl-[80px]'
                     }`}
             >
                 <Suspense fallback={<LoadingSpinner />}>

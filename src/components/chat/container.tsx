@@ -7,6 +7,7 @@ import ChatInput from './ChatInput'
 import MessageBubble from './MessageBubble'
 import { X } from 'lucide-react'
 import { useVoiceStore } from '@/store/useVoiceStore'
+import { CognitiveCore3D } from '../visual/CognitiveCore3D'
 
 // Lazy loaded heavy components
 const ModernStudio = React.lazy(() => import('@/features/studio/ModernStudio').then(m => ({ default: m.ModernStudio })))
@@ -101,8 +102,20 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
 
                     {activeModule === 'chat' ? (
                         messages.length === 0 ? (
-                            <div className="w-full max-w-6xl px-4 flex flex-col gap-10 animate-in fade-in zoom-in-95 duration-700">
-                                {/* Empty State */}
+                            <div className="w-full h-full min-h-[400px] flex flex-col items-center justify-center pt-20">
+                                <div className="w-full max-w-xl h-[400px] mb-8">
+                                    <CognitiveCore3D 
+                                        isActive={false} 
+                                        isThinking={false} 
+                                        isListening={false} 
+                                    />
+                                </div>
+                                <div className="text-center space-y-4">
+                                    <h1 className="text-5xl font-bold tracking-tighter text-white">NEXA OS <span className="text-purple-500">PRO</span></h1>
+                                    <p className="text-xl text-gray-400 font-light max-w-lg mx-auto">
+                                        Núcleo de inteligencia híbrida activado. Sincronía con enjambre de sub-agentes establecida.
+                                    </p>
+                                </div>
                             </div>
                         ) : (
                             <div className="w-full max-w-4xl mx-auto py-4 px-4 overflow-x-hidden">

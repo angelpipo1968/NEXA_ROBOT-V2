@@ -193,7 +193,7 @@ export default function ChatInput() {
 
             {/* MOBILE INPUT (Nexa-style) */}
             <div className="md:hidden">
-                <div className="bg-gray-50 dark:bg-[#1a1b1e] rounded-t-2xl p-3 flex flex-col gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.2)] border-t border-gray-100 dark:border-white/5 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+                <div className="bg-gray-50 dark:bg-[#1a1b1e] rounded-t-2xl p-3 flex flex-col gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.2)] border-t border-gray-100 dark:border-white/5 pb-4">
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}

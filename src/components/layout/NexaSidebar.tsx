@@ -116,15 +116,15 @@ export default function NexaSidebar() {
             )}
 
             <aside
-                className={`fixed left-0 top-0 h-[100dvh] transition-all duration-300 z-50 flex flex-col border-r shadow-xl bg-[var(--bg-secondary)] border-[var(--border-color)]
+                className={`absolute left-0 top-0 h-full transition-all duration-300 z-50 flex flex-col border-r shadow-xl bg-[var(--bg-secondary)] border-[var(--border-color)]
                 /* Mobile Styles */
-                ${isSidebarOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full w-[280px]'}
+                ${isSidebarOpen ? 'translate-x-0 w-[240px]' : '-translate-x-full w-[240px]'}
                 /* Desktop Styles */
                 md:translate-x-0 md:w-auto ${isSidebarOpen ? 'md:w-[280px]' : 'md:w-[80px]'}
                 `}
             >
                 {/* Header: Logo & New Chat */}
-                <div className="p-4">
+                <div className="p-4 pt-8 md:pt-4">
                     <div className={`flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} mb-6 px-2`}>
                         {isSidebarOpen ? (
                             <div className="flex items-center gap-3">
@@ -169,7 +169,7 @@ export default function NexaSidebar() {
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto px-2 py-2 space-y-6 custom-scrollbar pb-20">
+                <div className="flex-1 overflow-y-auto px-2 py-2 space-y-6 custom-scrollbar">
 
                     {/* Navigation Links (The "Three Things") */}
                     <div className="space-y-1">
@@ -269,7 +269,10 @@ export default function NexaSidebar() {
                 </div>
 
                 {/* Footer: Theme Toggle & User Profile */}
-                <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] absolute bottom-0 left-0 w-full" ref={userMenuRef}>
+                <div 
+                    className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] w-full shrink-0" 
+                    ref={userMenuRef}
+                >
 
                     {/* Theme Toggle - Only show when sidebar is open */}
                     {isSidebarOpen && (

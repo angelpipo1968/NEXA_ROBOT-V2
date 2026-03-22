@@ -13,7 +13,7 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({ onPlusClick, isGuest
     const { toggleSidebar } = useUIStore();
 
     return (
-        <div className="fixed top-0 left-0 w-full h-[calc(3.5rem+max(env(safe-area-inset-top),40px))] pt-[max(env(safe-area-inset-top),40px)] bg-white dark:bg-[#0a0a0f] border-b border-gray-100 dark:border-white/5 z-40 md:hidden flex items-center justify-between px-4 transition-colors gap-2">
+        <div className="absolute top-0 left-0 w-full h-[3.5rem] bg-white dark:bg-[#0a0a0f] border-b border-gray-100 dark:border-white/5 z-40 md:hidden flex items-center justify-between px-4 transition-colors gap-2">
             <div className="flex items-center gap-2 flex-grow">
                 <button
                     onClick={toggleSidebar}

@@ -79,12 +79,12 @@ export const NexaSyncProvider = ({ children }: { children: React.ReactNode }) =>
     return (
         <NexaSyncContext.Provider value={{ doc, provider, status }}>
             {children}
-            {/* Visual indicator of Swarm Status */}
-            {status !== 'connected' && (
-                <div className="fixed bottom-12 right-4 z-50 text-[9px] font-mono text-cyan-400 bg-black/60 px-2 py-1 rounded backdrop-blur border border-cyan-500/20 animate-pulse">
-                    SWARM_SYNC: {status.toUpperCase()}
-                </div>
-            )}
+                    {/* Visual indicator of Swarm Status */}
+                    {status !== 'connected' && (
+                        <div className="absolute bottom-12 right-4 z-50 text-[9px] font-mono text-cyan-400 bg-black/60 px-2 py-1 rounded backdrop-blur border border-cyan-500/20 animate-pulse">
+                            SWARM_SYNC: {status.toUpperCase()}
+                        </div>
+                    )}
         </NexaSyncContext.Provider>
     );
 };

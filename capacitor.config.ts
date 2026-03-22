@@ -4,10 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.nexa.ai',
   appName: 'Nexa AI',
   webDir: 'dist',
-  server: {
-    url: 'https://nexa-ai.dev/',
-    cleartext: true
-  }
+  // server: {
+  //   url: 'https://nexa-ai.dev/',
+  //   cleartext: true
+  // }
 };
 
 export default config;

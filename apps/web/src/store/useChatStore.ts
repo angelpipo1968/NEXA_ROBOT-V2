@@ -494,9 +494,9 @@ export const useChatStore = create<ChatState>()(
                         const groqResponse = await groqClient.chat({
                             message: content,
                             context: context.map(c => ({
-                                role: c.role === 'assistant' ? 'model' : c.role as 'user' | 'model',
+                                role: c.role === 'user' ? 'user' : 'model',
                                 parts: c.parts
-                            }))
+                            })) as any
                         });
 
                         get().updateMessage(assistantMsgId, { content: groqResponse });
@@ -510,9 +510,9 @@ export const useChatStore = create<ChatState>()(
                             const claudeResponse = await anthropicClient.chat({
                                 message: content,
                                 context: context.map(c => ({
-                                    role: c.role === 'assistant' ? 'model' : c.role as 'user' | 'model',
+                                    role: c.role === 'user' ? 'user' : 'model',
                                     parts: c.parts // Fixed: use parts, not content
-                                }))
+                                })) as any
                             });
 
                             get().updateMessage(assistantMsgId, { content: claudeResponse });
@@ -529,9 +529,9 @@ export const useChatStore = create<ChatState>()(
                                 const openaiResponse = await openaiClient.chat({
                                     message: content,
                                     context: context.map(c => ({
-                                        role: c.role === 'assistant' ? 'model' : c.role as 'user' | 'model',
+                                        role: c.role === 'user' ? 'user' : 'model',
                                         parts: c.parts
-                                    }))
+                                    })) as any
                                 });
 
                                 get().updateMessage(assistantMsgId, { content: openaiResponse });
@@ -545,9 +545,9 @@ export const useChatStore = create<ChatState>()(
                                     const deepseekResponse = await deepseekClient.chat({
                                         message: content,
                                         context: context.map(c => ({
-                                            role: c.role === 'assistant' ? 'model' : c.role as 'user' | 'model',
+                                            role: c.role === 'user' ? 'user' : 'model',
                                             parts: c.parts
-                                        }))
+                                        })) as any
                                     });
 
                                     get().updateMessage(assistantMsgId, { content: deepseekResponse });

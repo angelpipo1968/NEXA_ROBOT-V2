@@ -16,7 +16,7 @@ export default function ChatPage() {
     }, [location.pathname, setActiveModule]);
 
     return (
-        <div className="h-[100dvh] w-full bg-transparent text-[var(--text-primary)] transition-colors duration-300">
+        <div className="h-full w-full bg-transparent text-[var(--text-primary)] transition-colors duration-300">
             <ChatContainer />
         </div>
     );

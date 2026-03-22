@@ -8,6 +8,7 @@ import { X } from 'lucide-react';
 import { UltraFastResponseSystem } from '../../packages/voice/src/core/UltraFastResponseSystem';
 import { LiveVoiceControl } from '../voice/LiveVoiceControl';
 import { NexaVoice } from '../../lib/voice/TextToSpeech';
+import { CognitiveCore3D } from '../visual/CognitiveCore3D';
 
 // Types
 interface ChatMessage {
@@ -31,7 +32,7 @@ const VoiceWaveform = ({ isActive }: { isActive: boolean }) => (
 );
 
 export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps) {
-    const { } = useChatStore();
+    const { isThinking, isSearching } = useChatStore();
     const { speak, stopSpeaking, isSpeaking: isVoiceSpeaking, toggleVoiceMode } = useVoiceStore();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputText, setInputText] = useState('');
@@ -358,11 +359,21 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
                         ))}
 
                         {messages.length === 0 && (
-                            <div className="text-center py-12 text-gray-500">
-                                <div className="text-6xl mb-4">🎤</div>
-                                <h3 className="text-xl mb-2">Voice Chat Activo</h3>
-                                <p>Habla o escribe para comenzar la conversación</p>
-                                <p className="text-sm mt-4">Latencia objetivo: {"<"}100ms</p>
+                            <div className="text-center py-6 h-full flex flex-col items-center justify-center opacity-80">
+                                <div className="w-full max-w-md h-64 mb-4">
+                                    <CognitiveCore3D 
+                                        isActive={isSpeaking || isVoiceSpeaking} 
+                                        isThinking={isThinking} 
+                                        isListening={isListening} 
+                                    />
+                                </div>
+                                <h3 className="text-2xl font-bold mb-2 tracking-tight">Nucleo de Cognición Activo</h3>
+                                <p className="text-[var(--text-muted)]">Habla o escribe para sincronizar con Nexa</p>
+                                <div className="flex gap-4 mt-8 text-xs font-mono opacity-50">
+                                    <span>MEMORIA: OK</span>
+                                    <span>SWARM: ONLINE</span>
+                                    <span>LATENCIA: {"<"}80ms</span>
+                                </div>
                             </div>
                         )}
                     </div>

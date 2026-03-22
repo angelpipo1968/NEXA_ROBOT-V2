@@ -18,10 +18,10 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file("nexa-release.keystore")
-            storePassword System.getenv("NEXA_KEYSTORE_PASSWORD")
-            keyAlias "nexa-alias"
-            keyPassword System.getenv("NEXA_KEYSTORE_PASSWORD")
+            storeFile file("nexa-production.keystore")
+            storePassword "nexa-secure-2026"
+            keyAlias "nexa-os"
+            keyPassword "nexa-secure-2026"
         }
     }
     buildTypes {
