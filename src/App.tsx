@@ -1,6 +1,7 @@
 // NEXA OS SINGULARITY v3.0.1 [STABLE-P2P]
 import React, { Suspense, useEffect } from 'react';
-import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import NexaSidebar from '@/components/layout/NexaSidebar';
 import { Menu } from 'lucide-react';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -19,6 +20,7 @@ const AuthPage = React.lazy(() => import('./pages/Auth'));
 const AuthCallback = React.lazy(() => import('./components/auth/AuthCallback'));
 const MediaGeneratorPage = React.lazy(() => import('./pages/Generator'));
 const FuturisticDashboard = React.lazy(() => import('./components/dev/FuturisticDashboard'));
+const GmailPage = React.lazy(() => import('./components/widgets/GmailHub'));
 
 import { MobileTopBar } from '@/components/layout/MobileTopBar';
 
@@ -117,30 +119,52 @@ function Layout({ children }: { children: React.ReactNode }) {
     );
 }
 
+function AppRoutes() {
+    const location = useLocation();
+    return (
+        <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<PageTransition><ChatPage /></PageTransition>} />
+                <Route path="/home" element={<PageTransition><ChatPage /></PageTransition>} />
+                <Route path="/chat" element={<PageTransition><ChatPage /></PageTransition>} />
+                <Route path="/webdev" element={<PageTransition><ChatPage /></PageTransition>} />
+                <Route path="/studio" element={<PageTransition><StudioPage /></PageTransition>} />
+                <Route path="/projects" element={<PageTransition><div className="p-8 text-white">Projects Placeholder</div></PageTransition>} />
+                <Route path="/test-search" element={<PageTransition><SearchCardTest /></PageTransition>} />
+                <Route path="/landing-demo" element={<PageTransition><DemoLanding /></PageTransition>} />
+                <Route path="/generator" element={<PageTransition><MediaGeneratorPage /></PageTransition>} />
+                <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
+                <Route path="/auth/callback" element={<PageTransition><AuthCallback /></PageTransition>} />
+                <Route path="/dashboard" element={<PageTransition><FuturisticDashboard /></PageTransition>} />
+                <Route path="/gmail" element={<PageTransition><GmailPage /></PageTransition>} />
+            </Routes>
+        </AnimatePresence>
+    );
+}
+
+function PageTransition({ children }: { children: React.ReactNode }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="w-full h-full"
+        >
+            {children}
+        </motion.div>
+    );
+}
+
 function App() {
     return (
-        <>
-            <ErrorBoundary>
-                <HashRouter>
-                    <Layout>
-                        <Routes>
-                            <Route path="/" element={<ChatPage />} />
-                            <Route path="/home" element={<ChatPage />} />
-                            <Route path="/chat" element={<ChatPage />} />
-                            <Route path="/webdev" element={<ChatPage />} />
-                            <Route path="/studio" element={<StudioPage />} />
-                            <Route path="/projects" element={<div className="p-8 text-white">Projects Placeholder</div>} />
-                            <Route path="/test-search" element={<SearchCardTest />} />
-                            <Route path="/landing-demo" element={<DemoLanding />} />
-                            <Route path="/generator" element={<MediaGeneratorPage />} />
-                            <Route path="/auth" element={<AuthPage />} />
-                            <Route path="/auth/callback" element={<AuthCallback />} />
-                            <Route path="/dashboard" element={<FuturisticDashboard />} />
-                        </Routes>
-                    </Layout>
-                </HashRouter>
-            </ErrorBoundary>
-        </>
+        <ErrorBoundary>
+            <HashRouter>
+                <Layout>
+                    <AppRoutes />
+                </Layout>
+            </HashRouter>
+        </ErrorBoundary>
     );
 }
 

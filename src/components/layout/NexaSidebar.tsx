@@ -27,7 +27,8 @@ import {
     LogOut,
     User,
     Palette,
-    Wand2
+    Wand2,
+    Mail
 } from 'lucide-react';
 import { NexaAvatar, AvatarState } from '@/components/ui/NexaAvatar';
 import { useChatStore } from '@/store/useChatStore';
@@ -206,6 +207,13 @@ export default function NexaSidebar() {
                             label="Dashboard"
                             active={location.pathname === '/dashboard'}
                             onClick={() => handleNavigation('/dashboard')}
+                            collapsed={!isSidebarOpen}
+                        />
+                        <NavItem
+                            icon={Mail}
+                            label="Gmail Hub"
+                            active={location.pathname === '/gmail'}
+                            onClick={() => handleNavigation('/gmail')}
                             collapsed={!isSidebarOpen}
                         />
                     </div>

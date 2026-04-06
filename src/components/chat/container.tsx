@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, Suspense } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useChatStore, Message } from '@/store/useChatStore'
 import { useUIStore } from '@/store/useUIStore'
 import ChatInput from './ChatInput'
@@ -118,20 +119,39 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
                                 </div>
                             </div>
                         ) : (
-                            <div className="w-full max-w-4xl mx-auto py-4 px-4 overflow-x-hidden">
+                            <motion.div 
+                                initial="hidden"
+                                animate="show"
+                                variants={{
+                                    show: {
+                                        transition: {
+                                            staggerChildren: 0.1
+                                        }
+                                    }
+                                }}
+                                className="w-full max-w-4xl mx-auto py-4 px-4 overflow-x-hidden"
+                            >
                                 {messages.map((message) => (
-                                    <MessageBubble
+                                    <motion.div
                                         key={message.id}
-                                        id={message.id}
-                                        role={message.role}
-                                        content={message.content}
-                                        deleteMessage={deleteMessage}
-                                        forkChat={forkChat}
-                                        regenerateResponse={regenerateResponse}
-                                    />
+                                        variants={{
+                                            hidden: { opacity: 0, y: 20 },
+                                            show: { opacity: 1, y: 0 }
+                                        }}
+                                        transition={{ duration: 0.4, ease: "easeOut" }}
+                                    >
+                                        <MessageBubble
+                                            id={message.id}
+                                            role={message.role}
+                                            content={message.content}
+                                            deleteMessage={deleteMessage}
+                                            forkChat={forkChat}
+                                            regenerateResponse={regenerateResponse}
+                                        />
+                                    </motion.div>
                                 ))}
                                 <div ref={messagesEndRef} />
-                            </div>
+                            </motion.div>
                         )
                     ) : (
                         <div className="absolute inset-0 z-50 bg-[#05060a] flex flex-col">

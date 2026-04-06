@@ -260,19 +260,38 @@
         animation: pulse-glow 12s infinite alternate-reverse;
     }
 
-    /* Glassmorphism Classes */
+    /* Glassmorphism 2.0 Classes */
     .glass-panel {
-        background: var(--card-bg);
-        backdrop-filter: blur(20px);
-        border: 1px solid var(--card-border);
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(255, 255, 255, 0.01) 100%
+        );
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(255, 252, 252, 0.1);
+        box-shadow: 
+            0 8px 32px 0 rgba(0, 0, 0, 0.37),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
     }
 
     .glass-input {
-        background: rgba(20, 20, 25, 0.6);
-        backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        background: rgba(10, 10, 15, 0.4);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(0, 242, 255, 0.1);
+        box-shadow: 
+            0 4px 16px 0 rgba(0, 0, 0, 0.2),
+            inset 0 0 8px rgba(0, 242, 255, 0.05);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-input:focus {
+        border-color: var(--vp-accent-cyan);
+        box-shadow: 
+            0 0 20px rgba(0, 242, 255, 0.15),
+            inset 0 0 12px rgba(0, 242, 255, 0.1);
+        background: rgba(10, 10, 15, 0.6);
     }
 
     /* Premium Paper Sheet class */
