@@ -24,72 +24,85 @@ export const geminiClient = {
         let lastError: any = null;
 
         for (const apiKey of uniqueKeys) {
-            const models = ['gemini-2.0-flash-thinking-exp', 'gemini-2.0-pro-exp-02-05', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+            // Updated model list for better compatibility
+            const models = [
+                'gemini-2.0-flash-thinking-exp',
+                'gemini-2.0-flash',
+                'gemini-1.5-flash',
+                'gemini-1.5-pro',
+                'gemini-1.5-flash-8b'
+            ];
 
-            for (const modelName of models) {
-                try {
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            const apiVersions = ['v1beta', 'v1']; // Fallback to v1 if v1beta fails
 
-                    const userParts: any[] = [{ text: payload.message }];
+            for (const apiVersion of apiVersions) {
+                for (const modelName of models) {
+                    try {
+                        const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
 
-                    if (payload.attachments && payload.attachments.length > 0) {
-                        payload.attachments.forEach(att => {
-                            const cleanBase64 = att.data.includes('base64,')
-                                ? att.data.split('base64,')[1]
-                                : att.data;
+                        const userParts: any[] = [{ text: payload.message }];
 
-                            userParts.unshift({
-                                inlineData: {
-                                    mimeType: att.type,
-                                    data: cleanBase64
-                                }
+                        if (payload.attachments && payload.attachments.length > 0) {
+                            payload.attachments.forEach(att => {
+                                const cleanBase64 = att.data.includes('base64,')
+                                    ? att.data.split('base64,')[1]
+                                    : att.data;
+
+                                userParts.unshift({
+                                    inlineData: {
+                                        mimeType: att.type,
+                                        data: cleanBase64
+                                    }
+                                });
                             });
+                        }
+
+                        const systemPrompt = payload.systemInstruction || NEXA_SYSTEM_PROMPT;
+
+                        const contents = [
+                            ...(payload.context?.map(msg => ({
+                                role: msg.role === 'assistant' ? 'model' : msg.role,
+                                parts: Array.isArray(msg.parts) ? msg.parts : [{ text: msg.parts }]
+                            })) || []),
+                            {
+                                role: 'user',
+                                parts: userParts
+                            }
+                        ];
+
+                        const body: any = {
+                            contents,
+                            system_instruction: {
+                                parts: [{ text: payload.systemInstruction || systemPrompt }]
+                            },
+                            generationConfig: {
+                                temperature: payload.temperature || 0.7,
+                                maxOutputTokens: 2048,
+                            }
+                        };
+
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body)
                         });
-                    }
 
-                    const systemPrompt = payload.systemInstruction || NEXA_SYSTEM_PROMPT;
-
-                    const contents = [
-                        ...(payload.context?.map(msg => ({
-                            role: msg.role === 'assistant' ? 'model' : msg.role,
-                            parts: Array.isArray(msg.parts) ? msg.parts : [{ text: msg.parts }]
-                        })) || []),
-                        {
-                            role: 'user',
-                            parts: userParts
+                        if (!response.ok) {
+                            const errData = await response.json().catch(() => ({}));
+                            console.warn(`[Gemini] Model ${modelName} failed on ${apiVersion}: ${errData.error?.message || response.statusText}`);
+                            throw new Error(`Gemini API Error: ${errData.error?.message || response.statusText}`);
                         }
-                    ];
 
-                    const body: any = {
-                        contents,
-                        system_instruction: {
-                            parts: [{ text: payload.systemInstruction || systemPrompt }]
-                        },
-                        generationConfig: {
-                            temperature: payload.temperature || 0.7,
-                            maxOutputTokens: 2048,
-                        }
-                    };
+                        console.log(`[Gemini] ✅ Successfully used ${modelName} on ${apiVersion}`);
+                        return response;
 
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
-                    });
-
-                    if (!response.ok) {
-                        const errData = await response.json().catch(() => ({}));
-                        throw new Error(`Gemini API Error: ${errData.error?.message || response.statusText}`);
+                    } catch (error) {
+                        lastError = error;
                     }
-
-                    return response;
-
-                } catch (error) {
-                    lastError = error;
                 }
             }
         }
-        throw lastError || new Error('All Gemini API keys failed');
+        throw lastError || new Error('All Gemini API keys and models failed');
     },
 
     getEmbedding: async (text: string): Promise<number[]> => {

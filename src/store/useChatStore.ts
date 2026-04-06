@@ -256,6 +256,12 @@ export const useChatStore = create<ChatState>()(
                     });
                 }
 
+                // Build messages for ModelService (pre-defined for back-up fallbacks)
+                const chatHistory: ModelMessage[] = get().messages.map(m => ({
+                    role: m.role,
+                    content: m.content
+                }));
+
                 try {
                     // 1. Retrieve relevant memories (RAG) using the new Bridge
                     const memories = await memoryBridge.search(content);
@@ -263,20 +269,14 @@ export const useChatStore = create<ChatState>()(
                         ? `\n\nContexto relevante de memoria:\n${memories.join('\n')}`
                         : '';
 
-                    // Build messages for ModelService
-                    const history: ModelMessage[] = get().messages.map(m => ({
-                        role: m.role,
-                        content: m.content
-                    }));
-
-                    const finalPrompt = contentWithMode + memoryContext;
-                    history.push({ role: 'user', content: finalPrompt });
-
                     // 2. Save User Memory via Bridge
                     await memoryBridge.save(content, 'user');
 
+                    const finalPrompt = contentWithMode + memoryContext;
+                    chatHistory.push({ role: 'user', content: finalPrompt });
+
                     // 3. Call Unified Model Service
-                    const finalResponse = await modelService.generateResponse(history, {
+                    const finalResponse = await modelService.generateResponse(chatHistory, {
                         temperature: get().reasoningMode === 'deep' ? 0.3 : 0.7,
                         reasoningMode: get().reasoningMode
                     });
@@ -370,14 +370,21 @@ export const useChatStore = create<ChatState>()(
                                     if (onResponse) onResponse(deepseekResponse);
 
                                 } catch (deepseekError) {
-                                    console.error('Final Fallback (DeepSeek) Error:', deepseekError);
-                                    // Absolute Final Failure
-                                    const simResponse = "⚠️ Error TOTAL (Gemini, Claude, OpenAI, DeepSeek). \n\n¡REINICIA LA TERMINAL!";
-                                    get().updateMessage(assistantMsgId, { content: simResponse });
-                                    // if (useVoiceStore.getState().voiceEnabled) {
-                                    //     useVoiceStore.getState().speak("Por favor reinicia el servidor.");
-                                    // }
-                                    if (onResponse) onResponse(simResponse);
+                                    console.error('DeepSeek Error, trying final local fallback (Ollama)...', deepseekError);
+                                    
+                                    try {
+                                        const ollamaResponse = await modelService.generateResponse(chatHistory, {
+                                            provider: 'ollama'
+                                        });
+                                        get().updateMessage(assistantMsgId, { content: ollamaResponse });
+                                        if (onResponse) onResponse(ollamaResponse);
+                                    } catch (ollamaError) {
+                                        console.error('Final Fallback (Ollama) Error:', ollamaError);
+                                        // Absolute Final Failure
+                                        const simResponse = "⚠️ Error TOTAL (Cloud & Local). \n\n¡REINICIA LA TERMINAL O VERIFICA OLLAMA!";
+                                        get().updateMessage(assistantMsgId, { content: simResponse });
+                                        if (onResponse) onResponse(simResponse);
+                                    }
                                 }
                             }
                         }

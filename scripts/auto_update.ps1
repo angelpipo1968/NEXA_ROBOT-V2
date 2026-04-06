@@ -23,8 +23,8 @@ if ($?) { Write-Host "VERCEL DEPLOYED." -ForegroundColor Green } else { Write-Ho
 
 # 3. Supabase
 Write-Host "3. Syncing Supabase..." -ForegroundColor Yellow
-Write-Host "Pushing DB migrations (if authenticated)..."
-cmd /c "npx -y supabase db push"
-if ($?) { Write-Host "SUPABASE SYNCED." -ForegroundColor Green } else { Write-Host "SUPABASE SYNC SKIPPED (Check CLI Auth)." -ForegroundColor Yellow }
+Write-Host "Executing Database Sync Script..."
+node scripts/sync-database.js
+if ($?) { Write-Host "SUPABASE SYNCED." -ForegroundColor Green } else { Write-Host "SUPABASE SYNC FAILED." -ForegroundColor Red }
 
 Write-Host "SYSTEM AUTO-UPDATE COMPLETE." -ForegroundColor Cyan

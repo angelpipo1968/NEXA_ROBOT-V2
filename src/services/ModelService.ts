@@ -4,6 +4,7 @@ import { toolService } from '@/lib/toolService';
 import { openaiClient } from '@/lib/openai';
 import { anthropicClient } from '@/lib/anthropic';
 import { deepseekClient } from '@/lib/deepseek';
+import { ollamaClient } from '@/lib/ollama';
 import { useThoughtStore } from '@/lib/stores/useThoughtStore';
 
 export interface ModelMessage {
@@ -12,7 +13,7 @@ export interface ModelMessage {
 }
 
 export interface ModelOptions {
-    provider?: 'gemini' | 'groq' | 'openai' | 'anthropic' | 'deepseek';
+    provider?: 'gemini' | 'groq' | 'openai' | 'anthropic' | 'deepseek' | 'ollama';
     temperature?: number;
     maxTokens?: number;
     useMCP?: boolean;
@@ -86,6 +87,13 @@ export class ModelService {
                 return await groqClient.chat({
                     message: lastMessage,
                     context: context as any,
+                });
+            }
+
+            if (provider === 'ollama') {
+                return await ollamaClient.chat({
+                    message: lastMessage,
+                    model: 'deepseek-r1:8b'
                 });
             }
 

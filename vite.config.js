@@ -84,6 +84,11 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/groq-api/, ''),
             },
+            '/ollama-api': {
+                target: 'http://localhost:11434',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/ollama-api/, ''),
+            },
         },
         headers: {
             "Cross-Origin-Opener-Policy": "same-origin",
