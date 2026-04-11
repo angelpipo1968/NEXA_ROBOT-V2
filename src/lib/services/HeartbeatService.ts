@@ -1,5 +1,5 @@
 import { reflectionService } from './ReflectionService';
-import { newsService } from './newsService';
+import { searchNews } from './newsService';
 import { memoryBridge } from '../memoryBridge';
 import { useAutonomyStore } from '@/store/useAutonomyStore';
 import { useChatStore } from '@/store/useChatStore';
@@ -48,7 +48,7 @@ export class HeartbeatService {
 
             // Tarea B: Búsqueda proactiva de noticias (Actualización de conocimiento global)
             try {
-                const news = await newsService.getLatestNews('tecnología inteligencia artificial');
+                const news = await searchNews('tecnología inteligencia artificial', 'es');
                 if (news && news.length > 0) {
                     await memoryBridge.save(`NOTICIAS DEL DÍA (Heartbeat): ${news.slice(0, 3).map((n:any) => n.title).join(', ')}`, 'system', { tool: 'heartbeat_news' });
                     addLog('Conocimiento global actualizado vía Heartbeat.');
