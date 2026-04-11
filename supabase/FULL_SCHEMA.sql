@@ -21,15 +21,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 3. THE MEMORIES TABLE (Used by memoryService)
+-- 3. THE MEMORIES TABLE (v4.0 Singularity Optimized)
 CREATE TABLE IF NOT EXISTS public.memories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
-  role TEXT CHECK (role IN ('user', 'assistant')),
+  role TEXT NOT NULL,
   embedding VECTOR(768), -- Optimized for Gemini text-embedding-004
+  metadata JSONB DEFAULT '{}'::jsonb, -- New in v4.0: For consolidation and agents
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_memories_metadata ON public.memories USING gin (metadata);
 
 -- 4. CONVERSATIONS & MESSAGES
 CREATE TABLE IF NOT EXISTS public.conversations (
@@ -58,6 +61,7 @@ CREATE OR REPLACE FUNCTION match_memories (
 RETURNS TABLE (
   id uuid,
   content text,
+  metadata jsonb,
   similarity float
 )
 LANGUAGE plpgsql
@@ -67,6 +71,7 @@ BEGIN
   SELECT
     memories.id,
     memories.content,
+    memories.metadata,
     1 - (memories.embedding <=> query_embedding) AS similarity
   FROM memories
   WHERE 1 - (memories.embedding <=> query_embedding) > match_threshold

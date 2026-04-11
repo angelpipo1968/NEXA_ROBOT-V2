@@ -179,7 +179,8 @@ export const toolService = {
                         query: args.query,
                         search_depth: isDeep ? 'advanced' : 'basic'
                     });
-                    if (!tavilyResults) return "Error performing search.";
+                    if (typeof tavilyResults === 'string') return `Error de Búsqueda Tavily: ${tavilyResults}`;
+                    if (!tavilyResults) return "Error performing search (Null results).";
 
                     const formatted = tavilyResults.map((r: any) => ({ title: r.title, content: r.content, url: r.url }));
                     if (isDeep) {
@@ -209,7 +210,8 @@ export const toolService = {
                     query: args.query,
                     search_depth: isDeep ? 'advanced' : 'basic'
                 });
-                if (!tavilyResults) return "Error performing search.";
+                if (typeof tavilyResults === 'string') return `Error in Búsqueda Fallback: ${tavilyResults}`;
+                if (!tavilyResults) return "Error performing search (Null fallback).";
                 return JSON.stringify(tavilyResults.map((r: any) => ({ title: r.title, content: r.content, url: r.url })));
             }
         }

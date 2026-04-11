@@ -37,13 +37,13 @@ export const useVoiceStore = create<VoiceState>()(
 
             toggleVoice: () => set((state) => ({ voiceEnabled: !state.voiceEnabled })),
 
-            setRecording: (isRecording) => set({ isRecording }),
+            setRecording: (isRecording: boolean) => set({ isRecording }),
 
             toggleVoiceMode: () => set((state) => ({ isVoiceMode: !state.isVoiceMode })),
 
             toggleContinuousListening: () => set((state) => ({ isContinuousListening: !state.isContinuousListening })),
 
-            setSelectedVoice: (selectedVoice) => set({ selectedVoice }),
+            setSelectedVoice: (selectedVoice: string) => set({ selectedVoice }),
 
             stopSpeaking: () => {
                 const { currentAudio, currentUtterance } = get();
@@ -61,159 +61,148 @@ export const useVoiceStore = create<VoiceState>()(
                 if (typeof window !== 'undefined' && window.speechSynthesis) {
                     window.speechSynthesis.cancel();
                 }
+                // Also stop Capacitor TTS if on native
+                if (Capacitor.isNativePlatform()) {
+                    TextToSpeech.stop().catch(() => {});
+                }
                 set({ isSpeaking: false });
             },
 
             speak: async (text: string, onEnd?: () => void) => {
-                // Sanitize text to remove markdown, symbols and avoid reading punctuation literally
-                const sanitizeTextForSpeech = (input: string): string => {
-                    return input
-                        // Remove URLs to avoid character-by-character reading of dots/slashes
+                // Sanitize text — remove markdown, URLs, symbols for natural TTS
+                const sanitize = (input: string): string =>
+                    input
                         .replace(/https?:\/\/\S+/g, 'enlace')
-                        // Remove markdown symbols (asterisks, underscores, headers, etc)
                         .replace(/\*{1,3}/g, '')
                         .replace(/_{1,3}/g, '')
                         .replace(/#{1,6}\s/g, '')
                         .replace(/`{1,3}[\s\S]*?`{1,3}/g, 'un bloque de código')
                         .replace(/>\s/g, '')
-                        // Remove grouping symbols that might be read literally
-                        .replace(/[()\[\]{}|\\\/]/g, ' ')
-                        // Remove dashes used as bullets but keep them for negative numbers/hyphenated words
+                        .replace(/[()[\]{}|\\\/]/g, ' ')
                         .replace(/^\s*[-•]\s+/gm, '')
-                        // Replace multiple spaces with a single one
                         .replace(/\s+/g, ' ')
                         .trim();
-                };
 
-                const cleanText = sanitizeTextForSpeech(text);
+                const cleanText = sanitize(text);
                 if (!cleanText) return;
 
-                // Stop any current speaking
+                // Stop current audio/TTS
                 get().stopSpeaking();
 
-                const playBrowserTTS = async () => {
-                    if (Capacitor.isNativePlatform()) {
-                        try {
-                            await TextToSpeech.speak({
-                                text: cleanText,
-                                lang: 'es-ES',
-                                rate: 1.0,
-                                pitch: 1.0,
-                                volume: 1.0,
-                            });
-                            set({ isSpeaking: false });
-                            onEnd?.();
-                        } catch (e) {
-                            console.error('Capacitor TTS failed', e);
-                            set({ isSpeaking: false });
-                        }
-                        return;
-                    }
-
-                    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
-                        console.warn('[VOICE] Browser TTS not supported or SpeechSynthesisUtterance not defined');
-                        set({ isSpeaking: false });
-                        return;
-                    }
-
-                    // Safety check for Android WebView where checking 'in window' might pass but constructor fails
+                // ─── Android (Capacitor Native TTS) ──────────────────────
+                if (Capacitor.isNativePlatform()) {
+                    set({ isSpeaking: true });
                     try {
-                        const testUtterance = new SpeechSynthesisUtterance("test");
+                        await TextToSpeech.speak({
+                            text: cleanText,
+                            lang: 'es-ES',
+                            rate: 1.0,
+                            pitch: 1.0,
+                            volume: 1.0,
+                        });
+                        // speak() resolves when TTS finishes on Android ✅
+                        set({ isSpeaking: false });
+                        onEnd?.();
                     } catch (e) {
-                        console.warn('[VOICE] SpeechSynthesisUtterance constructor failed:', e);
+                        console.error('[VOICE] Capacitor TTS error:', e);
+                        set({ isSpeaking: false });
+                        onEnd?.();
+                    }
+                    return;
+                }
+
+                // ─── Web: Try ElevenLabs first ───────────────────────────
+                const elevenKey = (window as any).__VITE_ELEVENLABS_API_KEY__ ??
+                    import.meta.env?.VITE_ELEVENLABS_API_KEY;
+
+                if (elevenKey) {
+                    try {
+                        const audioData = await elevenlabsClient.speakText(cleanText);
+                        if (audioData) {
+                            const blob = new Blob([audioData], { type: 'audio/mpeg' });
+                            const url = URL.createObjectURL(blob);
+                            const audio = new Audio(url);
+                            set({ currentAudio: audio, isSpeaking: true });
+
+                            const cleanup = () => {
+                                URL.revokeObjectURL(url);
+                                set({ isSpeaking: false, currentAudio: null });
+                            };
+
+                            audio.onended = () => { cleanup(); onEnd?.(); };
+                            audio.onerror = () => { cleanup(); playBrowserTTS(); };
+
+                            audio.play().catch(() => { cleanup(); playBrowserTTS(); });
+                            return;
+                        }
+                    } catch (_) {
+                        console.warn('[VOICE] ElevenLabs unavailable, using browser TTS');
+                    }
+                }
+
+                // ─── Fallback: Browser Web Speech API ────────────────────
+                playBrowserTTS();
+
+                function playBrowserTTS() {
+                    if (
+                        typeof window === 'undefined' ||
+                        !('speechSynthesis' in window) ||
+                        !('SpeechSynthesisUtterance' in window)
+                    ) {
+                        console.warn('[VOICE] Browser TTS not supported');
                         set({ isSpeaking: false });
                         return;
                     }
 
-                    const utterance = new SpeechSynthesisUtterance(cleanText);
+                    let utterance: SpeechSynthesisUtterance;
+                    try {
+                        utterance = new SpeechSynthesisUtterance(cleanText);
+                    } catch (e) {
+                        console.warn('[VOICE] SpeechSynthesisUtterance failed:', e);
+                        set({ isSpeaking: false });
+                        return;
+                    }
 
-                    const getVoicesLoaded = (): Promise<SpeechSynthesisVoice[]> => {
+                    const loadVoices = (): Promise<SpeechSynthesisVoice[]> => {
                         return new Promise((resolve) => {
-                            let voices = window.speechSynthesis.getVoices();
-                            if (voices.length !== 0) {
-                                resolve(voices);
-                            } else {
-                                window.speechSynthesis.onvoiceschanged = () => {
-                                    voices = window.speechSynthesis.getVoices();
-                                    resolve(voices);
-                                };
-                            }
+                            const v = window.speechSynthesis.getVoices();
+                            if (v.length > 0) { resolve(v); return; }
+                            window.speechSynthesis.onvoiceschanged = () => resolve(window.speechSynthesis.getVoices());
+                            // Timeout fallback in case onvoiceschanged never fires (some browsers)
+                            setTimeout(() => resolve(window.speechSynthesis.getVoices()), 1000);
                         });
                     };
 
-                    getVoicesLoaded().then(voices => {
-                        // Standardize language detection
+                    loadVoices().then((voices) => {
                         const isSpanish = /[áéíóúñ]/i.test(text) || navigator.language.startsWith('es');
 
-                        // Prioritize high-quality neural voices for Spanish
-                        let voice = voices.find(v => v.lang.startsWith('es') && (v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Mujer') || v.name.includes('Helena')));
-
-                        if (!voice && isSpanish) {
-                            voice = voices.find(v => v.lang.startsWith('es'));
-                        }
-
-                        if (!voice) {
-                            const voiceName = get().selectedVoice;
-                            voice = voices.find(v => v.name.includes(voiceName)) || voices[0];
-                        }
+                        let voice =
+                            voices.find(v => v.lang.startsWith('es') && (v.name.includes('Neural') || v.name.includes('Google') || v.name.includes('Mujer') || v.name.includes('Helena'))) ||
+                            (isSpanish ? voices.find(v => v.lang.startsWith('es')) : null) ||
+                            voices.find(v => v.name.includes(get().selectedVoice)) ||
+                            voices[0];
 
                         if (voice) utterance.voice = voice;
-
-                        utterance.rate = 1.05; // Slightly faster for natural feel
+                        utterance.rate = 1.05;
                         utterance.pitch = 1.0;
                         utterance.volume = 1.0;
                         utterance.lang = isSpanish ? 'es-ES' : (voice?.lang || 'en-US');
 
-                        utterance.onstart = () => {
-                            console.log(`[VOICE] Speaking in ${utterance.lang} using ${voice?.name}`);
-                            set({ isSpeaking: true });
-                        };
-
+                        utterance.onstart = () => set({ isSpeaking: true });
                         utterance.onend = () => {
                             set({ isSpeaking: false, currentUtterance: null });
-                            if (onEnd) onEnd();
+                            onEnd?.();
                         };
-
                         utterance.onerror = (err) => {
-                            console.error('[VOICE] Error in speech synthesis:', err);
+                            if (err.error !== 'interrupted') {
+                                console.error('[VOICE] TTS error:', err);
+                            }
                             set({ isSpeaking: false, currentUtterance: null });
                         };
 
                         set({ currentUtterance: utterance });
                         window.speechSynthesis.speak(utterance);
                     });
-                };
-
-                // Try ElevenLabs if configured
-                try {
-                    const voiceIdMap: Record<string, string> = {
-                        'Katerina': 'EXAVITQu4vr4xnSDxMaL',
-                        'Momo': 'ThT5KcBe7VKqLNo943fj',
-                        'Sunny': 'pMsS4qc977856WDp5k3p',
-                        'Maia': 'z9fAnlkS8qcnwp47usmC',
-                        'Jennifer': '21m00Tcm4llvDq8ikWAM'
-                    };
-
-                    const selectedName = get().selectedVoice;
-                    const voiceId = voiceIdMap[selectedName] || voiceIdMap['Katerina'];
-
-                    const audioData = await elevenlabsClient.speakText(cleanText);
-                    if (audioData) {
-                        const blob = new Blob([audioData], { type: 'audio/mpeg' });
-                        const url = URL.createObjectURL(blob);
-                        const audio = new Audio(url);
-                        set({ currentAudio: audio, isSpeaking: true });
-                        audio.onended = () => {
-                            set({ isSpeaking: false, currentAudio: null });
-                            if (onEnd) onEnd();
-                        };
-                        audio.play();
-                    } else {
-                        playBrowserTTS();
-                    }
-                } catch (error) {
-                    console.error('[VOICE] ElevenLabs failed, falling back to browser TTS:', error);
-                    playBrowserTTS();
                 }
             },
         }),

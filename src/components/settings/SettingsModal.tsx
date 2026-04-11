@@ -28,6 +28,7 @@ import { MCPExplorer } from './MCPExplorer';
 import { SearchSettings } from './SearchSettings';
 import { MemoryPanel } from './MemoryPanel';
 import { CrashSimulator } from '../debug/CrashSimulator';
+import { useVoiceStore } from '@/store/useVoiceStore';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -63,7 +64,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<Tab>('general');
     const [subTab, setSubTab] = useState<'main' | 'voice' | 'memory'>('main'); // Sub-navigation
-    const [selectedVoice, setSelectedVoice] = useState('Katerina');
+    const { selectedVoice, setSelectedVoice } = useVoiceStore();
     const [voiceFilter, setVoiceFilter] = useState<'Female' | 'Male' | 'My Voice'>('Female');
     const { theme, setTheme } = useTheme();
     const [user, setUser] = useState<any>(null);
@@ -559,7 +560,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                                     // Note: Full deletion usually requires an Edge Function or admin key.
                                                     // For MVP, we'll sign out and mark a flag, or just explain the limitation.
                                                     const { error } = await supabase.auth.signOut(); // Sign out and redirect
-                                                    alert('Para una eliminación definitiva de tus datos, por favor contacta a soporte@nexa-ai.dev. Se ha cerrado tu sesión.');
+                                                    alert('Para una eliminación definitiva de tus datos, por favor contacta a soporte@nexa.ai. Se ha cerrado tu sesión.');
                                                     onClose();
                                                     navigate('/auth');
                                                 }

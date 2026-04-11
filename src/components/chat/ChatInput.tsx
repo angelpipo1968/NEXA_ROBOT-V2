@@ -51,6 +51,21 @@ export default function ChatInput() {
         }
     }, [transcript]);
 
+    // Wake Word Integration
+    useEffect(() => {
+        const handleWake = () => {
+            if (isSpeaking) {
+                stopSpeaking(); // Interrupt AI immediately
+            }
+            if (!isContinuousListening) {
+                toggleContinuousListening(); // Auto-enable hands-free mode
+            }
+        };
+
+        window.addEventListener('nexa-wake-word', handleWake);
+        return () => window.removeEventListener('nexa-wake-word', handleWake);
+    }, [isSpeaking, stopSpeaking, isContinuousListening, toggleContinuousListening]);
+
     // Logic for hands-free (continuous listening)
     useEffect(() => {
         if (isContinuousListening) {

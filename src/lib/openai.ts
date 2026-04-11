@@ -2,6 +2,7 @@ export interface OpenAIRequest {
     message: string;
     context?: { role: 'user' | 'model' | 'assistant'; parts: string }[];
     temperature?: number;
+    attachments?: Array<{ type: string, data: string, name: string }>;
 }
 
 import { NEXA_SYSTEM_PROMPT } from './systemPrompt';
@@ -14,12 +15,24 @@ export const openaiClient = {
             throw new Error('Missing OpenAI API Key');
         }
 
-        // Use proxy path if configured, otherwise direct (risk of CORS)
-        // Ideally we update vite.config.js to proxy /openai-api -> https://api.openai.com
         const isNode = typeof process !== 'undefined' && process.versions && process.versions.node;
         const url = isNode
             ? 'https://api.openai.com/v1/chat/completions'
             : '/openai-api/v1/chat/completions';
+
+        // Construct User Content (supports Vision)
+        let userContent: any = payload.message;
+        if (payload.attachments && payload.attachments.length > 0) {
+            userContent = [
+                { type: "text", text: payload.message },
+                ...payload.attachments.map(att => ({
+                    type: "image_url",
+                    image_url: {
+                        url: att.data // base64 data url
+                    }
+                }))
+            ];
+        }
 
         const messages = [
             { role: "system", content: NEXA_SYSTEM_PROMPT },
@@ -29,7 +42,7 @@ export const openaiClient = {
             })) || []),
             {
                 role: 'user',
-                content: payload.message
+                content: userContent
             }
         ];
 

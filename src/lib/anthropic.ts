@@ -2,6 +2,7 @@ export interface AnthropicRequest {
     message: string;
     context?: { role: 'user' | 'model' | 'assistant'; parts: string }[];
     temperature?: number;
+    attachments?: Array<{ type: string, data: string, name: string }>;
 }
 
 export const anthropicClient = {
@@ -17,8 +18,28 @@ export const anthropicClient = {
             ? 'https://api.anthropic.com/v1/messages'
             : '/anthropic-api/v1/messages';
 
-        // Convert context to Anthropic format
-        // Anthropic roles: 'user', 'assistant' (not 'model')
+        // Construct User Content (supports Vision)
+        let userContent: any = payload.message;
+        if (payload.attachments && payload.attachments.length > 0) {
+            userContent = [
+                { type: "text", text: payload.message },
+                ...payload.attachments.map(att => {
+                    const cleanBase64 = att.data.includes('base64,')
+                        ? att.data.split('base64,')[1]
+                        : att.data;
+                    
+                    return {
+                        type: "image",
+                        source: {
+                            type: "base64",
+                            media_type: att.type,
+                            data: cleanBase64
+                        }
+                    };
+                })
+            ];
+        }
+
         const messages = [
             ...(payload.context?.map(msg => ({
                 role: msg.role === 'model' ? 'assistant' : msg.role,
@@ -26,7 +47,7 @@ export const anthropicClient = {
             })) || []),
             {
                 role: 'user',
-                content: payload.message
+                content: userContent
             }
         ];
 
@@ -39,8 +60,8 @@ export const anthropicClient = {
                     'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
-                    model: 'claude-3-haiku-20240307',
-                    max_tokens: 1024,
+                    model: 'claude-3-5-sonnet-20240620',
+                    max_tokens: 2048,
                     messages: messages,
                     temperature: payload.temperature || 0.7
                 })

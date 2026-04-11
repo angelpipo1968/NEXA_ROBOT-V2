@@ -10,8 +10,8 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
-const DB_PASSWORD = 'aAbkX2NN!M-nwd8';
-const DB_HOST = 'db.nhzxaduqutvsrpjecuah.supabase.co';
+const DB_PASSWORD = 'Aurora_Singularity_2026_!';
+const DB_HOST = 'db.ykzoeytmcxlsodwdavtv.supabase.co';
 const SCHEMA_PATH = path.join(__dirname, '..', 'supabase', 'FULL_SCHEMA.sql');
 
 async function sync() {

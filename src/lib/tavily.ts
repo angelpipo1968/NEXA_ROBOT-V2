@@ -14,7 +14,7 @@ export const tavilyClient = {
             return null; // Fail gracefully if no key
         }
 
-        const url = '/tavily-api/search';
+        const url = 'https://api.tavily.com/search';
 
         try {
             const response = await fetch(url, {
@@ -34,15 +34,15 @@ export const tavilyClient = {
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
                 console.error('Tavily API Error:', errData);
-                return null;
+                return `Error API: ${response.status} - ${JSON.stringify(errData)}`;
             }
 
             const data = await response.json();
             return data.results; // Returns array of { title, url, content, score, ... }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Tavily Client Error:', error);
-            return null;
+            return `Network Fetch Error: ${error.message}`;
         }
     }
 };

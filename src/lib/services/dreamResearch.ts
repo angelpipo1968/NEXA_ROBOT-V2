@@ -1,6 +1,9 @@
 import { memoryBridge } from '../memoryBridge';
 import { geminiClient } from '../gemini';
 import { toolService } from '../toolService';
+import { App } from '@capacitor/app';
+import { BackgroundTask } from '@capawesome/capacitor-background-task';
+import { Capacitor } from '@capacitor/core';
 
 /**
  * Nexa Dream Research Service (El Sueño Indexador)
@@ -43,6 +46,23 @@ class DreamResearchService {
         window.addEventListener('keydown', updateActivity);
         window.addEventListener('touchstart', updateActivity);
         window.addEventListener('click', updateActivity);
+
+        if (Capacitor.isNativePlatform()) {
+            App.addListener('appStateChange', async ({ isActive }) => {
+                if (!isActive) {
+                    console.log('[Nexa Dream] App backgrounded, prep for REM...');
+                    const taskId = await BackgroundTask.beforeExit(async () => {
+                        console.log('[Nexa Dream] Background Task Started');
+                        this.lastActivityTime = 0; // force inactivity
+                        await this.checkDreamState();
+                        // Finish task so OS doesn't kill us abruptly
+                        BackgroundTask.finish({ taskId });
+                    });
+                } else {
+                    updateActivity();
+                }
+            });
+        }
     }
 
     public startMonitoring() {
@@ -98,10 +118,14 @@ class DreamResearchService {
                 return;
             }
 
+            // 3. Consolidación de memoria (Proceso REM de Singularity)
+            console.log('[Nexa Dream] 🧬 Consolidando fragmentos de memoria recientes...');
+            await memoryBridge.consolidate();
+
             if (!this.isDreaming) return;
 
-            // 3. Sintetizar la memoria
-            console.log('[Nexa Dream] 📝 Consolidando conocimiento en memoria Vectorial (Supabase)...');
+            // 4. Sintetizar la investigación actual
+            console.log('[Nexa Dream] 📝 Consolidando investigación web en memoria Vectorial...');
             const digestPrompt = `Sintetiza de forma SOTA (State of the Art) esta investigación que hiciste mientras dormías:
             Consulta original: ${query}
             Resultados: ${toolResult}

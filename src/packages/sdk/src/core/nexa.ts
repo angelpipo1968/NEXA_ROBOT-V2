@@ -20,7 +20,7 @@ export class NexaClient extends EventEmitter {
         super()
 
         this.config = {
-            baseURL: 'https://api.nexa-ai.dev/v1',
+            baseURL: 'https://api.nexa.ai/v1',
             timeout: 30000,
             maxRetries: 3,
             ...config

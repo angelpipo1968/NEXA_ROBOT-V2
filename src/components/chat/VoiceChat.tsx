@@ -1,224 +1,220 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useChatStore } from '@/store/useChatStore';
 import { useVoiceStore } from '@/store/useVoiceStore';
 import { X } from 'lucide-react';
-// Importing directly from packages for now
-import { UltraFastResponseSystem } from '../../packages/voice/src/core/UltraFastResponseSystem';
 import { LiveVoiceControl } from '../voice/LiveVoiceControl';
-import { NexaVoice } from '../../lib/voice/TextToSpeech';
 import { CognitiveCore3D } from '../visual/CognitiveCore3D';
 
-// Types
+// ─── Types ──────────────────────────────────────────────────────────────────
+
 interface ChatMessage {
     id: string;
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
     isThinking?: boolean;
-    audioDuration?: number;
 }
+
 interface VoiceChatProps {
     initialMessage?: string;
     autoStart?: boolean;
 }
 
-// Stub for Waveform
+// ─── Waveform Visualizer ────────────────────────────────────────────────────
+
 const VoiceWaveform = ({ isActive }: { isActive: boolean }) => (
-    <div className={`h-8 w-32 bg-gray-700/50 rounded flex items-center justify-center ${isActive ? 'animate-pulse' : ''}`}>
-        <span className="text-xs text-gray-400">Waveform</span>
+    <div className={`h-8 w-32 flex items-center justify-center gap-0.5 ${isActive ? '' : 'opacity-30'}`}>
+        {Array.from({ length: 8 }).map((_, i) => (
+            <div
+                key={i}
+                className="w-1 bg-purple-400 rounded-full transition-all duration-150"
+                style={{
+                    height: isActive ? `${10 + Math.sin(i * 1.3) * 10}px` : '4px',
+                    animation: isActive ? `pulse ${0.4 + i * 0.08}s ease-in-out infinite alternate` : 'none',
+                }}
+            />
+        ))}
     </div>
 );
 
+// ─── Main Component ──────────────────────────────────────────────────────────
+
 export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps) {
-    const { isThinking, isSearching } = useChatStore();
-    const { speak, stopSpeaking, isSpeaking: isVoiceSpeaking, toggleVoiceMode } = useVoiceStore();
+    const { isThinking, sendMessage } = useChatStore();
+    const { speak, stopSpeaking, isSpeaking, toggleVoiceMode } = useVoiceStore();
+
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputText, setInputText] = useState('');
     const [isListening, setIsListening] = useState(false);
-    const [isSpeaking, setIsSpeaking] = useState(false);
     const [isHandsFree, setIsHandsFree] = useState(false);
-    const [voiceResponseSystem, setVoiceResponseSystem] = useState<UltraFastResponseSystem | null>(null);
-    const [nexaVoice, setNexaVoice] = useState<NexaVoice | null>(null);
 
-    useEffect(() => {
-        const initVoice = async () => {
-            if (typeof window === 'undefined') return;
-            const voice = new NexaVoice();
-            await voice.loadVoices();
-            setNexaVoice(voice);
-        };
-        initVoice();
-    }, []);
-
-    const audioRef = useRef<HTMLAudioElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
-    const voiceStreamRef = useRef<MediaStream | null>(null);
+    const isListeningRef = useRef(false);
+    const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Auto-scroll to latest message
     useEffect(() => {
-        const initVoiceSystem = async () => {
-            const system = new UltraFastResponseSystem();
-            await system.initialize();
-            setVoiceResponseSystem(system as any);
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
-            if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-                const SpeechRecognition = (window as any).webkitSpeechRecognition;
-                recognitionRef.current = new SpeechRecognition();
-                recognitionRef.current.continuous = true;
-                recognitionRef.current.interimResults = true;
-                recognitionRef.current.lang = 'es-ES';
+    // ─── Initialize Speech Recognition (once) ──────────────────────────────
+    useEffect(() => {
+        const SpeechRecognition =
+            (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            console.warn('[VoiceChat] SpeechRecognition not supported');
+            return;
+        }
 
-                recognitionRef.current.onresult = (event: any) => {
-                    const transcript = Array.from(event.results)
-                        .map((result: any) => result[0])
-                        .map((result: any) => result.transcript)
-                        .join('');
+        const recognition = new SpeechRecognition();
+        // single-shot is more reliable on Android WebView
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'es-ES';
+        recognitionRef.current = recognition;
 
-                    setInputText(transcript);
+        let pendingFinal = '';
 
-                    if (voiceResponseSystem && transcript.length > 3) {
-                        voiceResponseSystem.predictResponse(transcript);
+        recognition.onresult = (event: any) => {
+            let interim = '';
+            pendingFinal = '';
+            for (let i = 0; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    pendingFinal += event.results[i][0].transcript;
+                } else {
+                    interim += event.results[i][0].transcript;
+                }
+            }
+            setInputText(pendingFinal || interim);
+        };
+
+        recognition.onend = () => {
+            if (pendingFinal && isListeningRef.current) {
+                // We got a complete phrase — process it
+                const phrase = pendingFinal;
+                pendingFinal = '';
+                isListeningRef.current = false;
+                setIsListening(false);
+                handleSendMessage(phrase);
+            } else if (isListeningRef.current) {
+                // Still listening but no result yet — restart for next phrase
+                restartTimerRef.current = setTimeout(() => {
+                    if (isListeningRef.current) {
+                        try { recognition.start(); } catch (_) {}
                     }
-                };
-
-                recognitionRef.current.onend = () => {
-                    setIsListening(false);
-                };
+                }, 300);
+            } else {
+                setIsListening(false);
             }
         };
 
-        initVoiceSystem();
+        recognition.onerror = (event: any) => {
+            if (event.error === 'no-speech' || event.error === 'aborted') return;
+            if (event.error === 'not-allowed') {
+                alert('🎤 Micrófono bloqueado. Actívalo en Ajustes → Aplicaciones → Nexa AI → Permisos.');
+            }
+            console.warn('[VoiceChat] Recognition error:', event.error);
+            isListeningRef.current = false;
+            setIsListening(false);
+        };
 
+        return () => {
+            isListeningRef.current = false;
+            if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+            try { recognition.stop(); } catch (_) {}
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Auto-start
+    useEffect(() => {
         if (autoStart && initialMessage) {
             handleSendMessage(initialMessage);
         }
-
-        return () => {
-            try { recognitionRef.current?.stop(); } catch (e) { }
-            voiceStreamRef.current?.getTracks().forEach(track => track.stop());
-        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleStartListening = () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.start();
-            setIsListening(true);
-        }
-    };
+    // ─── Listening Controls ──────────────────────────────────────────────────
 
-    const handleStopListening = () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
+    const handleStartListening = useCallback(() => {
+        if (!recognitionRef.current || isListeningRef.current) return;
+        stopSpeaking(); // pause any ongoing TTS before recording
+        isListeningRef.current = true;
+        setIsListening(true);
+        setInputText('');
+        try {
+            recognitionRef.current.start();
+        } catch (e) {
+            console.error('[VoiceChat] Cannot start recognition:', e);
+            isListeningRef.current = false;
             setIsListening(false);
         }
-    };
+    }, [stopSpeaking]);
 
-    const handleSendMessage = async (text?: string) => {
-        const message = text || inputText;
-        if (!message.trim() || !voiceResponseSystem) return;
+    const handleStopListening = useCallback(() => {
+        isListeningRef.current = false;
+        if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+        setIsListening(false);
+        try { recognitionRef.current?.stop(); } catch (_) {}
+    }, []);
 
-        // Add User Message
-        const userMessage: ChatMessage = {
+    // ─── Send Message → Real AI ──────────────────────────────────────────────
+
+    const handleSendMessage = useCallback(async (text?: string) => {
+        const message = (text ?? inputText).trim();
+        if (!message) return;
+
+        const userMsg: ChatMessage = {
             id: Date.now().toString(),
             role: 'user',
             content: message,
-            timestamp: new Date()
+            timestamp: new Date(),
         };
-
-        setMessages(prev => [...prev, userMessage]);
+        setMessages(prev => [...prev, userMsg]);
         setInputText('');
-        // Local isSpeaking is used for UI feedback while processing
-        setIsSpeaking(true);
 
+        const assistantId = String(Date.now() + 1);
+        const thinkingMsg: ChatMessage = {
+            id: assistantId,
+            role: 'assistant',
+            content: '',
+            timestamp: new Date(),
+            isThinking: true,
+        };
+        setMessages(prev => [...prev, thinkingMsg]);
 
         try {
-            const voiceResponse = await voiceResponseSystem.getInstantVoiceResponse(
-                {
-                    messages: messages.slice(-5),
-                    userPreferences: {},
-                    conversationId: 'voice-chat-' + Date.now()
-                } as any,
-                message
-            );
+            // ✅ Calls Gemini → Groq → Claude → DeepSeek → Ollama chain
+            await sendMessage(message, (responseText: string) => {
+                setMessages(prev =>
+                    prev.map(m =>
+                        m.id === assistantId
+                            ? { ...m, content: responseText, isThinking: false }
+                            : m
+                    )
+                );
 
-            // Get response text (it might be in metadata or just the mocked one)
-            // The UltraFastSystem returns 'audio' and metadata, but the actual text response seems hidden in the mock?
-            // Checking UltraFastResponseSystem again: 'getAIResponse' returns string, but 'getInstantVoiceResponse' returns VoiceResponse object which DOES NOT contain the text!
-            // Wait, looking at lines 69-71 of UltraFastResponseSystem.ts:
-            // const finalAudio = match ? match.audio : await this.fastGenerateWithChunks(aiResponse);
-            // It uses 'aiResponse' but doesn't return it in the VoiceResponse object!
-            // I need to patch UltraFastResponseSystem to return the text too, OR assume it's "Respuesta de IA simulada".
-            // Let's assume I patch UltraFastResponseSystem first or just use a fixed text for now if I can't touch packages.
-            // But I CAN touch packages.
-
-            // Let's UPDATE UltraFastResponseSystem to return the text.
-            // But first, let's look at what VoiceChat expects. 
-            // It updates content to: `Respuesta en ${voiceResponse.responseTime.toFixed(0)}ms...`
-            // It effectively overwrites the "content".
-
-            // Actually, I should probably return the text in VoiceResponse.
-
-            // Converting this thought process into action:
-            // 1. Update UltraFastResponseSystem to return 'text'.
-            // 2. Update VoiceChat to use that text.
-
-            // Ideally I'd do that, but for this specific "replace_file_content" on VoiceChat.tsx, I'll stick to mostly existing logic but add the TTS call.
-
-            // ...
-
-            const responseText = "Respuesta de IA simulada"; // Fallback/Mock for now as per the file content
-
-            const thinkingMessage: ChatMessage = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: responseText, // Use actual text
-                timestamp: new Date(),
-                isThinking: true
-            };
-
-            setMessages(prev => [...prev, thinkingMessage]);
-
-            if (audioRef.current && voiceResponse.audio) {
-                // ... existing audio logic
-            } else {
-                // Fallback to TTS
-                if (nexaVoice) {
-                    const savedSettings = localStorage.getItem('nexa-voice-settings');
-                    const settings = savedSettings ? JSON.parse(savedSettings) : {};
-
-                    nexaVoice.speak(responseText, {
-                        speed: settings.speed || 1.0,
-                        pitch: settings.pitch || 1.0,
-                        volume: settings.volume || 1.0,
-                        voiceName: settings.voice,
-                        onStart: () => setIsSpeaking(true),
-                        onEnd: () => {
-                            setIsSpeaking(false);
-                            if (isHandsFree) {
-                                setTimeout(handleStartListening, 500); // Small delay to avoid feedback
-                            }
-                        }
-                    });
-                }
-
-                // Update UI to show it's done (but rely on TTS events for speaking state)
-                setMessages(prev => prev.map(msg =>
-                    msg.id === thinkingMessage.id
-                        ? {
-                            ...msg,
-                            content: responseText,
-                            isThinking: false
-                        }
-                        : msg
-                ));
-            }
-
+                // Speak response using native Android TTS or Web Speech API
+                speak(responseText, () => {
+                    if (isHandsFree) {
+                        setTimeout(handleStartListening, 600);
+                    }
+                });
+            });
         } catch (error) {
-            console.error('Error en respuesta de voz:', error);
-            setIsSpeaking(false);
+            console.error('[VoiceChat] sendMessage error:', error);
+            setMessages(prev =>
+                prev.map(m =>
+                    m.id === assistantId
+                        ? { ...m, content: '⚠️ Error al conectar. Verifica tu internet.', isThinking: false }
+                        : m
+                )
+            );
         }
-    };
+    }, [inputText, sendMessage, speak, isHandsFree, handleStartListening]);
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -227,8 +223,12 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
         }
     };
 
+    // ─── Render ──────────────────────────────────────────────────────────────
+
     return (
         <div className="flex flex-col h-[100dvh] bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-500">
+
+            {/* Header */}
             <header className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-secondary)]/50 backdrop-blur-md">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold text-[var(--text-primary)]">
@@ -236,62 +236,71 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
                     </h1>
 
                     <div className="flex items-center gap-4">
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${isListening
-                            ? 'bg-green-900/30 text-green-400'
-                            : isSpeaking
-                                ? 'bg-[var(--vp-accent-purple)]/10 text-[var(--vp-accent-purple)]'
-                                : 'bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]'
-                            }`}>
-                            <div className={`h-2 w-2 rounded-full ${isListening
-                                ? 'bg-green-500 animate-pulse'
+                        {/* Status indicator */}
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                            isListening
+                                ? 'bg-green-900/30 text-green-400'
                                 : isSpeaking
-                                    ? 'bg-[var(--vp-accent-purple)]'
-                                    : 'bg-[var(--text-muted)]'
-                                }`} />
-                            <span className="text-sm">
-                                {isListening ? 'Escuchando...' :
-                                    (isSpeaking || isVoiceSpeaking) ? 'Hablando...' :
-                                        'Listo'}
+                                    ? 'bg-purple-900/30 text-purple-400'
+                                    : isThinking
+                                        ? 'bg-yellow-900/30 text-yellow-400'
+                                        : 'bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]'
+                        }`}>
+                            <div className={`h-2 w-2 rounded-full ${
+                                isListening ? 'bg-green-500 animate-pulse'
+                                    : isSpeaking ? 'bg-purple-400 animate-pulse'
+                                        : isThinking ? 'bg-yellow-400 animate-pulse'
+                                            : 'bg-gray-500'
+                            }`} />
+                            <span>
+                                {isListening ? 'Escuchando...'
+                                    : isSpeaking ? 'Hablando...'
+                                        : isThinking ? 'Pensando...'
+                                            : 'Listo'}
                             </span>
                         </div>
 
+                        {/* Hands-free toggle */}
                         <button
-                            onClick={() => setIsHandsFree(!isHandsFree)}
-                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${isHandsFree
-                                ? 'bg-indigo-600 text-white shadow-[0_0_10px_rgba(79,70,229,0.5)]'
-                                : 'bg-gray-800 text-gray-400 hover:text-gray-200'
-                                }`}
-                            title="Modo Manos Libres: Nexa escuchará automáticamente tras hablar"
+                            onClick={() => setIsHandsFree(v => !v)}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                                isHandsFree
+                                    ? 'bg-indigo-600 text-white shadow-[0_0_10px_rgba(79,70,229,0.5)]'
+                                    : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                            }`}
+                            title="Manos Libres: Nexa escucha automáticamente tras hablar"
                         >
                             {isHandsFree ? '👐 Manos Libres: ON' : '👐 Manos Libres: OFF'}
                         </button>
 
+                        {/* Mic buttons */}
                         <div className="flex gap-2">
                             <button
                                 onClick={handleStartListening}
                                 disabled={isListening || isSpeaking}
-                                className={`p-2 rounded-lg ${isListening
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-[var(--bg-tertiary)] text-[var(--text-primary)] hover:bg-[var(--card-hover-bg)] border border-[var(--border-color)]'
-                                    }`}
+                                className={`p-2 rounded-lg transition-all ${
+                                    isListening
+                                        ? 'bg-green-600 text-white'
+                                        : 'bg-[var(--bg-tertiary)] hover:bg-[var(--card-hover-bg)] border border-[var(--border-color)]'
+                                }`}
                                 title="Comenzar a hablar"
                             >
                                 🎤
                             </button>
-
                             <button
                                 onClick={handleStopListening}
                                 disabled={!isListening}
-                                className="p-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                                className="p-2 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-40 transition-all"
                                 title="Detener"
                             >
                                 ⏹️
                             </button>
                         </div>
 
+                        {/* Close */}
                         <button
                             onClick={toggleVoiceMode}
-                            className="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors border border-transparent hover:border-red-500/20"
+                            className="p-2 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors"
                             title="Cerrar chat de voz"
                         >
                             <X size={20} />
@@ -300,186 +309,171 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
                 </div>
             </header>
 
+            {/* Body */}
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 overflow-hidden">
-                <div className="lg:col-span-2 flex flex-col">
-                    <div className="flex-1 overflow-y-auto bg-gray-900/50 rounded-xl p-4">
-                        {messages.map(message => (
+
+                {/* Chat panel */}
+                <div className="lg:col-span-2 flex flex-col overflow-hidden">
+                    <div className="flex-1 overflow-y-auto bg-gray-900/50 rounded-xl p-4 space-y-4">
+
+                        {messages.length === 0 && (
+                            <div className="text-center h-full flex flex-col items-center justify-center py-8 opacity-80">
+                                <div className="w-full max-w-md h-64 mb-6">
+                                    <CognitiveCore3D
+                                        isActive={isSpeaking}
+                                        isThinking={isThinking}
+                                        isListening={isListening}
+                                    />
+                                </div>
+                                <h3 className="text-2xl font-bold mb-2 tracking-tight">Núcleo de Cognición Activo</h3>
+                                <p className="text-[var(--text-muted)]">Habla o escribe para sincronizar con Nexa</p>
+                                <div className="flex gap-6 mt-8 text-xs font-mono opacity-50">
+                                    <span>IA: ACTIVA</span>
+                                    <span>VOZ: NATIVA</span>
+                                    <span>LATENCIA: &lt;80ms</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {messages.map(msg => (
                             <div
-                                key={message.id}
-                                className={`mb-4 p-4 rounded-lg shadow-sm ${message.role === 'user'
-                                    ? 'bg-[var(--vp-accent-purple)] text-white ml-auto max-w-[80%]'
-                                    : 'bg-[var(--card-bg)] text-[var(--text-primary)] border border-[var(--border-color)] mr-auto max-w-[80%]'
-                                    }`}
+                                key={msg.id}
+                                className={`p-4 rounded-xl shadow-sm max-w-[85%] ${
+                                    msg.role === 'user'
+                                        ? 'bg-[var(--vp-accent-purple)] text-white ml-auto'
+                                        : 'bg-[var(--card-bg)] border border-[var(--border-color)] mr-auto'
+                                }`}
                             >
                                 <div className="flex items-start gap-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs ${message.role === 'user'
-                                        ? 'bg-white/20'
-                                        : 'bg-[var(--vp-accent-purple)] shadow-sm'
-                                        }`}>
-                                        {message.role === 'user' ? '👤' : '🤖'}
+                                    <div className={`w-8 h-8 min-w-[2rem] rounded-full flex items-center justify-center text-sm ${
+                                        msg.role === 'user' ? 'bg-white/20' : 'bg-[var(--vp-accent-purple)]'
+                                    }`}>
+                                        {msg.role === 'user' ? '👤' : '✦'}
                                     </div>
-
-                                    <div className="flex-1">
-                                        <div className="font-semibold mb-1">
-                                            {message.role === 'user' ? 'Tú' : 'Nexa AI'}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-xs font-semibold mb-1 opacity-70">
+                                            {msg.role === 'user' ? 'Tú' : 'Nexa AI'}
                                         </div>
-
-                                        {message.isThinking ? (
+                                        {msg.isThinking ? (
                                             <div className="flex items-center gap-2">
-                                                <span className="text-gray-400">Procesando respuesta...</span>
+                                                <div className="flex gap-1">
+                                                    {[0, 1, 2].map(i => (
+                                                        <div
+                                                            key={i}
+                                                            className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"
+                                                            style={{ animationDelay: `${i * 0.15}s` }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <span className="text-xs opacity-60">Procesando con IA real...</span>
                                             </div>
                                         ) : (
-                                            <>
-                                                <p className="whitespace-pre-wrap">{message.content}</p>
-
-                                                {message.audioDuration && (
-                                                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-400">
-                                                        <span>🔊 {message.audioDuration.toFixed(1)}s</span>
-                                                        {message.role === 'assistant' && (
-                                                            <button
-                                                                onClick={() => { }}
-                                                                className="hover:text-white"
-                                                            >
-                                                                ▶️ Reproducir
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </>
+                                            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                                                {msg.content}
+                                            </p>
                                         )}
                                     </div>
                                 </div>
-
-                                <div className="text-xs text-gray-500 mt-2 text-right">
-                                    {message.timestamp ?
-                                        message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                        : ''}
+                                <div className="text-xs opacity-40 mt-2 text-right">
+                                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             </div>
                         ))}
 
-                        {messages.length === 0 && (
-                            <div className="text-center py-6 h-full flex flex-col items-center justify-center opacity-80">
-                                <div className="w-full max-w-md h-64 mb-4">
-                                    <CognitiveCore3D 
-                                        isActive={isSpeaking || isVoiceSpeaking} 
-                                        isThinking={isThinking} 
-                                        isListening={isListening} 
-                                    />
-                                </div>
-                                <h3 className="text-2xl font-bold mb-2 tracking-tight">Nucleo de Cognición Activo</h3>
-                                <p className="text-[var(--text-muted)]">Habla o escribe para sincronizar con Nexa</p>
-                                <div className="flex gap-4 mt-8 text-xs font-mono opacity-50">
-                                    <span>MEMORIA: OK</span>
-                                    <span>SWARM: ONLINE</span>
-                                    <span>LATENCIA: {"<"}80ms</span>
-                                </div>
-                            </div>
-                        )}
+                        <div ref={messagesEndRef} />
                     </div>
 
+                    {/* Input */}
                     <div className="mt-4">
                         <div className="relative">
                             <textarea
                                 value={inputText}
-                                onChange={(e) => setInputText(e.target.value)}
+                                onChange={e => setInputText(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                placeholder="Escribe o haz clic en 🎤 para hablar..."
-                                className="w-full p-4 pr-24 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-lg focus:outline-none focus:border-[var(--vp-accent-purple)] resize-none text-[var(--text-primary)] placeholder-[var(--text-muted)]"
+                                placeholder={isListening ? 'Escuchando...' : 'Escribe o usa el micrófono...'}
+                                className="w-full p-4 pr-28 bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl focus:outline-none focus:border-[var(--vp-accent-purple)] resize-none text-[var(--text-primary)] placeholder-[var(--text-muted)] transition-colors"
                                 rows={3}
                             />
 
                             <div className="absolute right-2 top-2 flex gap-2">
                                 <button
                                     onClick={() => handleSendMessage()}
-                                    disabled={!inputText.trim() || isSpeaking}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                                    disabled={!inputText.trim() || isSpeaking || isThinking}
+                                    className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg disabled:opacity-40 transition-all text-sm font-medium"
                                 >
                                     Enviar
                                 </button>
-
                                 <button
-                                    onClick={handleStartListening}
-                                    className={`p-2 rounded-lg ${isListening
-                                        ? 'bg-green-600 animate-pulse'
-                                        : 'bg-gray-700 hover:bg-gray-600'
-                                        }`}
-                                    title="Reconocimiento de voz"
+                                    onClick={isListening ? handleStopListening : handleStartListening}
+                                    className={`p-2 rounded-lg transition-all ${
+                                        isListening
+                                            ? 'bg-red-600 hover:bg-red-700 animate-pulse'
+                                            : 'bg-gray-700 hover:bg-gray-600'
+                                    }`}
+                                    title={isListening ? 'Detener microfono' : 'Activar micrófono'}
                                 >
-                                    🎤
+                                    {isListening ? '⏹️' : '🎤'}
                                 </button>
                             </div>
 
                             {isListening && (
-                                <div className="absolute bottom-2 left-4">
-                                    <VoiceWaveform isActive={isListening} />
+                                <div className="absolute bottom-3 left-4">
+                                    <VoiceWaveform isActive={true} />
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex items-center justify-between mt-2 text-sm text-gray-500">
+                        <div className="flex items-center justify-between mt-2 text-xs text-gray-500 px-1">
                             <div>
-                                {isListening && (
-                                    <span className="text-green-400">
-                                        <span className="animate-pulse">●</span> Escuchando...
-                                    </span>
-                                )}
+                                {isListening && <span className="text-green-400">● Escuchando...</span>}
+                                {isSpeaking && !isListening && <span className="text-purple-400">♪ Hablando...</span>}
+                                {isThinking && !isListening && !isSpeaking && <span className="text-yellow-400">⚙ Procesando...</span>}
                             </div>
-                            <div className="flex gap-4">
-                                <span>Predicción activa</span>
-                                <span>Voz: {isSpeaking ? 'Generando...' : 'Lista'}</span>
-                            </div>
+                            <span>IA Real: Gemini → Groq → Claude</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="lg:col-span-1">
+                {/* Side panel */}
+                <div className="lg:col-span-1 space-y-4">
                     <LiveVoiceControl />
 
-                    <div className="mt-6 bg-gray-900/50 p-4 rounded-xl">
-                        <h3 className="text-lg font-semibold mb-3">⚡ Rendimiento en Vivo</h3>
-
-                        <div className="space-y-3">
-                            <div>
-                                <div className="flex justify-between mb-1">
-                                    <span>Tiempo de respuesta</span>
-                                    <span className="text-green-400">{"<"}100ms</span>
-                                </div>
-                                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-green-500 rounded-full"
-                                        style={{ width: '95%' }}
-                                    />
-                                </div>
+                    <div className="bg-gray-900/50 p-4 rounded-xl">
+                        <h3 className="text-base font-semibold mb-3">⚡ Estado del Sistema</h3>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">IA Engine</span>
+                                <span className="text-green-400 font-medium">Gemini 2.0</span>
                             </div>
-                        </div>
-
-                        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                            <div className="p-3 bg-gray-800/50 rounded">
-                                <div className="text-gray-400">Cache hits</div>
-                                <div className="text-xl font-semibold">92%</div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">TTS</span>
+                                <span className="text-green-400 font-medium">Nativo Android</span>
                             </div>
-                            <div className="p-3 bg-gray-800/50 rounded">
-                                <div className="text-gray-400">Latencia media</div>
-                                <div className="text-xl font-semibold text-green-400">86ms</div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">STT</span>
+                                <span className="text-green-400 font-medium">WebSpeech API</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-400">Manos Libres</span>
+                                <span className={isHandsFree ? 'text-green-400 font-medium' : 'text-gray-500'}>
+                                    {isHandsFree ? 'ACTIVO' : 'INACTIVO'}
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <audio ref={audioRef} className="hidden" />
-
-            <footer className="p-4 border-t border-gray-800 text-center text-gray-500 text-sm">
+            {/* Footer */}
+            <footer className="p-3 border-t border-gray-800 text-center text-gray-500 text-xs">
                 <div className="flex items-center justify-center gap-6">
-                    <span className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="flex items-center gap-1.5">
+                        <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
                         Sistema de voz activo
                     </span>
-                    <span>🎯 Respuesta ultra rápida ({"<"}100ms)</span>
-                    <span>🤖 IA + Humano + Futurista</span>
+                    <span>🤖 IA Real — Nexa v4.0 Singularity</span>
                 </div>
             </footer>
-        </div >
+        </div>
     );
 }

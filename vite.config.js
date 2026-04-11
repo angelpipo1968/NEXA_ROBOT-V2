@@ -102,6 +102,17 @@ export default defineConfig({
         }
     },
     build: {
-        chunkSizeWarningLimit: 600
+        chunkSizeWarningLimit: 2500,
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'zustand'],
+                    three: ['three', '@react-three/fiber', '@react-three/drei'],
+                    supabase: ['@supabase/supabase-js', '@supabase/auth-helpers-react'],
+                    icons: ['lucide-react', '@phosphor-icons/react'],
+                    ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-slot', '@radix-ui/react-toast', 'clsx', 'tailwind-merge', 'class-variance-authority']
+                }
+            }
+        }
     }
 })

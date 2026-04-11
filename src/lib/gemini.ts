@@ -24,13 +24,10 @@ export const geminiClient = {
         let lastError: any = null;
 
         for (const apiKey of uniqueKeys) {
-            // Updated model list for better compatibility
+            // Models ordered by preferred/most stable first (Optimized for latency)
             const models = [
-                'gemini-2.0-flash-thinking-exp',
                 'gemini-2.0-flash',
-                'gemini-1.5-flash',
-                'gemini-1.5-pro',
-                'gemini-1.5-flash-8b'
+                'gemini-1.5-flash-8b', // Fast fallback
             ];
 
             const apiVersions = ['v1beta', 'v1']; // Fallback to v1 if v1beta fails
@@ -77,7 +74,8 @@ export const geminiClient = {
                             },
                             generationConfig: {
                                 temperature: payload.temperature || 0.7,
-                                maxOutputTokens: 2048,
+                                maxOutputTokens: 8192,
+                                topP: 0.95,
                             }
                         };
 

@@ -272,13 +272,20 @@ export const useChatStore = create<ChatState>()(
                     // 2. Save User Memory via Bridge
                     await memoryBridge.save(content, 'user');
 
+                    const currentAttachments = [...get().attachments];
                     const finalPrompt = contentWithMode + memoryContext;
-                    chatHistory.push({ role: 'user', content: finalPrompt });
+                    
+                    chatHistory.push({ 
+                        role: 'user', 
+                        content: finalPrompt,
+                        attachments: currentAttachments 
+                    });
 
                     // 3. Call Unified Model Service
                     const finalResponse = await modelService.generateResponse(chatHistory, {
                         temperature: get().reasoningMode === 'deep' ? 0.3 : 0.7,
-                        reasoningMode: get().reasoningMode
+                        reasoningMode: get().reasoningMode,
+                        attachments: currentAttachments
                     });
 
                     // Update UI with Final Response
@@ -381,7 +388,8 @@ export const useChatStore = create<ChatState>()(
                                     } catch (ollamaError) {
                                         console.error('Final Fallback (Ollama) Error:', ollamaError);
                                         // Absolute Final Failure
-                                        const simResponse = "⚠️ Error TOTAL (Cloud & Local). \n\n¡REINICIA LA TERMINAL O VERIFICA OLLAMA!";
+                                        const emsg = finalError?.message || ollamaError?.message || "Network Timeout or CORS";
+                                        const simResponse = `⚠️ Error TOTAL (Cloud & Local).\n\nDetalle: ${emsg}\n\n¡REINICIA LA TERMINAL O VERIFICA OLLAMA!`;
                                         get().updateMessage(assistantMsgId, { content: simResponse });
                                         if (onResponse) onResponse(simResponse);
                                     }

@@ -10,6 +10,7 @@ import { useThoughtStore } from '@/lib/stores/useThoughtStore';
 export interface ModelMessage {
     role: 'user' | 'assistant' | 'system';
     content: string;
+    attachments?: Array<{ type: string, data: string, name: string }>;
 }
 
 export interface ModelOptions {
@@ -18,6 +19,7 @@ export interface ModelOptions {
     maxTokens?: number;
     useMCP?: boolean;
     reasoningMode?: 'normal' | 'search' | 'deep';
+    attachments?: Array<{ type: string, data: string, name: string }>;
 }
 
 export class ModelService {
@@ -52,31 +54,35 @@ export class ModelService {
                 return await this.handleGeminiFlow(messages, options);
             }
 
-            const lastMessage = messages[messages.length - 1].content;
+            const lastMessage = messages[messages.length - 1];
             const context = messages.slice(0, -1).map(m => ({
                 role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
                 parts: m.content
             }));
 
+            const attachments = options.attachments || lastMessage.attachments;
+
             if (provider === 'openai') {
                 return await openaiClient.chat({
-                    message: lastMessage,
+                    message: lastMessage.content,
                     context: context,
-                    temperature: options.temperature
+                    temperature: options.temperature,
+                    attachments
                 });
             }
 
             if (provider === 'anthropic') {
                 return await anthropicClient.chat({
-                    message: lastMessage,
+                    message: lastMessage.content,
                     context: context,
-                    temperature: options.temperature
+                    temperature: options.temperature,
+                    attachments
                 });
             }
 
             if (provider === 'deepseek') {
                 return await deepseekClient.chat({
-                    message: lastMessage,
+                    message: lastMessage.content,
                     context: context,
                     temperature: options.temperature,
                     model: reasoningMode === 'deep' ? 'deepseek-reasoner' : 'deepseek-chat'
@@ -85,15 +91,15 @@ export class ModelService {
 
             if (provider === 'groq') {
                 return await groqClient.chat({
-                    message: lastMessage,
+                    message: lastMessage.content,
                     context: context as any,
                 });
             }
 
             if (provider === 'ollama') {
                 return await ollamaClient.chat({
-                    message: lastMessage,
-                    model: 'deepseek-r1:8b'
+                    message: lastMessage.content,
+                    model: reasoningMode === 'deep' ? 'deepseek-r1:14b' : 'deepseek-r1:8b'
                 });
             }
 
@@ -105,16 +111,17 @@ export class ModelService {
     }
 
     private async handleGeminiFlow(messages: ModelMessage[], options: ModelOptions): Promise<string> {
-        const lastMessage = messages[messages.length - 1].content;
+        const lastMessage = messages[messages.length - 1];
         const context = messages.slice(0, -1).map(m => ({
             role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
             parts: m.content
         }));
 
-        // Initial call to Gemini
+        // Initial call to Gemini with support for current attachments
         const response = await geminiClient.chat({
-            message: lastMessage,
+            message: lastMessage.content,
             context: context,
+            attachments: options.attachments || lastMessage.attachments,
             temperature: options.temperature ?? 0.7
         });
 
@@ -160,13 +167,24 @@ export class ModelService {
                 const { name, args } = JSON.parse(jsonStr.trim());
                 console.log(`[ModelService] 🛠️ Executing tool: ${name}`, args);
 
-                // ThoughtStream Visualization
+                // ThoughtStream Visualization - Dynamic Agent Detection
+                let agentColor = '#8b5cf6'; // Default Purple (Kernel)
+                let agentPrefix = 'TOOL';
+
+                if (name.includes('search') || name.includes('tavily')) {
+                    agentColor = '#3b82f6'; // Blue (Researcher)
+                    agentPrefix = 'RESEARCH';
+                } else if (name.includes('file') || name.includes('write')) {
+                    agentColor = '#10b981'; // Green (Developer)
+                    agentPrefix = 'DEV';
+                }
+
                 const nodeId = `tool-${Date.now()}`;
                 useThoughtStore.getState().addNode({
                     id: nodeId,
-                    label: `TOOL: ${name}`,
+                    label: `[${agentPrefix}] ${name}`,
                     val: 15,
-                    color: '#8b5cf6',
+                    color: agentColor,
                     details: `Argumentos: ${JSON.stringify(args).slice(0, 100)}...`,
                     timestamp: Date.now()
                 });
@@ -186,7 +204,7 @@ export class ModelService {
                         label: 'SELF-CORRECTION',
                         val: 12,
                         color: '#f59e0b',
-                        details: `Aurora detectó un fallo en ${name}. Re-evaluando estrategia...`,
+                        details: `Singularity Protocol detectó un fallo en ${name}. Re-evaluando estrategia...`,
                         timestamp: Date.now()
                     }, nodeId);
                 }

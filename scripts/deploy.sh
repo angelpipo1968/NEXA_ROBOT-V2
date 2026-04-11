@@ -83,14 +83,13 @@ health_check() {
 
 # 8. Display information
 display_info() {
-    echo ""
-    echo "✨ Nexa AI Deployment Complete!"
-    echo ""
-    echo "🌐 Access URLs:"
-    echo "   Frontend:    http://localhost:3000"
-    echo "   API:         http://localhost:3001"
-    echo "   Ollama:      http://localhost:11434"
-    echo "   Adminer:     http://localhost:8080"
+      echo ""
+      echo "✨ Nexa AI Singularity v4.0 Deployment Complete!"
+      echo ""
+      echo "🌐 Access URLs:"
+      echo "   Production:  https://nexa.ai"
+      echo "   Analytics:   https://nexa.ai/admin/dashboard"
+      echo "   Ollama Local: http://localhost:11434"
     echo ""
     echo "🔧 Models available:"
     echo "   - llama3 (local)"
