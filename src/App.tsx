@@ -26,6 +26,8 @@ import { MobileTopBar } from '@/components/layout/MobileTopBar';
 
 import CyberpunkParticles from '@/components/ui/CyberpunkParticles';
 import { dreamResearchService } from '@/lib/services/dreamResearch';
+import { autonomyService } from '@/lib/services/AutonomyService';
+import { heartbeatService } from '@/lib/services/HeartbeatService';
 
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -81,6 +83,12 @@ function Layout({ children }: { children: React.ReactNode }) {
 
         // Start El Sueño Indexador (Dream Research REM Phase)
         dreamResearchService.startMonitoring();
+
+        // Start Inmortal Mode (Foreground Service for 24/7 autonomy)
+        autonomyService.startInmortalMode();
+
+        // Start Heartbeat (Autonomous reflection and research)
+        heartbeatService.start();
 
         return () => subscription.unsubscribe();
     }, [syncUser, navigate]);

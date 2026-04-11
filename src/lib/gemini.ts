@@ -1,4 +1,5 @@
 import { NEXA_SYSTEM_PROMPT } from './systemPrompt';
+import { useAutonomyStore } from '@/store/useAutonomyStore';
 
 export interface GeminiRequest {
     message: string;
@@ -54,7 +55,8 @@ export const geminiClient = {
                             });
                         }
 
-                        const systemPrompt = payload.systemInstruction || NEXA_SYSTEM_PROMPT;
+                        const dynamicRules = useAutonomyStore.getState().getSystemRulesPrompt();
+                        const systemPrompt = (payload.systemInstruction || NEXA_SYSTEM_PROMPT) + dynamicRules;
 
                         const contents = [
                             ...(payload.context?.map(msg => ({
