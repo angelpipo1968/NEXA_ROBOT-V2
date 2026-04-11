@@ -21,10 +21,12 @@ export class ReflectionService {
     public async performReflection() {
         if (useAutonomyStore.getState().isReflecting) return;
         
+        const { setStatus, addLog } = useAutonomyStore.getState();
         console.log('[ReflectionService] 🧠 Iniciando ciclo de Auto-Reflexión...');
-        useAutonomyStore.getState().setReflecting(true);
-        const addLog = useChatStore.getState().addTerminalLog;
-        addLog('Iniciando ciclo de Auto-Reflexión (Protocolo Singularity)');
+        setStatus('reflecting', 'Analizando base de recuerdos...');
+        const addChatLog = useChatStore.getState().addTerminalLog;
+        addChatLog('Iniciando ciclo de Auto-Reflexión (Protocolo Singularity)');
+        addLog('Ciclo de reflexión iniciado: Analizando coherencia cognitiva.');
 
         try {
             // 1. Recuperar los últimos fragmentos de memoria No Consolidados
@@ -68,20 +70,23 @@ export class ReflectionService {
             const reflection = JSON.parse(jsonStr);
 
             console.log('[ReflectionService] ✨ Reflexión completada:', reflection);
-            addLog(`Reflexión completada. Eficiencia percibida: ${reflection.efficiency_score}%`);
+            addChatLog(`Reflexión completada. Eficiencia percibida: ${reflection.efficiency_score}%`);
+            addLog(`Fase de análisis terminada. Eficiencia: ${reflection.efficiency_score}%`);
 
             if (reflection.rule) {
                 useAutonomyStore.getState().addRule(reflection.lesson, reflection.rule);
-                addLog(`Nueva Regla de Auto-Corrección inyectada: ${reflection.rule}`);
+                addChatLog(`Nueva Regla de Auto-Corrección inyectada: ${reflection.rule}`);
+                addLog(`Nueva norma auto-impuesta: ${reflection.rule}`);
             }
 
             useAutonomyStore.getState().setLastHeartbeat(Date.now());
 
         } catch (error) {
             console.error('[ReflectionService] ❌ Fallo en el ciclo de reflexión:', error);
-            addLog('Fallo en el ciclo de Auto-Reflexión.');
+            addChatLog('Fallo en el ciclo de Auto-Reflexión.');
+            addLog('ERROR: Fallo crítico en motor de reflexión.');
         } finally {
-            useAutonomyStore.getState().setReflecting(false);
+            setStatus('idle');
         }
     }
 }

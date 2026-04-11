@@ -21,6 +21,9 @@ import {
 import { useState, useEffect, useCallback } from 'react';
 import { useProductivityGuardian } from '../../lib/hooks/useProductivityGuardian';
 import { useAchievementStore } from '../../lib/stores/useAchievementStore';
+import { useAutonomyStore } from '@/store/useAutonomyStore';
+import { reflectionService } from '@/lib/services/ReflectionService';
+import { heartbeatService } from '@/lib/services/HeartbeatService';
 
 export default function FuturisticDashboard() {
     const [localStatus, setLocalStatus] = useState<any>({ status: 'stopped', logs: [] });
@@ -329,6 +332,78 @@ export default function FuturisticDashboard() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* AUTONOMY SINGULARITY HUD */}
+                    <div className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border border-indigo-500/30 rounded-2xl p-6 relative overflow-hidden backdrop-blur-xl">
+                        <div className="absolute top-0 right-0 p-2 opacity-20">
+                            <Zap size={40} className="text-indigo-400" />
+                        </div>
+                        
+                        <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
+                            Autonomy Engine v4.0
+                            <span className={`px-2 py-0.5 rounded text-[7px] border ${
+                                useAutonomyStore((s) => s.status) !== 'idle' ? 'bg-indigo-500 text-white animate-pulse' : 'border-indigo-500/30 text-indigo-400'
+                            }`}>
+                                {useAutonomyStore((s) => s.status).toUpperCase()}
+                            </span>
+                        </h3>
+
+                        <div className="space-y-4 relative z-10">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[9px] text-slate-400 uppercase font-bold">Process Pulse</span>
+                                <span className="text-[9px] text-indigo-300 font-mono">
+                                    {useAutonomyStore((s) => s.lastHeartbeat) ? new Date(useAutonomyStore((s) => s.lastHeartbeat)!).toLocaleTimeString() : 'WAITING'}
+                                </span>
+                            </div>
+
+                            <div className="p-3 bg-black/40 border border-indigo-500/20 rounded-xl">
+                                <p className="text-[10px] text-indigo-200 font-bold mb-2">Current Operation:</p>
+                                <p className="text-[9px] text-slate-400 italic">
+                                    {useAutonomyStore((s) => s.currentTask) || 'Nexa is dormant, monitoring for neural triggers...'}
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <p className="text-[8px] font-black text-slate-500 uppercase">Self-Correction Rules:</p>
+                                {useAutonomyStore((s) => s.selfCorrectionRules).length === 0 ? (
+                                    <p className="text-[8px] text-slate-600 italic">No rules generated yet. Nexa is learning...</p>
+                                ) : (
+                                    useAutonomyStore((s) => s.selfCorrectionRules).map(rule => (
+                                        <div key={rule.id} className="flex items-start gap-2 p-2 bg-indigo-500/5 border border-indigo-500/10 rounded-lg">
+                                            <div className="w-1 h-1 bg-indigo-500 rounded-full mt-1.5" />
+                                            <p className="text-[8px] text-indigo-100 leading-tight">
+                                                <span className="font-bold text-indigo-400">RULE:</span> {rule.rule}
+                                            </p>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button 
+                                    onClick={() => reflectionService.performReflection()}
+                                    className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[8px] font-black uppercase tracking-widest transition-all"
+                                >
+                                    Force Reflection
+                                </button>
+                                <button 
+                                    onClick={() => heartbeatService.start()}
+                                    className="px-3 py-2 border border-indigo-500/30 text-indigo-400 rounded-lg text-[8px] font-black uppercase transition-all"
+                                >
+                                    Start Pulse
+                                </button>
+                            </div>
+
+                            <div className="bg-black/60 rounded-lg p-2 border border-indigo-500/10 max-h-24 overflow-y-auto font-mono text-[7px] text-slate-500 space-y-1">
+                                {useAutonomyStore((s) => s.logs).map((log, i) => (
+                                    <div key={i} className="flex gap-2">
+                                        <span className="text-indigo-900">[{i}]</span>
+                                        <span>{log}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
 

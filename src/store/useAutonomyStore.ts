@@ -13,13 +13,17 @@ interface AutonomyState {
     selfCorrectionRules: SelfCorrectionRule[];
     lastHeartbeat: number | null;
     isReflecting: boolean;
+    status: 'idle' | 'reflecting' | 'researching' | 'sleeping';
+    currentTask: string | null;
+    logs: string[];
 
     // Actions
     addRule: (lesson: string, rule: string) => void;
     toggleRule: (id: string) => void;
     deleteRule: (id: string) => void;
     setLastHeartbeat: (timestamp: number) => void;
-    setReflecting: (isReflecting: boolean) => void;
+    setStatus: (status: AutonomyState['status'], task?: string) => void;
+    addLog: (log: string) => void;
     getSystemRulesPrompt: () => string;
 }
 
@@ -29,6 +33,9 @@ export const useAutonomyStore = create<AutonomyState>()(
             selfCorrectionRules: [],
             lastHeartbeat: null,
             isReflecting: false,
+            status: 'idle',
+            currentTask: null,
+            logs: [],
 
             addRule: (lesson, rule) => set((state) => ({
                 selfCorrectionRules: [
@@ -55,7 +62,15 @@ export const useAutonomyStore = create<AutonomyState>()(
 
             setLastHeartbeat: (timestamp) => set({ lastHeartbeat: timestamp }),
             
-            setReflecting: (isReflecting) => set({ isReflecting }),
+            setStatus: (status, task) => set({ 
+                status, 
+                currentTask: task || null,
+                isReflecting: status === 'reflecting'
+            }),
+
+            addLog: (log) => set((state) => ({
+                logs: [log, ...state.logs].slice(0, 20)
+            })),
 
             getSystemRulesPrompt: () => {
                 const activeRules = get().selfCorrectionRules.filter(r => r.active);
