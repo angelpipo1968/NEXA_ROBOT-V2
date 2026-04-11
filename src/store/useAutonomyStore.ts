@@ -16,6 +16,13 @@ interface AutonomyState {
     status: 'idle' | 'reflecting' | 'researching' | 'sleeping';
     currentTask: string | null;
     logs: string[];
+    metrics: {
+        lastLatency: number;
+        avgLatency: number;
+        tokenUsage: number;
+        provider: string;
+    };
+    performanceLog: Array<{ timestamp: number; latency: number; provider: string }>;
 
     // Actions
     addRule: (lesson: string, rule: string) => void;
@@ -24,6 +31,7 @@ interface AutonomyState {
     setLastHeartbeat: (timestamp: number) => void;
     setStatus: (status: AutonomyState['status'], task?: string) => void;
     addLog: (log: string) => void;
+    updateMetrics: (latency: number, provider: string) => void;
     getSystemRulesPrompt: () => string;
 }
 
@@ -36,6 +44,13 @@ export const useAutonomyStore = create<AutonomyState>()(
             status: 'idle',
             currentTask: null,
             logs: [],
+            metrics: {
+                lastLatency: 0,
+                avgLatency: 0,
+                tokenUsage: 0,
+                provider: 'gemini'
+            },
+            performanceLog: [],
 
             addRule: (lesson, rule) => set((state) => ({
                 selfCorrectionRules: [
@@ -71,6 +86,25 @@ export const useAutonomyStore = create<AutonomyState>()(
             addLog: (log) => set((state) => ({
                 logs: [log, ...state.logs].slice(0, 20)
             })),
+
+            updateMetrics: (latency, provider) => set((state) => {
+                const newLog = [
+                    { timestamp: Date.now(), latency, provider },
+                    ...state.performanceLog
+                ].slice(0, 50);
+                
+                const avg = newLog.reduce((acc, curr) => acc + curr.latency, 0) / newLog.length;
+
+                return {
+                    metrics: {
+                        ...state.metrics,
+                        lastLatency: latency,
+                        avgLatency: avg,
+                        provider
+                    },
+                    performanceLog: newLog
+                };
+            }),
 
             getSystemRulesPrompt: () => {
                 const activeRules = get().selfCorrectionRules.filter(r => r.active);

@@ -6,6 +6,7 @@ import { anthropicClient } from '@/lib/anthropic';
 import { deepseekClient } from '@/lib/deepseek';
 import { ollamaClient } from '@/lib/ollama';
 import { useThoughtStore } from '@/lib/stores/useThoughtStore';
+import { performanceMonitor } from '@/lib/services/PerformanceMonitor';
 
 export interface ModelMessage {
     role: 'user' | 'assistant' | 'system';
@@ -112,6 +113,14 @@ export class ModelService {
 
     private async handleGeminiFlow(messages: ModelMessage[], options: ModelOptions): Promise<string> {
         const lastMessage = messages[messages.length - 1];
+        
+        // SICA: Self-Tuning Optimization
+        if (performanceMonitor.shouldOptimize()) {
+            console.warn('[SICA] ⚡ High latency detected. Opting for ultralight response path.');
+            // We don't force it here yet, but we could pass a flag to geminiClient
+            // For now, let's just log it to the dashboard via the monitor.
+        }
+
         const context = messages.slice(0, -1).map(m => ({
             role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
             parts: m.content

@@ -217,6 +217,71 @@ export default function FuturisticDashboard() {
                         </div>
                     </div>
 
+                    {/* SICA PERFORMANCE HUD */}
+                    <div className="bg-slate-900 border border-indigo-500/20 rounded-2xl p-6 relative overflow-hidden">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                    <Zap size={16} className="text-indigo-400" />
+                                    SICA: Neural Latency HUD
+                                </h3>
+                                <p className="text-[10px] text-slate-500">Self-Improving Critical Architecture Metrics</p>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] text-slate-400 uppercase font-bold block">Avg. Pulse</span>
+                                <span className="text-lg font-black text-indigo-400">
+                                    {(useAutonomyStore((s) => s.metrics.avgLatency) / 1000).toFixed(2)}s
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Real-time Latency Graph (Mocked with live data) */}
+                        <div className="flex items-end justify-between h-24 gap-1 px-1">
+                            {useAutonomyStore.getState().performanceLog.length === 0 ? (
+                                <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-white/5 rounded-xl">
+                                    <span className="text-[8px] text-slate-600 uppercase tracking-widest animate-pulse">Initializing Telemetry...</span>
+                                </div>
+                            ) : (
+                                useAutonomyStore((s) => s.performanceLog).slice(0, 30).reverse().map((log, i) => {
+                                    const height = Math.min((log.latency / 10000) * 100, 100);
+                                    return (
+                                        <div key={i} className="flex-1 group relative">
+                                            <div 
+                                                className={`w-full rounded-t-sm transition-all duration-500 ${
+                                                    log.latency > 5000 ? 'bg-red-500' : log.latency > 3000 ? 'bg-amber-500' : 'bg-indigo-500'
+                                                }`}
+                                                style={{ height: `${height}%` }}
+                                            />
+                                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1 bg-slate-800 rounded text-[6px] opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                                {(log.latency / 1000).toFixed(1)}s
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                        
+                        <div className="mt-4 flex items-center justify-between">
+                            <div className="flex gap-4">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                                    <span className="text-[8px] text-slate-500 uppercase">Fast</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                    <span className="text-[8px] text-slate-500 uppercase">Warning</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                    <span className="text-[8px] text-slate-500 uppercase">Critical</span>
+                                </div>
+                            </div>
+                            <span className="text-[8px] text-indigo-400 font-bold uppercase">
+                                Model: {useAutonomyStore((s) => s.metrics.provider)}
+                            </span>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-6">
                         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-4">
                             <div className="p-4 bg-purple-500/10 text-purple-400 rounded-xl">

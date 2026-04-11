@@ -1,5 +1,6 @@
 import { NEXA_SYSTEM_PROMPT } from './systemPrompt';
 import { useAutonomyStore } from '@/store/useAutonomyStore';
+import { performanceMonitor } from './services/PerformanceMonitor';
 
 export interface GeminiRequest {
     message: string;
@@ -81,11 +82,13 @@ export const geminiClient = {
                             }
                         };
 
+                        performanceMonitor.startOperation();
                         const response = await fetch(url, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(body)
                         });
+                        performanceMonitor.endOperation(modelName);
 
                         if (!response.ok) {
                             const errData = await response.json().catch(() => ({}));
