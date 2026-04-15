@@ -213,7 +213,7 @@ export function BookStudio({ onToggleZen }: BookStudioProps) {
                                     <Wand2 size={12} /> Plantillas Maestras
                                 </h3>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {BOOK_TEMPLATES.map(template => (
+                                    {BOOK_TEMPLATES.map((template: BookTemplate) => (
                                         <button
                                             key={template.id}
                                             onClick={() => applyTemplate(template)}

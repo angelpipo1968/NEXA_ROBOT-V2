@@ -29,6 +29,13 @@ interface NexaState {
 
 const defaultModels: Model[] = [
     {
+        id: 'nexa-unlimited',
+        name: 'Nexa Ilimitada',
+        provider: 'Antigravity',
+        capabilities: { contextLength: 1000000, streaming: true, functionCalling: true, vision: true },
+        recommendationReason: 'Gravity Master Orchestrator'
+    },
+    {
         id: 'gpt-4',
         name: 'GPT-4',
         provider: 'OpenAI',

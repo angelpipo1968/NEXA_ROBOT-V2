@@ -50,10 +50,24 @@ export class ModelService {
 
         console.log(`[ModelService] 🤖 Generating with provider: ${provider}, MCP: ${useMCP}, Mode: ${reasoningMode}`);
 
+        // TRY CLOUD HUB FIRST IF ON MOBILE OR CLOUD MODE
+        const isCloudMode = import.meta.env.VITE_NEXA_CLOUD_MODE === 'true' || !!(window as any).Capacitor;
+        
         try {
+            if (isCloudMode && provider !== 'ollama') {
+                try {
+                    console.log(`[ModelService] ☁️ Using Cloud Hub for ${provider}...`);
+                    return await this.handleCloudFlow(messages, options);
+                } catch (cloudError) {
+                    console.warn('[ModelService] ⚠️ Cloud Hub failed, falling back to local provider flow.', cloudError);
+                    // Continue to local flow
+                }
+            }
+
             if (provider === 'gemini') {
                 return await this.handleGeminiFlow(messages, options);
             }
+
 
             const lastMessage = messages[messages.length - 1];
             const context = messages.slice(0, -1).map(m => ({
@@ -64,44 +78,54 @@ export class ModelService {
             const attachments = options.attachments || lastMessage.attachments;
 
             if (provider === 'openai') {
-                return await openaiClient.chat({
+                const response = await openaiClient.chat({
                     message: lastMessage.content,
                     context: context,
                     temperature: options.temperature,
                     attachments
                 });
+                if (response.includes(':::TOOL_CALL:::')) return await this.handleReactLoop(response, messages, options);
+                return response;
             }
 
             if (provider === 'anthropic') {
-                return await anthropicClient.chat({
+                const response = await anthropicClient.chat({
                     message: lastMessage.content,
                     context: context,
                     temperature: options.temperature,
                     attachments
                 });
+                if (response.includes(':::TOOL_CALL:::')) return await this.handleReactLoop(response, messages, options);
+                return response;
             }
 
             if (provider === 'deepseek') {
-                return await deepseekClient.chat({
+                const response = await deepseekClient.chat({
                     message: lastMessage.content,
                     context: context,
                     temperature: options.temperature,
                     model: reasoningMode === 'deep' ? 'deepseek-reasoner' : 'deepseek-chat'
                 });
+                if (response.includes(':::TOOL_CALL:::')) return await this.handleReactLoop(response, messages, options);
+                return response;
             }
 
             if (provider === 'groq') {
-                return await groqClient.chat({
+                const response = await groqClient.chat({
                     message: lastMessage.content,
                     context: context as any,
                 });
+                if (response.includes(':::TOOL_CALL:::')) return await this.handleReactLoop(response, messages, options);
+                return response;
             }
 
             if (provider === 'ollama') {
-                return await ollamaClient.chat({
+                const response = await ollamaClient.chat({
                     message: lastMessage.content,
                     model: reasoningMode === 'deep' ? 'deepseek-r1:14b' : 'deepseek-r1:8b'
                 });
+                if (response.includes(':::TOOL_CALL:::')) return await this.handleReactLoop(response, messages, options);
+                return response;
             }
 
             throw new Error(`Provider ${provider} not fully integrated in ModelService yet.`);
@@ -163,8 +187,30 @@ export class ModelService {
         const MAX_ITERATIONS = options.reasoningMode === 'deep' ? 20 : 10;
 
         while (iteration < MAX_ITERATIONS) {
+            // Log Initial Cognition Before Tool Exec
+            const cognitionId = `cognition-${Date.now()}`;
+            useThoughtStore.getState().addNode({
+                id: cognitionId,
+                label: 'INTERNAL_COGNITION',
+                val: 10,
+                color: '#6366f1', // Indigo
+                details: iteration === 1 ? 'Analizando intención inicial...' : `Evaluando resultado previo (Paso ${iteration})...`,
+                timestamp: Date.now()
+            });
+
             const match = currentText.match(/:::TOOL_CALL:::([\s\S]*?):::END_TOOL_CALL:::/);
-            if (!match) return currentText;
+            if (!match) {
+                // Final Synthesis Node
+                useThoughtStore.getState().addNode({
+                    id: `synthesis-${Date.now()}`,
+                    label: 'SYNTHESIS',
+                    val: 20,
+                    color: '#f43f5e', // Rose
+                    details: 'Generando resolución final y respuesta al usuario.',
+                    timestamp: Date.now()
+                }, cognitionId);
+                return currentText;
+            }
 
             iteration++;
             try {
@@ -196,7 +242,7 @@ export class ModelService {
                     color: agentColor,
                     details: `Argumentos: ${JSON.stringify(args).slice(0, 100)}...`,
                     timestamp: Date.now()
-                });
+                }, cognitionId);
 
                 const result = await toolService.execute(name, args);
 
@@ -255,6 +301,40 @@ export class ModelService {
 
         return currentText + "\n\n[System: Max tool iterations reached]";
     }
+    /**
+     * Communicates with the Supabase Edge Function (Nexa Cloud Core)
+     */
+    private async handleCloudFlow(messages: ModelMessage[], options: ModelOptions): Promise<string> {
+        const { supabase } = await import('@/lib/supabase');
+        
+        const lastMessage = messages[messages.length - 1];
+        const context = messages.slice(0, -1).map(m => ({
+            role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
+            parts: [{ text: m.content }]
+        }));
+
+        const cloudPayload = {
+            action: 'chat',
+            payload: {
+                messages: [
+                    ...context,
+                    { role: 'user', parts: [{ text: lastMessage.content }] }
+                ],
+                model: options.provider === 'gemini' ? 'gemini-1.5-flash' : undefined,
+                temperature: options.temperature || 0.7,
+            }
+        };
+
+        const { data, error } = await supabase.functions.invoke('nexa-core', {
+            body: cloudPayload
+        });
+
+        if (error) throw error;
+        
+        // Handle Gemini-style response from the Edge Function
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "Cloud Core returned an empty response.";
+    }
 }
 
 export const modelService = ModelService.getInstance();
+

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -48,6 +49,12 @@ const mockSupabase = {
             return { data: { subscription: { unsubscribe: () => { } } } };
         }
     },
+    functions: {
+        invoke: async (name: string, options: any) => {
+            console.warn(`[MockSupabase] Cloud Hub Call: ${name}`, options.body);
+            return { data: { candidates: [{ content: { parts: [{ text: `Simulación (Modo Demo): Nexa Cloud recibió tu consulta sobre: ${options.body.payload?.messages?.slice(-1)[0]?.parts[0]?.text || "nada"}` }] } }] }, error: null };
+        }
+    },
     from: (table: string) => ({
         select: () => ({
             eq: () => ({
@@ -80,7 +87,7 @@ const mockSupabase = {
 };
 
 export const supabase = isSupabaseConfigured
-    ? createClient(supabaseUrl!, supabaseAnonKey!, {
+    ? createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
         auth: {
             persistSession: true,
             autoRefreshToken: true,

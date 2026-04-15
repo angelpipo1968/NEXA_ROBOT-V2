@@ -173,11 +173,15 @@ class MemoryBridge {
                         const summary = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
                         if (summary) {
-                            // 3. Guardar como nueva memoria de sistema "Consolidada"
-                            await this.save(summary, 'system', { consolidated: true, source_ids: memories.map(m => m.id) });
+                            // 3. Guardar como nueva memoria protegida "Consolidada" (Singularity Memory Protection)
+                            await this.save(summary, 'system', { 
+                                consolidated: true, 
+                                isProtected: true, // Singularity Protection
+                                source_ids: memories.map(m => m.id) 
+                            });
                             
-                            // 4. Marcar originales como consolidados (Mocking local state update)
-                            console.log('[MemoryBridge] ✨ Consolidación exitosa. Nueva cápsula generada.');
+                            // 4. Marcar originales como consolidados
+                            console.log('[MemoryBridge] ✨ Consolidación exitosa. Nueva cápsula protegida generada.');
                         }
                     } catch (e) {
                         console.error('[MemoryBridge] Consolidación fallida:', e);

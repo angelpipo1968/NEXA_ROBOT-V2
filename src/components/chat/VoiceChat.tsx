@@ -5,7 +5,7 @@ import { useChatStore } from '@/store/useChatStore';
 import { useVoiceStore } from '@/store/useVoiceStore';
 import { X } from 'lucide-react';
 import { LiveVoiceControl } from '../voice/LiveVoiceControl';
-import { CognitiveCore3D } from '../visual/CognitiveCore3D';
+import { NexaAvatar } from '../ui/NexaAvatar';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -318,11 +318,10 @@ export function VoiceChat({ initialMessage, autoStart = false }: VoiceChatProps)
 
                         {messages.length === 0 && (
                             <div className="text-center h-full flex flex-col items-center justify-center py-8 opacity-80">
-                                <div className="w-full max-w-md h-64 mb-6">
-                                    <CognitiveCore3D
-                                        isActive={isSpeaking}
-                                        isThinking={isThinking}
-                                        isListening={isListening}
+                                <div className="w-full max-w-md h-64 mb-6 flex items-center justify-center">
+                                    <NexaAvatar
+                                        state={isSpeaking ? 'speaking' : isThinking ? 'thinking' : isListening ? 'speaking' : 'logo'}
+                                        size={200}
                                     />
                                 </div>
                                 <h3 className="text-2xl font-bold mb-2 tracking-tight">Núcleo de Cognición Activo</h3>

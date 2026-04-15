@@ -122,3 +122,22 @@ CREATE INDEX IF NOT EXISTS idx_messages_created_at ON public.messages(created_at
 CREATE INDEX IF NOT EXISTS idx_memories_user_id ON public.memories(user_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON public.conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_memories_embedding ON public.memories USING hnsw (embedding vector_cosine_ops);
+
+-- 10. COGNITIVE CYCLES (v4.0 Cloud Autonomy)
+-- This table tracks what Nexa does autonomously in the cloud (Heartbeat)
+CREATE TABLE IF NOT EXISTS public.cognitive_cycles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  type TEXT NOT NULL CHECK (type IN ('reflection', 'research', 'learning', 'heartbeat')),
+  status TEXT DEFAULT 'success',
+  summary TEXT,
+  detail JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cognitive_cycles_created_at ON public.cognitive_cycles(created_at);
+CREATE INDEX IF NOT EXISTS idx_cognitive_cycles_type ON public.cognitive_cycles(type);
+
+-- Enable RLS and add policy
+ALTER TABLE public.cognitive_cycles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view cognitive cycles" ON public.cognitive_cycles FOR SELECT TO authenticated USING (true);
+

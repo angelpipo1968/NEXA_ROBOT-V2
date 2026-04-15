@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, LogIn, Menu } from 'lucide-react';
+import { Plus, LogIn, Menu, Layout } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '@/store/useUIStore';
 
@@ -31,6 +31,14 @@ export const MobileTopBar: React.FC<MobileTopBarProps> = ({ onPlusClick, isGuest
             </div>
 
             <div className="flex items-center gap-3">
+                <button
+                    onClick={() => navigate('/dashboard')}
+                    className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-indigo-600 dark:text-indigo-400"
+                    title="Dashboard de Autonomía"
+                >
+                    <Layout size={20} />
+                </button>
+
                 <button
                     onClick={onPlusClick}
                     className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-600 dark:text-gray-400"

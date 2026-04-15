@@ -58,7 +58,7 @@ export function ModernStudio() {
     const activeBook = projectData.title ? { title: projectData.title } : null;
 
     const handleUseTemplate = (template: WritingTemplate) => {
-        const newContent = `# ${template.title}\n## ${template.subtitle}\n\n${template.description}\n\n## Estructura Sugerida\n${template.structure.map(s => `- ${s}`).join('\n')}\n\n## Personajes\n${template.characters.map(c => `- ${c}`).join('\n')}\n\n## Consejos\n${template.tips}\n\n--- Empieza a escribir aquí ---`;
+        const newContent = `# ${template.title}\n## ${template.subtitle}\n\n${template.description}\n\n## Estructura Sugerida\n${template.structure.map((s: string) => `- ${s}`).join('\n')}\n\n## Personajes\n${template.characters.map((c: string) => `- ${c}`).join('\n')}\n\n## Consejos\n${template.tips}\n\n--- Empieza a escribir aquí ---`;
         updateProjectContent(newContent);
         setActiveView('editor');
     };

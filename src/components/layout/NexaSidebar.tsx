@@ -130,7 +130,7 @@ export default function NexaSidebar() {
                         {isSidebarOpen ? (
                             <div className="flex items-center gap-3">
                                 <NexaAvatar state={avatarState} size={32} />
-                                <span className="font-bold text-xl tracking-tight text-[var(--text-primary)] neon-glow-text">NEXA AI</span>
+                                <span className="font-bold text-xl tracking-tight text-[var(--text-primary)]">ANTIGRAVITY</span>
                             </div>
                         ) : (
                             <NexaAvatar state={avatarState} size={32} />
@@ -172,48 +172,13 @@ export default function NexaSidebar() {
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto px-2 py-2 space-y-6 custom-scrollbar">
 
-                    {/* Navigation Links (The "Three Things") */}
+                    {/* Navigation Links */}
                     <div className="space-y-1">
                         <NavItem
                             icon={MessageSquare}
                             label="Nexa Chat"
                             active={location.pathname === '/' || location.pathname === '/home' || location.pathname === '/chat'}
                             onClick={() => handleNavigation('/')}
-                            collapsed={!isSidebarOpen}
-                        />
-                        <NavItem
-                            icon={Palette}
-                            label="Studio"
-                            active={location.pathname === '/studio'}
-                            onClick={() => handleNavigation('/studio')}
-                            collapsed={!isSidebarOpen}
-                        />
-                        <NavItem
-                            icon={Bot}
-                            label="Dev Studio"
-                            active={location.pathname === '/webdev'}
-                            onClick={() => handleNavigation('/webdev')}
-                            collapsed={!isSidebarOpen}
-                        />
-                        <NavItem
-                            icon={Wand2}
-                            label="Generador"
-                            active={location.pathname === '/generator'}
-                            onClick={() => handleNavigation('/generator')}
-                            collapsed={!isSidebarOpen}
-                        />
-                        <NavItem
-                            icon={Layout}
-                            label="Dashboard"
-                            active={location.pathname === '/dashboard'}
-                            onClick={() => handleNavigation('/dashboard')}
-                            collapsed={!isSidebarOpen}
-                        />
-                        <NavItem
-                            icon={Mail}
-                            label="Gmail Hub"
-                            active={location.pathname === '/gmail'}
-                            onClick={() => handleNavigation('/gmail')}
                             collapsed={!isSidebarOpen}
                         />
                     </div>
@@ -277,8 +242,8 @@ export default function NexaSidebar() {
                 </div>
 
                 {/* Footer: Theme Toggle & User Profile */}
-                <div 
-                    className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] w-full shrink-0" 
+                <div
+                    className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] w-full shrink-0"
                     ref={userMenuRef}
                 >
 
@@ -341,8 +306,7 @@ export default function NexaSidebar() {
                         {isSidebarOpen && (
                             <>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold truncate text-[var(--text-primary)]">{isGuest ? 'Invitado' : userName}</p>
-                                    <p className="text-[10px] text-[var(--text-muted)] truncate uppercase tracking-wider font-bold">{isGuest ? 'SESIÓN TEMPORAL' : 'NEXA PRO'}</p>
+                                    <p className="text-[10px] text-[var(--text-muted)] truncate uppercase tracking-wider font-bold">{isGuest ? 'SESIÓN TEMPORAL' : 'ANTIGRAVITY UNLIMITED'}</p>
                                 </div>
                                 <ChevronRight size={14} className={`text-[var(--text-muted)] transition-transform ${showUserMenu ? 'rotate-90' : ''}`} />
                             </>
@@ -374,7 +338,7 @@ function NavItem({ icon: Icon, label, active, onClick, collapsed }: { icon: any,
                 : 'text-[var(--text-tertiary)] hover:bg-[var(--card-hover-bg)] hover:text-[var(--text-primary)]'
                 } ${collapsed ? 'w-full justify-center' : 'w-full'}`}
         >
-            <Icon size={18} className={active ? 'text-[var(--vp-accent-purple)]' : ''} />
+            <Icon size={20} className={active ? 'text-[var(--accent-primary)]' : ''} />
             {!collapsed && <span className="text-sm font-medium animate-in fade-in duration-200">{label}</span>}
         </button>
     );

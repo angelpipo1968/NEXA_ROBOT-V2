@@ -8,7 +8,7 @@ export default function TemplatesPanel() {
         const { updateProjectContent, updateTitle } = useProjectStore();
     const { switchPanel } = useUiStore();
 
-    const handleApplyTemplate = (template: any) => {
+    const handleApplyTemplate = (template: (typeof WRITING_TEMPLATES)[number]) => {
         // Construct the content from the template structure
         let content = `# ${template.title}\n## ${template.subtitle}\n\n${template.description}\n\n## Estructura Sugerida\n`;
         template.structure.forEach((s: string) => {

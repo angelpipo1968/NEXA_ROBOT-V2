@@ -56,7 +56,7 @@ export default defineConfig({
         port: 3000,
         proxy: {
             '/api': {
-                target: 'http://localhost:3001',
+                target: 'http://localhost:5000',
                 changeOrigin: true,
             },
             '/anthropic-api': {
@@ -108,7 +108,7 @@ export default defineConfig({
                 manualChunks: {
                     vendor: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'zustand'],
                     three: ['three', '@react-three/fiber', '@react-three/drei'],
-                    supabase: ['@supabase/supabase-js', '@supabase/auth-helpers-react'],
+                    supabase: ['@supabase/supabase-js'],
                     icons: ['lucide-react', '@phosphor-icons/react'],
                     ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-slot', '@radix-ui/react-toast', 'clsx', 'tailwind-merge', 'class-variance-authority']
                 }

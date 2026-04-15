@@ -3,6 +3,8 @@ import { searchNews } from './newsService';
 import { memoryBridge } from '../memoryBridge';
 import { useAutonomyStore } from '@/store/useAutonomyStore';
 import { useChatStore } from '@/store/useChatStore';
+import { supabase } from '../supabase';
+
 
 export class HeartbeatService {
     private static instance: HeartbeatService;
@@ -39,6 +41,15 @@ export class HeartbeatService {
         const lastHeartbeat = useAutonomyStore.getState().lastHeartbeat || 0;
         const addLog = useChatStore.getState().addTerminalLog;
 
+        const isCloudMode = !!(window as any).Capacitor;
+
+        if (isCloudMode) {
+            console.log('[HeartbeatService] ☁️ Sincronizando latidos con la nube...');
+            await this.syncWithCloud();
+            useAutonomyStore.getState().setLastHeartbeat(now);
+            return;
+        }
+
         // 1. Fase de Auto-Reflexión (Solo si ha pasado el tiempo necesario)
         if (now - lastHeartbeat > this.MIN_INTERVAL) {
             addLog('❤️ [HEARTBEAT] Latido detectado. Iniciando tareas autónomas...');
@@ -62,6 +73,33 @@ export class HeartbeatService {
             console.log('[HeartbeatService] ❤️ Latido silenciado (Demasiado pronto para el siguiente ciclo reflexivo).');
         }
     }
+
+    private async syncWithCloud() {
+        try {
+            const { data: cycles, error } = await supabase
+                .from('cognitive_cycles')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (error) throw error;
+
+            const addLog = useChatStore.getState().addTerminalLog;
+            
+            if (cycles && cycles.length > 0) {
+                // Sincronizar logs basados en los ciclos de la nube
+                cycles.forEach((cycle: any) => {
+                    const time = new Date(cycle.created_at).toLocaleTimeString();
+                    if (!useAutonomyStore.getState().logs.some(l => l.includes(cycle.summary))) {
+                        addLog(`[CLOUD-${cycle.type.toUpperCase()}] ${cycle.summary}`);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('[HeartbeatService] Error syncing with cloud:', e);
+        }
+    }
+
 
     public stop() {
         if (this.timer) {

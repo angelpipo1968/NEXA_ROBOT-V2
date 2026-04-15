@@ -10,7 +10,7 @@ export interface AISuggestion {
     action: string;
 }
 
-export type AIEngine = 'gemini' | 'claude' | 'gpt' | 'deepseek' | 'ollama';
+export type AIEngine = 'nexa' | 'gemini' | 'claude' | 'gpt' | 'deepseek' | 'ollama';
 
 export interface AIConfig {
     model: string;
@@ -39,6 +39,14 @@ const executeAiQuery = async (prompt: string, engine: AIEngine, config: AIConfig
         } else if (engine === 'gpt') {
             const text = await openaiClient.chat({ message: prompt, temperature: config.creativity });
             return text;
+        } else if (engine === 'nexa') {
+            // NEXA UNLIMITED: The Master Orchestrator
+            const response = await geminiClient.chat({ 
+                message: `[GRAVITY MASTER MODE ACTIVE]\n${prompt}`, 
+                temperature: 0.8 
+            });
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se obtuvo respuesta del núcleo Nexa.";
         } else {
             // Default Gemini
             const response = await geminiClient.chat({ message: prompt, temperature: config.creativity });
@@ -54,9 +62,9 @@ const executeAiQuery = async (prompt: string, engine: AIEngine, config: AIConfig
 export const useAiStore = create<AiState>((set, get) => ({
     aiSuggestions: [],
     aiConfig: {
-        model: 'gemini-3.1-pro',
-        creativity: 0.7,
-        activeEngine: 'gemini'
+        model: 'nexa-unlimited-v1',
+        creativity: 0.8,
+        activeEngine: 'nexa'
     },
 
     setActiveEngine: (engine) => set((state) => ({ aiConfig: { ...state.aiConfig, activeEngine: engine } })),

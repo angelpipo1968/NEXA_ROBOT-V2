@@ -93,18 +93,40 @@ class SelfHealingKernel {
         }`;
 
         try {
-            const analysis = await modelService.generateResponse([
-                { role: 'system', content: 'Eres el Agente Inmunitario de Nexa OS. Tu objetivo es la homeostasis total del sistema.' },
-                { role: 'user', content: prompt }
-            ], { provider: 'groq' });
+            let analysis = '';
+            try {
+                // 1. Primary: Groq (Ultra-fast reasoning)
+                analysis = await modelService.generateResponse([
+                    { role: 'system', content: 'Eres el Agente Inmunitario de Nexa OS. Tu objetivo es la homeostasis total del sistema sin fallar.' },
+                    { role: 'user', content: prompt }
+                ], { provider: 'groq' });
+            } catch (e1) {
+                console.warn('[Self-Healing] Fallback activado: Cambiando a Gemini (Cloud Intelligence)...');
+                try {
+                    // 2. Fallback: Gemini
+                    analysis = await modelService.generateResponse([
+                        { role: 'system', content: 'Eres el Agente Inmunitario de Nexa OS. Sistema en modo recuperación.' },
+                        { role: 'user', content: prompt }
+                    ], { provider: 'gemini' });
+                } catch (e2) {
+                    console.warn('[Self-Healing] Fallback activado: Cambiando a Ollama (Local Limitless Mode)...');
+                    // 3. Fallback: Ollama Local (Offline/Limitless)
+                    analysis = await modelService.generateResponse([
+                        { role: 'system', content: 'Eres el Agente Inmunitario local de Nexa OS.' },
+                        { role: 'user', content: prompt }
+                    ], { provider: 'ollama' });
+                }
+            }
 
             let parsed;
             try {
-                // Limpiar posible markdown del JSON
-                const jsonStr = analysis.match(/\{[\s\S]*\}/)?.[0] || analysis;
+                // Limpiar posible markdown del JSON (R1 de deepseek envuelve en <think>)
+                let cleanStr = analysis.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+                const jsonMatch = cleanStr.match(/\{[\s\S]*\}/);
+                const jsonStr = jsonMatch ? jsonMatch[0] : cleanStr;
                 parsed = JSON.parse(jsonStr);
             } catch {
-                parsed = { diagnosis: analysis };
+                parsed = { diagnosis: analysis.substring(0, 150) + "...", patch: null, severity: "warning" };
             }
 
             // Guardar en la "Memoria Inmunitaria"

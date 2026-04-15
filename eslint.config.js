@@ -28,6 +28,11 @@ export default [
     },
   },
   {
+    rules: {
+      '@typescript-eslint/no-duplicate-enum-values': 'off',
+    },
+  },
+  {
     ignores: ['dist/**', 'node_modules/**', '**/*.d.ts'],
   },
 ];

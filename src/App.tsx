@@ -15,19 +15,14 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // Lazy load heavy pages
 const ChatPage = React.lazy(() => import('./pages/Chat'));
-const StudioPage = React.lazy(() => import('./pages/Studio'));
 const AuthPage = React.lazy(() => import('./pages/Auth'));
 const AuthCallback = React.lazy(() => import('./components/auth/AuthCallback'));
-const MediaGeneratorPage = React.lazy(() => import('./pages/Generator'));
-const FuturisticDashboard = React.lazy(() => import('./components/dev/FuturisticDashboard'));
-const GmailPage = React.lazy(() => import('./components/widgets/GmailHub'));
 
 import { MobileTopBar } from '@/components/layout/MobileTopBar';
 
-import CyberpunkParticles from '@/components/ui/CyberpunkParticles';
+import { heartbeatService } from '@/lib/services/HeartbeatService';
 import { dreamResearchService } from '@/lib/services/dreamResearch';
 import { autonomyService } from '@/lib/services/AutonomyService';
-import { heartbeatService } from '@/lib/services/HeartbeatService';
 
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -43,7 +38,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         // Initialize native platform features
         if (Capacitor.isNativePlatform()) {
             StatusBar.setOverlaysWebView({ overlay: false }).catch(() => { });
-            StatusBar.setBackgroundColor({ color: '#030305' }).catch(() => { });
+            StatusBar.setBackgroundColor({ color: '#131314' }).catch(() => { });
             StatusBar.setStyle({ style: Style.Dark }).catch(() => { });
             // KeyboardResize.Body ensures the view shrinks correctly on Samsung WebViews
             Keyboard.setResizeMode({ mode: KeyboardResize.Body }).catch(() => { });
@@ -94,11 +89,6 @@ function Layout({ children }: { children: React.ReactNode }) {
     }, [syncUser, navigate]);
     return (
         <div className="vp-app flex w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] transition-colors duration-300">
-            {/* Global Visual Effects */}
-            <CyberpunkParticles />
-            <div className="cyber-overlay" />
-            <div className="scanline" />
-
             {/* New Nexa-Style Sidebar with Branding */}
             <NexaSidebar />
 
@@ -135,16 +125,8 @@ function AppRoutes() {
                 <Route path="/" element={<PageTransition><ChatPage /></PageTransition>} />
                 <Route path="/home" element={<PageTransition><ChatPage /></PageTransition>} />
                 <Route path="/chat" element={<PageTransition><ChatPage /></PageTransition>} />
-                <Route path="/webdev" element={<PageTransition><ChatPage /></PageTransition>} />
-                <Route path="/studio" element={<PageTransition><StudioPage /></PageTransition>} />
-                <Route path="/projects" element={<PageTransition><div className="p-8 text-white">Projects Placeholder</div></PageTransition>} />
-                <Route path="/test-search" element={<PageTransition><SearchCardTest /></PageTransition>} />
-                <Route path="/landing-demo" element={<PageTransition><DemoLanding /></PageTransition>} />
-                <Route path="/generator" element={<PageTransition><MediaGeneratorPage /></PageTransition>} />
                 <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
                 <Route path="/auth/callback" element={<PageTransition><AuthCallback /></PageTransition>} />
-                <Route path="/dashboard" element={<PageTransition><FuturisticDashboard /></PageTransition>} />
-                <Route path="/gmail" element={<PageTransition><GmailPage /></PageTransition>} />
             </Routes>
         </AnimatePresence>
     );

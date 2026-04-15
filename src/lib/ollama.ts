@@ -7,8 +7,11 @@ export interface OllamaRequest {
 
 export const ollamaClient = {
     chat: async (payload: OllamaRequest) => {
-        // Use proxy to avoid CORS issues
-        const url = '/ollama-api/api/generate';
+        // Manejar entorno de Capacitor (App Android) vs Web
+        const isCapacitor = !!(window as any).Capacitor;
+        // En Android, localhost es el móvil. Para PC, configurar IP local o usar loopback default de Android studio (10.0.2.2 dev env)
+        const baseUrl = isCapacitor ? (localStorage.getItem('NEXA_OLLAMA_URL') || 'http://10.0.2.2:11434') : '/ollama-api';
+        const url = `${baseUrl}/api/generate`;
         const model = payload.model || 'deepseek-r1:8b';
 
         try {

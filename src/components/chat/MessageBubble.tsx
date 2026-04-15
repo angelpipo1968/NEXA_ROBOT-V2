@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Copy, Trash2, Volume2, Edit2, GitFork, ThumbsUp, ThumbsDown, Share2, RotateCw, MoreHorizontal, Settings, ChevronLeft, Check } from 'lucide-react';
+import { Copy, Trash2, Volume2, Edit2, GitFork, ThumbsUp, ThumbsDown, Share2, RotateCw, MoreHorizontal, Settings, ChevronLeft, Check, Sparkles } from 'lucide-react';
 import ThinkingCard from './ThinkingCard';
 import ArtifactCard from './ArtifactCard';
 import CodePreview from './CodePreview';
@@ -113,53 +113,60 @@ export default function MessageBubble({ role, content, id, deleteMessage, forkCh
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.4, type: 'spring', bounce: 0.3 }}
-            className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} group mb-4`}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} group mb-8 px-4 md:px-0`}
         >
-            <div
-                className={`max-w-[85%] rounded-3xl px-6 py-4 text-[15px] leading-relaxed shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-xl border border-white/10 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.2)] ${isUser
-                    ? 'bg-gradient-to-br from-purple-600/90 to-indigo-600/90 text-white rounded-tr-sm'
-                    : 'bg-white/5 dark:bg-black/20 text-[var(--text-primary)]'
-                    }`}
-            >
-                {isUser ? (
-                    <div className="space-y-2">
-                        {isEditing ? (
-                            <div className="flex flex-col gap-2 min-w-[300px]">
-                                <textarea
-                                    value={editContent}
-                                    onChange={(e) => setEditContent(e.target.value)}
-                                    className="w-full bg-black/20 text-white rounded-lg p-3 text-[15px] focus:outline-none resize-none border border-white/10"
-                                    rows={Math.max(3, editContent.split('\n').length)}
-                                    autoFocus
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSaveEdit();
-                                        }
-                                        if (e.key === 'Escape') setIsEditing(false);
-                                    }}
-                                />
-                                <div className="flex justify-end gap-2">
-                                    <button
-                                        onClick={() => { setIsEditing(false); setEditContent(content); }}
-                                        className="text-xs text-white/70 hover:text-white px-3 py-1.5 rounded hover:bg-white/10 transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        onClick={handleSaveEdit}
-                                        className="text-xs bg-white text-[var(--accent-primary)] px-4 py-1.5 rounded-md font-medium hover:bg-white/90 shadow-sm transition-colors"
-                                    >
-                                        Guardar
-                                    </button>
+            <div className={`relative flex gap-4 max-w-full md:max-w-4xl w-full ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                
+                {/* Avatar / Icon */}
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-1 ${isUser ? 'bg-[var(--accent-primary)] text-white ml-2' : 'bg-[var(--bg-tertiary)] text-[var(--accent-primary)] mr-2'}`}>
+                    {isUser ? <span className="text-[10px] font-bold">YO</span> : <Sparkles size={16} />}
+                </div>
+
+                <div
+                    className={`relative px-1 py-1 transition-all duration-300 ${isUser
+                        ? 'max-w-[85%] md:max-w-[70%] bg-[var(--bg-tertiary)] dark:bg-[var(--bg-secondary)] text-[var(--text-primary)] rounded-[20px] px-5 py-3 shadow-sm border border-[var(--border-color)]'
+                        : 'flex-1 prose-clean'
+                        }`}
+                >
+                    {isUser ? (
+                        <div className="space-y-2">
+                            {isEditing ? (
+                                <div className="flex flex-col gap-2 min-w-[200px] md:min-w-[400px]">
+                                    <textarea
+                                        value={editContent}
+                                        onChange={(e) => setEditContent(e.target.value)}
+                                        className="w-full bg-transparent text-[var(--text-primary)] rounded-lg p-0 text-[15px] focus:outline-none resize-none"
+                                        rows={Math.max(1, editContent.split('\n').length)}
+                                        autoFocus
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSaveEdit();
+                                            }
+                                            if (e.key === 'Escape') setIsEditing(false);
+                                        }}
+                                    />
+                                    <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border-color)]">
+                                        <button
+                                            onClick={() => { setIsEditing(false); setEditContent(content); }}
+                                            className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] px-2 py-1 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            onClick={handleSaveEdit}
+                                            className="text-xs bg-[var(--accent-primary)] text-white px-3 py-1 rounded-md font-medium shadow-sm transition-colors"
+                                        >
+                                            Guardar
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="whitespace-pre-wrap">{content}</div>
-                        )}
+                            ) : (
+                                <div className="whitespace-pre-wrap">{content}</div>
+                            )}
                         {/* User Actions: Copy + Delete */}
                         <div className="flex items-center justify-end gap-2 pt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <ActionButton
@@ -513,7 +520,8 @@ export default function MessageBubble({ role, content, id, deleteMessage, forkCh
                     </div>
                 )}
             </div>
-        </motion.div>
+        </div>
+    </motion.div>
     );
 }
 

@@ -18,6 +18,9 @@ interface UIState {
 
     isArtifactPanelOpen: boolean;
     setArtifactPanelOpen: (isOpen: boolean) => void;
+
+    isThoughtStreamOpen: boolean;
+    setThoughtStreamOpen: (isOpen: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -38,6 +41,9 @@ export const useUIStore = create<UIState>()(
 
             isArtifactPanelOpen: false,
             setArtifactPanelOpen: (isOpen) => set({ isArtifactPanelOpen: isOpen }),
+
+            isThoughtStreamOpen: false,
+            setThoughtStreamOpen: (isOpen) => set({ isThoughtStreamOpen: isOpen }),
         }),
         {
             name: 'nexa-ui-storage',

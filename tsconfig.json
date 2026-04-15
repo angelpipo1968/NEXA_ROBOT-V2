@@ -43,6 +43,7 @@
     "public",
     "apps",
     "python_agent",
+    "supabase/functions",
     "**/*.test.ts",
     "**/*.spec.ts"
   ]

@@ -259,7 +259,7 @@ export const toolService = {
             }
         }
 
-        // Project/System Tools (Delegate to Backend or Local MemoryBridge)
+        // Project/System/Dynamic MCP Tools (Delegate to Backend or Local MemoryBridge)
         if (functionName === 'save_knowledge') {
             try {
                 const { memoryBridge } = await import('./memoryBridge');
@@ -283,7 +283,14 @@ export const toolService = {
             }
         }
 
-        if (['read_url_content', 'run_script', 'list_dir', 'read_file', 'write_file', 'index_codebase', 'codebase_search'].includes(functionName)) {
+        // Catch-all for tools that should be handled by the backend (Filesystem, Dynamic MCP, etc.)
+        const backendTools = [
+            'read_url_content', 'run_script', 'list_dir', 'read_file', 'write_file', 
+            'index_codebase', 'codebase_search', 'nexa_deep_search', 
+            'nexa_analyze_characters', 'nexa_generate_creative_expansion'
+        ];
+
+        if (backendTools.includes(functionName) || functionName.startsWith('mcp_') || functionName.startsWith('nexa_')) {
             try {
                 // If writing a file, also update the active file in the UI
                 if (functionName === 'write_file') {

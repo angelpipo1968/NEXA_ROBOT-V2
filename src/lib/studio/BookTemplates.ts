@@ -1,52 +1,55 @@
+/**
+ * BookTemplates - Pre-defined book structure templates
+ */
 export interface BookTemplate {
     id: string;
     name: string;
-    description: string;
-    structure: string;
     icon: string;
+    structure: string;
+    description?: string;
 }
 
 export const BOOK_TEMPLATES: BookTemplate[] = [
     {
         id: 'novel',
-        name: 'Novela de Ficción',
-        description: 'Estructura clásica en tres actos para narrativas cautivadoras.',
-        icon: '📚',
-        structure: `# Título de la Novela\n\n## Acto I: El Planteamiento\n- Introducción de personajes\n- El incidente incitante\n\n## Acto II: El Nudo\n- Desarrollo del conflicto\n- Punto de no retorno\n\n## Acto III: El Desenlace\n- Clímax\n- Resolución`
+        name: 'Novela',
+        icon: '📖',
+        structure: '# Acto I: Presentación\n\n## Capítulo 1: El mundo ordinario\n\n## Capítulo 2: La llamada a la aventura\n\n# Acto II: Confrontación\n\n## Capítulo 3: Cruzando el umbral\n\n## Capítulo 4: Pruebas y aliados\n\n## Capítulo 5: La cueva más profunda\n\n# Acto III: Resolución\n\n## Capítulo 6: La prueba suprema\n\n## Capítulo 7: El camino de regreso\n\n## Capítulo 8: Resurrección',
+        description: 'Estructura clásica de tres actos para novelas'
     },
     {
-        id: 'biography',
-        name: 'Biografía / Memoria',
-        description: 'Cronología de una vida, desde los orígenes hasta el legado.',
-        icon: '👤',
-        structure: `# Biografía de [Nombre]\n\n## Infancia y Orígenes\n## Años de Formación\n## Hitos y Logros\n## Desafíos Superados\n## Legado y Reflexiones`
+        id: 'short-story',
+        name: 'Cuento Corto',
+        icon: '📝',
+        structure: '# Introducción\n\nEstablece el escenario y los personajes.\n\n# Nudo\n\nDesarrolla el conflicto principal.\n\n# Desenlace\n\nResuelve la historia.',
+        description: 'Estructura simple para cuentos cortos'
     },
     {
         id: 'essay',
-        name: 'Ensayo / No Ficción',
-        description: 'Ideal para libros técnicos, de autoayuda o investigación.',
-        icon: '💡',
-        structure: `# Título del Libro\n\n## Introducción\n- Tesis principal\n- Por qué este libro es importante\n\n## Capítulos Temáticos\n- Concepto 1\n- Concepto 2\n\n## Conclusión y Aplicación Práctica`
+        name: 'Ensayo',
+        icon: '🎓',
+        structure: '# Tesis\n\nPlantea tu argumento principal.\n\n# Desarrollo\n\n## Argumento 1\n\n## Argumento 2\n\n## Argumento 3\n\n# Conclusión\n\nResume y reafirma tu tesis.',
+        description: 'Estructura académica para ensayos'
     },
     {
-        id: 'script',
-        name: 'Guion Cinematográfico',
-        description: 'Formato estándar para cine y televisión.',
+        id: 'screenplay',
+        name: 'Guión',
         icon: '🎬',
-        structure: `ESC. 1 - INTERIOR - DÍA\n\n[PERSONAJE]\n(emocionado)\n¡Esta es la gran revelación!`
+        structure: '# ACTO I\n\nINT. UBICACIÓN - DÍA\n\nDescripción de la escena.\n\nPERSONAJE\n(acotación)\nDiálogo.\n\n# ACTO II\n\n# ACTO III',
+        description: 'Formato estándar para guiones cinematográficos'
     },
     {
-        id: 'visionary',
-        name: 'Novela Visionaria',
-        description: 'Enfoque en mundos profundos, realismo mágico y descripciones vívidas.',
-        icon: '✨',
-        structure: `# El Umbral de lo Invisible\n\n## Prólogo: El Susurro del Bosque\n(Aquí el autor debe enfocarse en la fluidez sensorial...)\n\n## Capítulo 1: La Anciana de los Tiempos\n- Encuentro en el claro del bosque\n- El realismo de las arrugas y la historia.`
+        id: 'poetry',
+        name: 'Poesía',
+        icon: '🌹',
+        structure: '# Poema sin título\n\nVerso 1...\nVerso 2...\nVerso 3...\n\nVerso 4...\nVerso 5...\nVerso 6...',
+        description: 'Formato libre para poesía'
     },
     {
-        id: 'business',
-        name: 'Libro Profesional / Negocios',
-        description: 'Estructura analítica, elegante y directa para el mundo corporativo.',
-        icon: '📊',
-        structure: `# Estrategias de Vanguardia\n\n## Introducción: El Nuevo Paradigma\n## Capítulo 1: Análisis de Mercado\n## Capítulo 2: Ejecución Perfecta\n## Conclusiones Ejecutivas`
+        id: 'memoir',
+        name: 'Memorias',
+        icon: '📔',
+        structure: '# Prólogo\n\nContexto y motivación.\n\n# Capítulo 1: Los primeros años\n\n# Capítulo 2: Momentos decisivos\n\n# Capítulo 3: Reflexiones\n\n# Epílogo',
+        description: 'Estructura para autobiografías y memorias'
     }
 ];

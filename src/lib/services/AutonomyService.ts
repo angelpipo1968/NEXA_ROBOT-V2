@@ -33,14 +33,11 @@ export class AutonomyService {
                 console.warn('[AutonomyService] ⚠️ Permisos de notificación no concedidos.');
             }
 
-            await ForegroundService.start({
+            await ForegroundService.startForegroundService({
                 id: 1988,
                 title: 'Nexa OS v4.0 "Singularity"',
                 body: 'Protocolo de Autonomía Activo • Monitoreo 24/7',
                 smallIcon: 'nexa_logo', // Debe coincidir con el recurso en Android
-                importance: 3, // Default
-                autoClear: false,
-                ongoing: true,
             });
 
             this.isStarted = true;
@@ -52,7 +49,7 @@ export class AutonomyService {
 
     public async stopInmortalMode() {
         if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
-            await ForegroundService.stop();
+            await ForegroundService.stopForegroundService();
             this.isStarted = false;
         }
     }

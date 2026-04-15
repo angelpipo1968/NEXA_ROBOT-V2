@@ -385,13 +385,32 @@ export const useChatStore = create<ChatState>()(
                                         });
                                         get().updateMessage(assistantMsgId, { content: ollamaResponse });
                                         if (onResponse) onResponse(ollamaResponse);
-                                    } catch (ollamaError) {
+                                    } catch (ollamaError: any) {
                                         console.error('Final Fallback (Ollama) Error:', ollamaError);
-                                        // Absolute Final Failure
-                                        const emsg = finalError?.message || ollamaError?.message || "Network Timeout or CORS";
-                                        const simResponse = `⚠️ Error TOTAL (Cloud & Local).\n\nDetalle: ${emsg}\n\n¡REINICIA LA TERMINAL O VERIFICA OLLAMA!`;
-                                        get().updateMessage(assistantMsgId, { content: simResponse });
-                                        if (onResponse) onResponse(simResponse);
+                                        // SOVEREIGN ARCHITECTURE REPAIR: Recuperar de memoria local si todo falla
+                                        console.warn('[Autonomous Sovereign Mode] Modelos externos caídos. Activando caché latente...');
+                                        try {
+                                            const localMemories = await memoryBridge.search(content, 3);
+                                            let simResponse = '';
+                                            if (localMemories && localMemories.length > 0) {
+                                                simResponse = `NEXA (Sovereign Offline Mode)\nEstoy operando sin conexión, pero aquí están mis recuerdos relevantes:\n\n${localMemories.join('\n\n')}`;
+                                            } else {
+                                                const emsg = (finalError as any)?.message || (ollamaError as any)?.message || "Offline";
+                                                simResponse = `NEXA (Sovereign Mode) 🛡️\n\nHe entrado en **Conservación de Energía (Modo Desconectado)**. Mis núcleos externos están inaccesibles.\n\nActualmente dependo de mi red neuronal pasiva y no tengo recuerdos latentes sobre este contexto. Conecta a la Red para reactivar mis capacidades completas de síntesis o habilita el Núcleo Nativo.\n\n[Diagnóstico: ${emsg}]`;
+                                            }
+                                            
+                                            // Enviar la respuesta (sea recuerdo u error custom)
+                                            get().updateMessage(assistantMsgId, { content: simResponse });
+                                            if (useVoiceStore.getState().voiceEnabled) {
+                                                 useVoiceStore.getState().speak("Sistema offline activado. Leyendo desde la memoria central.");
+                                            }
+                                            if (onResponse) onResponse(simResponse);
+                                        } catch (fallbackErr: any) {
+                                            // Fallo absoluto del sistema local
+                                            const simResponse = `NEXA (Sovereign Mode) 🛡️\n\nHe activado el modo de **Conservación de Energía Total** y el acceso al núcleo de persistencia local ha fallado. [Error: ${fallbackErr.message || 'IndexedDB / Swarm inaccesible'}]`;
+                                            get().updateMessage(assistantMsgId, { content: simResponse });
+                                            if (onResponse) onResponse(simResponse);
+                                        }
                                     }
                                 }
                             }
