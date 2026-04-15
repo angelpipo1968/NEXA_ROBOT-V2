@@ -6,11 +6,11 @@ import { toolService } from '@/lib/toolService';
 import { supabase } from '@/lib/supabase';
 import { geminiClient } from '@/lib/gemini';
 import { anthropicClient } from '@/lib/anthropic';
-import { openaiClient } from '@/lib/openai';
 import { deepseekClient } from '@/lib/deepseek';
 import { memoryBridge } from '@/lib/memoryBridge';
 import { groqClient } from '@/lib/groq';
 import { elevenlabsClient } from '@/lib/elevenlabs';
+import { ollamaClient } from '@/lib/ollama';
 import { autoToolDetector } from '@/lib/autoToolDetector';
 import { modelService, ModelMessage } from '@/services/ModelService';
 import { useVoiceStore } from './useVoiceStore';
@@ -187,6 +187,15 @@ export const useChatStore = create<ChatState>()(
             clearTerminalLogs: () => set({ terminalLogs: [] }),
 
             generateAIResponse: async (content: string, onResponse?: (text: string) => void) => {
+                const sanitizeDiagnostic = (value: unknown) => {
+                    const text = String((value as any)?.message || value || 'Offline');
+                    return text
+                        .replace(/sk-[A-Za-z0-9_\-]{12,}/g, 'sk-***')
+                        .replace(/gsk_[A-Za-z0-9]{12,}/g, 'gsk_***')
+                        .replace(/tvly-[A-Za-z0-9_\-]{12,}/g, 'tvly-***')
+                        .replace(/Bearer\s+[A-Za-z0-9._\-]+/gi, 'Bearer ***');
+                };
+
                 const assistantMsgId = (Date.now() + 1).toString();
 
                 // Optimistic UI update
@@ -340,11 +349,11 @@ export const useChatStore = create<ChatState>()(
                             // }
 
                         } catch (backupError) {
-                            console.error('Backup (Claude) Error, trying OpenAI...', backupError);
+                            console.error('Backup (Claude) Error, trying DeepSeek...', backupError);
 
                             try {
-                                // Second Fallback: OpenAI
-                                const openaiResponse = await openaiClient.chat({
+                                // Second Fallback: DeepSeek
+                                const deepseekResponse = await deepseekClient.chat({
                                     message: content,
                                     context: get().messages.map(m => ({
                                         role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
@@ -352,41 +361,25 @@ export const useChatStore = create<ChatState>()(
                                     })) as any
                                 });
 
-                                get().updateMessage(assistantMsgId, { content: openaiResponse });
-                                // if (useVoiceStore.getState().voiceEnabled) {
-                                //     useVoiceStore.getState().speak(openaiResponse);
-                                // }
+                                get().updateMessage(assistantMsgId, { content: deepseekResponse });
+                                if (onResponse) onResponse(deepseekResponse);
 
                             } catch (finalError) {
-                                console.error('OpenAI Error, trying DeepSeek...', finalError);
+                                console.error('DeepSeek Error, trying final local fallback (Ollama)...', finalError);
 
                                 try {
-                                    // Third Fallback: DeepSeek
-                                    const deepseekResponse = await deepseekClient.chat({
-                                        message: content,
-                                        context: get().messages.map(m => ({
-                                            role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
-                                            parts: m.content
-                                        })) as any
+                                    const ollamaAvailable = await ollamaClient.checkHealth();
+                                    if (!ollamaAvailable) {
+                                        throw new Error('Ollama local no disponible');
+                                    }
+
+                                    const ollamaResponse = await modelService.generateResponse(chatHistory, {
+                                        provider: 'ollama'
                                     });
-
-                                    get().updateMessage(assistantMsgId, { content: deepseekResponse });
-                                    // if (useVoiceStore.getState().voiceEnabled) {
-                                    //     useVoiceStore.getState().speak(deepseekResponse);
-                                    // }
-                                    if (onResponse) onResponse(deepseekResponse);
-
-                                } catch (deepseekError) {
-                                    console.error('DeepSeek Error, trying final local fallback (Ollama)...', deepseekError);
-                                    
-                                    try {
-                                        const ollamaResponse = await modelService.generateResponse(chatHistory, {
-                                            provider: 'ollama'
-                                        });
-                                        get().updateMessage(assistantMsgId, { content: ollamaResponse });
-                                        if (onResponse) onResponse(ollamaResponse);
-                                    } catch (ollamaError: any) {
-                                        console.error('Final Fallback (Ollama) Error:', ollamaError);
+                                    get().updateMessage(assistantMsgId, { content: ollamaResponse });
+                                    if (onResponse) onResponse(ollamaResponse);
+                                } catch (ollamaError: any) {
+                                    console.error('Final Fallback (Ollama) Error:', ollamaError);
                                         // SOVEREIGN ARCHITECTURE REPAIR: Recuperar de memoria local si todo falla
                                         console.warn('[Autonomous Sovereign Mode] Modelos externos caídos. Activando caché latente...');
                                         try {
@@ -395,8 +388,41 @@ export const useChatStore = create<ChatState>()(
                                             if (localMemories && localMemories.length > 0) {
                                                 simResponse = `NEXA (Sovereign Offline Mode)\nEstoy operando sin conexión, pero aquí están mis recuerdos relevantes:\n\n${localMemories.join('\n\n')}`;
                                             } else {
-                                                const emsg = (finalError as any)?.message || (ollamaError as any)?.message || "Offline";
-                                                simResponse = `NEXA (Sovereign Mode) 🛡️\n\nHe entrado en **Conservación de Energía (Modo Desconectado)**. Mis núcleos externos están inaccesibles.\n\nActualmente dependo de mi red neuronal pasiva y no tengo recuerdos latentes sobre este contexto. Conecta a la Red para reactivar mis capacidades completas de síntesis o habilita el Núcleo Nativo.\n\n[Diagnóstico: ${emsg}]`;
+                                                const errorMsg = ((ollamaError as any)?.message || (finalError as any)?.message || (backupError as any)?.message || '').toLowerCase();
+                                                const isOllamaConnection = errorMsg.includes('ollama') || errorMsg.includes('timeout') || errorMsg.includes('localhost:11434');
+                                                
+                                                if (isOllamaConnection) {
+                                                    simResponse = `🔌 **Ollama No Disponible**
+
+Necesito acceso a un modelo local de IA para responder. Ollama no está corriendo actualmente.
+
+**Para activar Ollama:**
+
+1. **Windows**: 
+   - Descarga desde https://ollama.ai/download
+   - Instala y abre una terminal
+   - Ejecuta: \`ollama serve\`
+
+2. **Descargar un modelo** (en otra terminal):
+   - \`ollama pull deepseek-r1:8b\`
+
+3. **Vuelve a Nexa** y escribe tu mensaje
+
+📖 Más modelos disponibles en https://ollama.ai/library`;
+                                                } else {
+                                                    const isBrowserOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+                                                    const networkHint = isBrowserOnline
+                                                        ? 'La red está activa, pero no se encontró un backend de IA disponible. Comprueba tu servidor Ollama local o tu proveedor en la nube.'
+                                                        : 'El dispositivo no tiene conexión de red activa en este momento.';
+
+                                                    simResponse = `NEXA (Sovereign Mode) 🛡️
+
+He entrado en **Conservación de Energía (Modo Desconectado)**. Mis núcleos externos están inaccesibles.
+
+Actualmente dependo de mi red neuronal pasiva y no tengo recuerdos latentes sobre este contexto. ${networkHint}
+
+[Diagnóstico: ${sanitizeDiagnostic(ollamaError || finalError || backupError)}]`;
+                                                }
                                             }
                                             
                                             // Enviar la respuesta (sea recuerdo u error custom)
@@ -407,11 +433,10 @@ export const useChatStore = create<ChatState>()(
                                             if (onResponse) onResponse(simResponse);
                                         } catch (fallbackErr: any) {
                                             // Fallo absoluto del sistema local
-                                            const simResponse = `NEXA (Sovereign Mode) 🛡️\n\nHe activado el modo de **Conservación de Energía Total** y el acceso al núcleo de persistencia local ha fallado. [Error: ${fallbackErr.message || 'IndexedDB / Swarm inaccesible'}]`;
+                                            const simResponse = `NEXA (Sovereign Mode) 🛡️\n\n**Sistema en Modo de Respuesto Total**\n\nNo puedo procesar tu solicitud en este momento. Las opciones son:\n\n1. **Iniciar Ollama**: Abre una terminal y ejecuta \`ollama serve\`\n2. **Configurar una API**: Añade claves de OpenAI/Gemini en las variables de entorno\n\n[Error: ${fallbackErr.message || 'Sin servicio disponible'}]`;
                                             get().updateMessage(assistantMsgId, { content: simResponse });
                                             if (onResponse) onResponse(simResponse);
                                         }
-                                    }
                                 }
                             }
                         }

@@ -102,7 +102,7 @@ cat > package.json << 'EOF'
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "deploy:supabase": "node scripts/deploy-supabase.js",
-    "deploy:vercel": "vercel --prod",
+    "deploy:vercel": "npx vercel --prod --confirm --alias nexa-ai.dev",
     "backup": "node scripts/backup.js",
     "restore": "node scripts/restore.js"
   },

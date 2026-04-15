@@ -18,6 +18,7 @@ import {
     ChevronRight,
     Search
 } from 'lucide-react';
+import { getEngineLabel } from '@/lib/ai/providerConfig';
 
 export default function RightPanel() {
     const { projectData } = useProjectStore();
@@ -67,8 +68,12 @@ export default function RightPanel() {
                                 </h4>
                                 <div className="grid grid-cols-2 gap-2">
                                     {[
-                                        { id: 'gemini', name: 'Gemini 2.5', color: 'blue' },
-                                        { id: 'claude', name: 'Claude 3.7', color: 'amber' },
+                                        { id: 'auto', name: getEngineLabel('auto'), color: 'emerald' },
+                                        { id: 'gemini', name: 'Gemini', color: 'blue' },
+                                        { id: 'gpt', name: 'OpenAI', color: 'sky' },
+                                        { id: 'claude', name: 'Claude', color: 'amber' },
+                                        { id: 'deepseek', name: 'DeepSeek', color: 'violet' },
+                                        { id: 'ollama', name: 'Ollama', color: 'rose' },
                                     ].map(engine => (
                                         <button
                                             key={engine.id}

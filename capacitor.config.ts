@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.nexa.ai',
-  appName: 'Nexa AI',
+  appName: 'Nexa S26 Ultra',
   webDir: 'dist',
   // Remove server.url so the app uses the bundled dist/ files locally
   // This ensures the app works offline and without network dependency at startup

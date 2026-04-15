@@ -4,11 +4,10 @@ create extension if not exists vector;
 -- Create the memories table
 create table if not exists public.memories (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade shadow-sm, -- Added shadow-sm here for consistency if needed, but standard DDL doesn't need it. Fix:
-  -- Correction: id is standard. user_id should be references auth.users
+  user_id uuid references auth.users(id) on delete cascade,
   content text not null,
   role text check (role in ('user', 'assistant')),
-  embedding vector(768), -- Adjust dimensions if using Gemini embeddings (768 is standard for text-embedding-004)
+  embedding vector(768), -- Optimized for Gemini text-embedding-004
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

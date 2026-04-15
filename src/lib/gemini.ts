@@ -9,6 +9,10 @@
 import { NEXA_SYSTEM_PROMPT } from './systemPrompt';
 import { useAutonomyStore } from '@/store/useAutonomyStore';
 import { performanceMonitor } from './services/PerformanceMonitor';
+import { inputValidator } from '@/lib/security/InputValidator';
+import { logger } from '@/lib/logging/StructuredLogger';
+import { analyticsService } from '@/lib/analytics/AnalyticsService';
+import { geminiErrorHandler } from '@/lib/errors/GeminiErrorHandler';
 
 // URL del Edge Function — seguro en el servidor de Supabase
 const EDGE_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nexa-core`;
@@ -42,47 +46,97 @@ async function callEdgeFunction(action: string, payload: Record<string, unknown>
 }
 
 export const geminiClient = {
-    chat: async (payload: GeminiRequest): Promise<Response> => {
+    chat: async (payload: GeminiRequest, userId?: string, conversationId?: string): Promise<Response> => {
         if (!EDGE_FUNCTION_URL || !SUPABASE_ANON_KEY) {
             throw new Error('Supabase no configurado. Verifica VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env');
         }
 
-        const dynamicRules = useAutonomyStore.getState().getSystemRulesPrompt();
-        const systemInstruction = (payload.systemInstruction || NEXA_SYSTEM_PROMPT) + dynamicRules;
-
-        // Construir el array `contents` en formato Gemini
-        const userParts: any[] = [{ text: payload.message }];
-
-        if (payload.attachments && payload.attachments.length > 0) {
-            payload.attachments.forEach(att => {
-                const cleanBase64 = att.data.includes('base64,')
-                    ? att.data.split('base64,')[1]
-                    : att.data;
-                userParts.unshift({
-                    inlineData: { mimeType: att.type, data: cleanBase64 }
-                });
-            });
+        // ✅ 1. VALIDATE INPUT
+        const validation = inputValidator.validate(payload.message);
+        if (!validation.safe) {
+            inputValidator.logAttempt(payload.message, validation, userId);
+            logger.securityBlock(userId || 'anonymous', validation.reason || 'Unknown', payload.message);
+            throw new Error(`Input validation failed: ${validation.reason}`);
         }
 
-        const messages = [
-            ...(payload.context?.map(msg => ({
-                role: msg.role === 'assistant' ? 'model' : msg.role,
-                parts: Array.isArray(msg.parts) ? msg.parts : [{ text: msg.parts }]
-            })) || []),
-            { role: 'user', parts: userParts }
-        ];
+        logger.geminiRequest(userId || 'anonymous', conversationId || 'unknown', payload.message);
+        const startTime = Date.now();
 
-        performanceMonitor.startOperation();
+        // ✅ 2. EXECUTE WITH RETRY
+        const result = await geminiErrorHandler.executeWithRetry(
+            async () => {
+                const dynamicRules = useAutonomyStore.getState().getSystemRulesPrompt();
+                const systemInstruction = (payload.systemInstruction || NEXA_SYSTEM_PROMPT) + dynamicRules;
 
-        const response = await callEdgeFunction('chat', {
-            messages,
-            systemInstruction,
-            temperature: payload.temperature ?? 0.7,
+                // Construir el array `contents` en formato Gemini
+                const userParts: any[] = [{ text: payload.message }];
+
+                if (payload.attachments && payload.attachments.length > 0) {
+                    payload.attachments.forEach(att => {
+                        const cleanBase64 = att.data.includes('base64,')
+                            ? att.data.split('base64,')[1]
+                            : att.data;
+                        userParts.unshift({
+                            inlineData: { mimeType: att.type, data: cleanBase64 }
+                        });
+                    });
+                }
+
+                const messages = [
+                    ...(payload.context?.map(msg => ({
+                        role: msg.role === 'assistant' ? 'model' : msg.role,
+                        parts: Array.isArray(msg.parts) ? msg.parts : [{ text: msg.parts }]
+                    })) || []),
+                    { role: 'user', parts: userParts }
+                ];
+
+                performanceMonitor.startOperation();
+
+                const response = await callEdgeFunction('chat', {
+                    messages,
+                    systemInstruction,
+                    temperature: payload.temperature ?? 0.7,
+                });
+
+                performanceMonitor.endOperation('gemini-via-edge');
+                return response;
+            },
+            { name: 'Gemini Chat', userId, conversationId }
+        );
+
+        // ✅ 3. HANDLE RESULT
+        const latency = Date.now() - startTime;
+
+        if (!result.success) {
+            logger.geminiFailed(userId || 'anonymous', conversationId || 'unknown', result.error || 'Unknown error', result.attempts);
+            
+            // Sugerir alternativas
+            const alternatives = geminiErrorHandler.getAlternativeProviders();
+            throw new Error(`${result.error}. Alternativas: ${alternatives.join(', ')}`);
+        }
+
+        logger.geminiSuccess(
+            userId || 'anonymous',
+            conversationId || 'unknown',
+            0, // tokens: a actualizar si obtenemos info de respuesta
+            latency,
+            'gemini-2.0-flash'
+        );
+
+        // ✅ 4. RECORD ANALYTICS
+        await analyticsService.recordInference({
+            model: 'gemini-2.0-flash',
+            action: 'chat',
+            tokens_used: 0,
+            latency_ms: latency,
+            cost_usd: 0,
+            success: true,
+            user_id: userId,
+            conversation_id: conversationId,
         });
 
-        performanceMonitor.endOperation('gemini-via-edge');
         console.log('[Gemini] ✅ Respuesta recibida a través del Edge Function seguro');
-        return response;
+        return result.data!;
     },
 
     getEmbedding: async (text: string): Promise<number[]> => {

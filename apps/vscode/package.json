@@ -1,0 +1,133 @@
+{
+  "name": "nexa-vscode",
+  "displayName": "Nexa VS Code",
+  "description": "Nexa as a VS Code coding assistant connected to your local Nexa backend.",
+  "version": "0.0.1",
+  "publisher": "nexa-local",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "nexa.openChat",
+        "title": "Nexa: Open Chat"
+      },
+      {
+        "command": "nexa.explainSelection",
+        "title": "Nexa: Explain Selection"
+      },
+      {
+        "command": "nexa.sendActiveFile",
+        "title": "Nexa: Send Active File"
+      },
+      {
+        "command": "nexa.reviewActiveFile",
+        "title": "Nexa: Review Active File"
+      },
+      {
+        "command": "nexa.fixSelection",
+        "title": "Nexa: Fix Selection"
+      },
+      {
+        "command": "nexa.insertLastAnswer",
+        "title": "Nexa: Insert Last Answer"
+      },
+      {
+        "command": "nexa.replaceSelectionWithLastAnswer",
+        "title": "Nexa: Replace Selection With Last Answer"
+      },
+      {
+        "command": "nexa.replaceActiveFileWithLastAnswer",
+        "title": "Nexa: Replace Active File With Last Answer"
+      },
+      {
+        "command": "nexa.workspaceReview",
+        "title": "Nexa: Review Workspace"
+      },
+      {
+        "command": "nexa.previewLastAnswer",
+        "title": "Nexa: Preview Last Answer"
+      },
+      {
+        "command": "nexa.generateCommitMessage",
+        "title": "Nexa: Generate Commit Message"
+      },
+      {
+        "command": "nexa.applyStructuredFiles",
+        "title": "Nexa: Apply Structured Files"
+      },
+      {
+        "command": "nexa.diffLastAnswerAgainstSelection",
+        "title": "Nexa: Diff Last Answer Against Selection"
+      },
+      {
+        "command": "nexa.checkBackendStatus",
+        "title": "Nexa: Check Backend Status"
+      }
+    ],
+    "configuration": {
+      "title": "Nexa",
+      "properties": {
+        "nexa.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:3001",
+          "description": "Base URL for the local Nexa API."
+        },
+        "nexa.userId": {
+          "type": "string",
+          "default": "vscode-user",
+          "description": "User ID sent to the Nexa backend."
+        },
+        "nexa.defaultMode": {
+          "type": "string",
+          "enum": [
+            "architect",
+            "reviewer",
+            "builder"
+          ],
+          "default": "reviewer",
+          "description": "Default operating mode for NEXAOS."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "nexa",
+          "title": "Nexa",
+          "icon": "media/nexa.svg"
+        }
+      ]
+    },
+    "views": {
+      "nexa": [
+        {
+          "id": "nexa.chatView",
+          "name": "Assistant"
+        }
+      ]
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "nexa.openChat"
+        },
+        {
+          "command": "nexa.reviewActiveFile"
+        },
+        {
+          "command": "nexa.workspaceReview"
+        }
+      ]
+    }
+  }
+}

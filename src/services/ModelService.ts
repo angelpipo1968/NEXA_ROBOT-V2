@@ -7,6 +7,7 @@ import { deepseekClient } from '@/lib/deepseek';
 import { ollamaClient } from '@/lib/ollama';
 import { useThoughtStore } from '@/lib/stores/useThoughtStore';
 import { performanceMonitor } from '@/lib/services/PerformanceMonitor';
+import { getDefaultProvider, getAvailableProviders } from '@/lib/ai/providerConfig';
 
 export interface ModelMessage {
     role: 'user' | 'assistant' | 'system';
@@ -42,42 +43,41 @@ export class ModelService {
         messages: ModelMessage[],
         options: ModelOptions = {}
     ): Promise<string> {
-        const { provider = 'gemini', useMCP = true, reasoningMode = 'normal' } = options;
+        const { provider = getDefaultProvider(), useMCP = true, reasoningMode = 'normal' } = options;
+        const resolvedProvider = await this.resolveProvider(provider);
 
         // Reset tool call counter for new flow
         const { resetToolCalls } = (await import('@/lib/stores/useAchievementStore')).useAchievementStore.getState();
         resetToolCalls();
 
-        console.log(`[ModelService] 🤖 Generating with provider: ${provider}, MCP: ${useMCP}, Mode: ${reasoningMode}`);
+        console.log(`[ModelService] 🤖 Generating with provider: ${resolvedProvider}, MCP: ${useMCP}, Mode: ${reasoningMode}`);
 
-        // TRY CLOUD HUB FIRST IF ON MOBILE OR CLOUD MODE
-        const isCloudMode = import.meta.env.VITE_NEXA_CLOUD_MODE === 'true' || !!(window as any).Capacitor;
-        
+        const lastMessage = messages[messages.length - 1];
+        const context = messages.slice(0, -1).map(m => ({
+            role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
+            parts: m.content
+        }));
+        const attachments = options.attachments || lastMessage.attachments;
+
+        // STRATEGY: Try the resolved provider first, with Ollama health fallback built in
         try {
-            if (isCloudMode && provider !== 'ollama') {
-                try {
-                    console.log(`[ModelService] ☁️ Using Cloud Hub for ${provider}...`);
-                    return await this.handleCloudFlow(messages, options);
-                } catch (cloudError) {
-                    console.warn('[ModelService] ⚠️ Cloud Hub failed, falling back to local provider flow.', cloudError);
-                    // Continue to local flow
-                }
+            // Try primary provider first
+            if (resolvedProvider === 'ollama') {
+                console.log('[ModelService] 📍 Trying Ollama (local)...');
+                const response = await ollamaClient.chat({
+                    message: lastMessage.content,
+                    model: reasoningMode === 'deep' ? 'deepseek-r1:14b' : 'deepseek-r1:8b'
+                });
+                if (response.includes(':::TOOL_CALL:::')) return await this.handleReactLoop(response, messages, options);
+                return response;
             }
 
-            if (provider === 'gemini') {
+            // If not ollama, try primary provider
+            if (resolvedProvider === 'gemini') {
                 return await this.handleGeminiFlow(messages, options);
             }
 
-
-            const lastMessage = messages[messages.length - 1];
-            const context = messages.slice(0, -1).map(m => ({
-                role: m.role === 'assistant' ? 'model' : m.role as 'user' | 'model',
-                parts: m.content
-            }));
-
-            const attachments = options.attachments || lastMessage.attachments;
-
-            if (provider === 'openai') {
+            if (resolvedProvider === 'openai') {
                 const response = await openaiClient.chat({
                     message: lastMessage.content,
                     context: context,
@@ -88,7 +88,7 @@ export class ModelService {
                 return response;
             }
 
-            if (provider === 'anthropic') {
+            if (resolvedProvider === 'anthropic') {
                 const response = await anthropicClient.chat({
                     message: lastMessage.content,
                     context: context,
@@ -99,7 +99,7 @@ export class ModelService {
                 return response;
             }
 
-            if (provider === 'deepseek') {
+            if (resolvedProvider === 'deepseek') {
                 const response = await deepseekClient.chat({
                     message: lastMessage.content,
                     context: context,
@@ -110,7 +110,7 @@ export class ModelService {
                 return response;
             }
 
-            if (provider === 'groq') {
+            if (resolvedProvider === 'groq') {
                 const response = await groqClient.chat({
                     message: lastMessage.content,
                     context: context as any,
@@ -119,19 +119,24 @@ export class ModelService {
                 return response;
             }
 
-            if (provider === 'ollama') {
+            throw new Error(`Provider ${resolvedProvider} not available`);
+        } catch (primaryError) {
+            console.warn(`[ModelService] ⚠️ Primary provider (${resolvedProvider}) failed, trying Ollama local fallback...`, primaryError);
+            
+            // AUTO-FALLBACK TO OLLAMA IF PRIMARY FAILS
+            try {
                 const response = await ollamaClient.chat({
                     message: lastMessage.content,
-                    model: reasoningMode === 'deep' ? 'deepseek-r1:14b' : 'deepseek-r1:8b'
+                    model: 'deepseek-r1:8b'
                 });
+                console.log('[ModelService] ✅ Ollama fallback succeeded');
                 if (response.includes(':::TOOL_CALL:::')) return await this.handleReactLoop(response, messages, options);
                 return response;
+            } catch (ollamaError) {
+                const err = new Error(`Primary provider failed: ${(primaryError as any)?.message || primaryError}. Ollama fallback also failed: ${(ollamaError as any)?.message || ollamaError}`);
+                console.error('[ModelService] ❌ Ollama fallback also failed:', ollamaError);
+                throw err;
             }
-
-            throw new Error(`Provider ${provider} not fully integrated in ModelService yet.`);
-        } catch (error) {
-            console.error(`[ModelService] ❌ Error generating response:`, error);
-            throw error;
         }
     }
 
@@ -177,6 +182,22 @@ export class ModelService {
     /**
      * Handles the ReAct loop for tool execution
      */
+    private async resolveProvider(provider?: ModelOptions['provider']): Promise<NonNullable<ModelOptions['provider']>> {
+        const preferred = provider || getDefaultProvider();
+        if (preferred === 'ollama') {
+            const available = getAvailableProviders();
+            const healthy = await ollamaClient.checkHealth().catch(() => false);
+            if (!healthy && available.length > 1) {
+                const fallback = available.find(p => p !== 'ollama');
+                if (fallback) {
+                    console.warn(`[ModelService] Ollama no está disponible, usando proveedor alternativo: ${fallback}`);
+                    return fallback;
+                }
+            }
+        }
+        return preferred as NonNullable<ModelOptions['provider']>;
+    }
+
     private async handleReactLoop(
         initialText: string,
         messages: ModelMessage[],

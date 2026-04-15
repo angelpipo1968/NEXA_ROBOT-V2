@@ -1,0 +1,75 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Nexa: API Server",
+      "type": "npm",
+      "script": "dev",
+      "path": "apps/api",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*tsx watch.*|.*Server is running on port 3001.*",
+          "endsPattern": ".*Server is running on port 3001.*"
+        }
+      }
+    },
+    {
+      "label": "Nexa: Dev Server",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "."
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*vite.*",
+          "endsPattern": ".*Local:.*http://localhost:3000.*"
+        }
+      }
+    },
+    {
+      "label": "Nexa: Build",
+      "type": "npm",
+      "script": "build",
+      "group": "build"
+    },
+    {
+      "label": "Nexa: Test",
+      "type": "npm",
+      "script": "test",
+      "group": "test"
+    },
+    {
+      "label": "Nexa: Lint",
+      "type": "npm",
+      "script": "lint",
+      "group": "test"
+    },
+    {
+      "label": "Nexa: Validate",
+      "type": "npm",
+      "script": "validate"
+    },
+    {
+      "label": "Nexa: Check AI Setup",
+      "type": "shell",
+      "command": "node",
+      "args": [
+        "scripts/check_ai_setup.mjs"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

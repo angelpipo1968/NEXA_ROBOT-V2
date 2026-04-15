@@ -4,13 +4,10 @@ import {
     Save,
     Loader2,
     BookOpen,
-    Type,
-    FileEdit,
     Wand2,
     Bot,
     Book,
     Layers,
-    History,
     Plus,
     Trash2,
     ArrowUp,
@@ -28,7 +25,8 @@ interface BookStudioProps {
     onToggleZen: () => void;
 }
 
-export function BookStudio({ onToggleZen }: BookStudioProps) {
+export function BookStudio(props: BookStudioProps) {
+    void props;
     const {
         writingTitle,
         setWritingTitle,
@@ -43,7 +41,7 @@ export function BookStudio({ onToggleZen }: BookStudioProps) {
     const [isSaving, setIsSaving] = useState(false);
     const [lastSavedTime, setLastSavedTime] = useState<Date | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<BookTemplate | null>(null);
-    const [isResizing, setIsResizing] = useState(false);
+    const [, setIsResizing] = useState(false);
     const [isMuseOpen, setIsMuseOpen] = useState(false);
     const [leftTab, setLeftTab] = useState<'estructura' | 'personajes'>('estructura');
 

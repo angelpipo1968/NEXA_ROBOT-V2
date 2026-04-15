@@ -29,27 +29,6 @@ interface NexaState {
 
 const defaultModels: Model[] = [
     {
-        id: 'nexa-unlimited',
-        name: 'Nexa Ilimitada',
-        provider: 'Antigravity',
-        capabilities: { contextLength: 1000000, streaming: true, functionCalling: true, vision: true },
-        recommendationReason: 'Gravity Master Orchestrator'
-    },
-    {
-        id: 'gpt-4',
-        name: 'GPT-4',
-        provider: 'OpenAI',
-        capabilities: { contextLength: 8192, streaming: true, functionCalling: true, vision: true },
-        recommendationReason: 'High quality reasoning'
-    },
-    {
-        id: 'claude-3',
-        name: 'Claude 3',
-        provider: 'Anthropic',
-        capabilities: { contextLength: 100000, streaming: true, functionCalling: true },
-        recommendationReason: 'Large context window'
-    },
-    {
         id: 'llama-3',
         name: 'Llama 3',
         provider: 'Meta',

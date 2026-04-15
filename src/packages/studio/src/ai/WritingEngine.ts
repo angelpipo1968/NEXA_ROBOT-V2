@@ -7,6 +7,7 @@ export class AIWritingEngine {
         content: string,
         options?: { mode?: string; depth?: string }
     ): Promise<{ improvements: string[]; suggestions: string[] }> {
+        void options; // Prevent unused variable lint error
         // Mock implementation - returns style-aware suggestions
         const improvements: string[] = [];
         const suggestions: string[] = [];

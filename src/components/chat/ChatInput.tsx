@@ -246,7 +246,7 @@ export default function ChatInput() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Pregunta a Antigravity Unlimited..."
+                            placeholder="Pregunta a NEXA Unlimited..."
                             className="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-3 px-2 text-[16px] leading-relaxed text-[var(--text-primary)] placeholder-[var(--text-muted)] max-h-48 overflow-y-auto scrollbar-hide"
                             rows={1}
                             style={{ minHeight: '44px' }}

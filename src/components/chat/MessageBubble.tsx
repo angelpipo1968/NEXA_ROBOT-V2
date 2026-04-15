@@ -20,7 +20,7 @@ import './SearchComponents.css';
 import { OptimizedImage } from '../ui/OptimizedImage';
 import { useChatStore } from '../../store/useChatStore';
 import { useVoiceStore } from '../../store/useVoiceStore';
-import { Download, ExternalLink, Maximize2, FileText } from 'lucide-react';
+import { Download, ExternalLink } from 'lucide-react';
 import { ImageReviewCard } from './ImageReviewCard';
 
 interface MessageBubbleProps {
@@ -265,7 +265,7 @@ export default function MessageBubble({ role, content, id, deleteMessage, forkCh
                                 } else if (content.trim().startsWith('{') && content.trim().endsWith('}')) {
                                     parsedData = JSON.parse(content);
                                 }
-                            } catch (e) {
+                            } catch {
                                 // Not JSON
                             }
 
@@ -339,7 +339,7 @@ export default function MessageBubble({ role, content, id, deleteMessage, forkCh
                                     <ReactMarkdown
                                         remarkPlugins={[remarkGfm]}
                                         components={{
-                                            a({ node, children, href, ...props }: any) {
+                                            a({ children, href, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { node?: unknown }) {
                                                 return (
                                                     <a
                                                         href={href}
@@ -353,7 +353,7 @@ export default function MessageBubble({ role, content, id, deleteMessage, forkCh
                                                     </a>
                                                 );
                                             },
-                                            code({ node, inline, className, children, ...props }: any) {
+                                            code({ inline, className, children, ...props }: React.HTMLAttributes<HTMLElement> & { inline?: boolean, node?: unknown }) {
                                                 const match = /language-(\w+)/.exec(className || '');
                                                 const code = String(children).replace(/\n$/, '');
                                                 if (!inline && match) {
@@ -368,7 +368,7 @@ export default function MessageBubble({ role, content, id, deleteMessage, forkCh
                                                 if (typeof children === 'string' && children.trim() === '') return null;
                                                 return <p className="text-[var(--text-primary)]">{children}</p>;
                                             },
-                                            img({ src, alt }: any) {
+                                            img({ src, alt }: React.ImgHTMLAttributes<HTMLImageElement> & { node?: unknown }) {
                                                 // If we have an image result type, we already rendered the card above
                                                 if (parsedData?.type === 'image_result') return null;
 
@@ -385,7 +385,7 @@ export default function MessageBubble({ role, content, id, deleteMessage, forkCh
                                                         </div>
                                                     );
                                                 }
-                                                return <OptimizedImage src={src} alt={alt || 'Image'} className="my-4 shadow-2xl rounded-xl border border-white/10" />;
+                                                return <OptimizedImage src={src || ''} alt={alt || 'Image'} className="my-4 shadow-2xl rounded-xl border border-white/10" />;
                                             }
                                         }}
                                     >
@@ -557,7 +557,7 @@ function MenuOption({ icon, label, onClick, className }: { icon: React.ReactNode
     );
 }
 
-function ImageResultCard({ url, prompt, aspectRatio, isMarkdown }: { url: string, prompt: string, aspectRatio?: string, isMarkdown?: boolean }) {
+function ImageResultCard({ url, prompt, aspectRatio }: { url: string, prompt: string, aspectRatio?: string, isMarkdown?: boolean }) {
     const handleDownload = async () => {
         try {
             const response = await fetch(url);
@@ -566,7 +566,7 @@ function ImageResultCard({ url, prompt, aspectRatio, isMarkdown }: { url: string
             link.href = URL.createObjectURL(blob);
             link.download = `nexa-image-${Date.now()}.jpg`;
             link.click();
-        } catch (e) {
+        } catch {
             window.open(url, '_blank');
         }
     };

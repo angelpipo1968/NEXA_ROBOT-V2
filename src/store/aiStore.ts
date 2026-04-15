@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { geminiClient } from '@/lib/gemini';
 import { anthropicClient } from '@/lib/anthropic';
 import { openaiClient } from '@/lib/openai';
+import { deepseekClient } from '@/lib/deepseek';
+import { ollamaClient } from '@/lib/ollama';
+import { resolveEngineToProvider } from '@/lib/ai/providerConfig';
 
 export interface AISuggestion {
     type: 'title' | 'style' | 'idea' | 'character' | 'dialogue';
@@ -10,7 +13,7 @@ export interface AISuggestion {
     action: string;
 }
 
-export type AIEngine = 'nexa' | 'gemini' | 'claude' | 'gpt' | 'deepseek' | 'ollama';
+export type AIEngine = 'auto' | 'nexa' | 'gemini' | 'claude' | 'gpt' | 'deepseek' | 'ollama';
 
 export interface AIConfig {
     model: string;
@@ -33,11 +36,19 @@ interface AiState {
 // Unified dispatcher
 const executeAiQuery = async (prompt: string, engine: AIEngine, config: AIConfig): Promise<string> => {
     try {
-        if (engine === 'claude') {
+        const provider = resolveEngineToProvider(engine);
+
+        if (provider === 'anthropic') {
             const text = await anthropicClient.chat({ message: prompt, temperature: config.creativity });
             return text;
-        } else if (engine === 'gpt') {
+        } else if (provider === 'openai') {
             const text = await openaiClient.chat({ message: prompt, temperature: config.creativity });
+            return text;
+        } else if (provider === 'deepseek') {
+            const text = await deepseekClient.chat({ message: prompt, temperature: config.creativity });
+            return text;
+        } else if (provider === 'ollama') {
+            const text = await ollamaClient.chat({ message: prompt });
             return text;
         } else if (engine === 'nexa') {
             // NEXA UNLIMITED: The Master Orchestrator
@@ -64,7 +75,7 @@ export const useAiStore = create<AiState>((set, get) => ({
     aiConfig: {
         model: 'nexa-unlimited-v1',
         creativity: 0.8,
-        activeEngine: 'nexa'
+        activeEngine: 'auto'
     },
 
     setActiveEngine: (engine) => set((state) => ({ aiConfig: { ...state.aiConfig, activeEngine: engine } })),

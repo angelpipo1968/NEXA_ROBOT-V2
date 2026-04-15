@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Nexa VS Code Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "preLaunchTask": "Nexa: API Server",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/apps/vscode"
+      ],
+      "outFiles": []
+    },
+    {
+      "name": "Nexa: Launch Chrome",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "Nexa: Dev Server"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Nexa App + VS Code Extension",
+      "configurations": [
+        "Nexa VS Code Extension",
+        "Nexa: Launch Chrome"
+      ]
+    }
+  ]
+}

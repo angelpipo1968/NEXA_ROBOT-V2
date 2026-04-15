@@ -1,4 +1,22 @@
 {
     "css.lint.unknownAtRules": "ignore",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+    ],
+    "search.exclude": {
+        "**/dist": true,
+        "**/.turbo": true,
+        "**/node_modules": true,
+        "**/backups": true,
+        "**/_backup": true,
+        "**/src_backup_20260202_152431": true
+    }
 }

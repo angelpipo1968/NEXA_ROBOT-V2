@@ -7,10 +7,11 @@ import React from 'react';
 
 
 import { MemoryGalaxy } from '@/components/brain/MemoryGalaxy';
+import { getEngineLabel } from '@/lib/ai/providerConfig';
 
 export default function SettingsPanel() {
         const { voiceConfig, updateVoiceConfig } = useVoiceStore();
-    const { aiConfig } = useAiStore();
+    const { aiConfig, setActiveEngine } = useAiStore();
 
     return (
         <div className="panel-content">
@@ -37,11 +38,18 @@ export default function SettingsPanel() {
 
                     <div style={{ marginBottom: '15px' }}>
                         <label style={{ display: 'block', marginBottom: '8px' }}>Modelo de IA Principal</label>
-                        <select className="format-select" style={{ width: '100%', padding: '10px' }} defaultValue="gemini-pro">
-                            <option value="gemini-pro">Google Gemini Pro 1.5 (Recomendado)</option>
-                            <option value="gemini-ultra">Google Gemini Ultra</option>
-                            <option value="gpt-4">GPT-4 Turbo</option>
-                            <option value="claude-3">Claude 3 Opus</option>
+                        <select
+                            className="format-select"
+                            style={{ width: '100%', padding: '10px' }}
+                            value={aiConfig.activeEngine}
+                            onChange={(e) => setActiveEngine(e.target.value as any)}
+                        >
+                            <option value="auto">{getEngineLabel('auto')} (Recomendado)</option>
+                            <option value="gemini">Gemini</option>
+                            <option value="gpt">OpenAI</option>
+                            <option value="claude">Claude</option>
+                            <option value="deepseek">DeepSeek</option>
+                            <option value="ollama">Ollama local</option>
                         </select>
                     </div>
 

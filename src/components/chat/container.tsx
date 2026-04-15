@@ -1,19 +1,17 @@
 'use client'
 
 import React, { useState, useEffect, useRef, Suspense } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useChatStore, Message } from '@/store/useChatStore'
+import { motion } from 'framer-motion'
+import { useChatStore } from '@/store/useChatStore'
 import { useUIStore } from '@/store/useUIStore'
 import ChatInput from './ChatInput'
 import MessageBubble from './MessageBubble'
-import { X, ChevronDown, Sparkles, Brain, Bot, Cpu } from 'lucide-react'
+import { ChevronDown, Brain, Bot } from 'lucide-react'
 import { useVoiceStore } from '@/store/useVoiceStore'
 
 const GRAVITY_MODELS = [
-    { id: 'nexa-unlimited', name: 'Nexa Ilimitada', tag: 'Gravity Master', icon: Sparkles, color: 'text-blue-400', gradient: 'from-blue-500/20 to-indigo-500/10', border: 'border-blue-500/30' },
-    { id: 'gemini', name: 'Gemini 1.5 Flash', tag: 'Google', icon: Brain, color: 'text-purple-400', gradient: 'from-purple-500/10 to-pink-500/10', border: 'border-purple-500/20' },
-    { id: 'claude', name: 'Claude 3.5 Sonnet', tag: 'Anthropic', icon: Bot, color: 'text-amber-400', gradient: 'from-amber-500/10 to-orange-500/10', border: 'border-amber-500/20' },
-    { id: 'gpt', name: 'GPT-4 Turbo', tag: 'OpenAI', icon: Cpu, color: 'text-green-400', gradient: 'from-green-500/10 to-emerald-500/10', border: 'border-green-500/20' },
+    { id: 'llama-3', name: 'Llama 3', tag: 'Local', icon: Bot, color: 'text-orange-400', gradient: 'from-orange-500/20 to-yellow-500/10', border: 'border-orange-500/30' },
+    { id: 'mistral', name: 'Mistral', tag: 'Local', icon: Brain, color: 'text-red-400', gradient: 'from-red-500/20 to-pink-500/10', border: 'border-red-500/30' },
 ]
 
 
@@ -21,7 +19,6 @@ const GRAVITY_MODELS = [
 const VoiceChat = React.lazy(() => import('./VoiceChat').then(m => ({ default: m.VoiceChat })))
 const VoiceVideoOverlay = React.lazy(() => import('./VoiceVideoOverlay').then(m => ({ default: m.VoiceVideoOverlay })))
 const ArtifactPanel = React.lazy(() => import('./ArtifactPanel'))
-const ThoughtStream = React.lazy(() => import('../thought/ThoughtStream').then(m => ({ default: m.ThoughtStream })))
 
 interface ChatContainerProps {
     userId?: string
@@ -31,9 +28,9 @@ interface ChatContainerProps {
     onNewChat?: () => void
 }
 
-export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
+export function ChatContainer({ initialMessage }: ChatContainerProps) {
     const { messages, addMessage, deleteMessage, forkChat, regenerateResponse } = useChatStore()
-    const { activeModule, setActiveModule, isVideoMode, isArtifactPanelOpen, isThoughtStreamOpen, setThoughtStreamOpen } = useUIStore()
+    const { activeModule, isVideoMode, isArtifactPanelOpen } = useUIStore()
     const { isVoiceMode } = useVoiceStore()
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const [activeModel, setActiveModel] = useState(GRAVITY_MODELS[0])
@@ -118,7 +115,7 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
                                         Hola, soy <span className="text-[var(--accent-primary)]">Nexa</span>
                                     </h1>
                                     <p className="text-lg md:text-2xl text-[var(--text-secondary)] font-normal leading-relaxed">
-                                        Bienvenido a <span className="font-bold">Antigravity Unlimited</span>.
+                                        Bienvenido a <span className="font-bold">NEXA Unlimited</span>.
                                     </p>
                                 </div>
                             </div>
@@ -175,21 +172,6 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
                                     <ChevronDown size={12} className={`transition-transform ${showModelPicker ? 'rotate-180' : ''}`} />
                                 </button>
 
-                                {/* Mind Map Toggle Button - Premium WOW Feature */}
-                                <motion.button
-                                    onClick={() => setThoughtStreamOpen(!isThoughtStreamOpen)}
-                                    whileHover={{ scale: 1.05, y: -2 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className={`ml-2 flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all text-sm font-medium ${
-                                        isThoughtStreamOpen 
-                                        ? 'bg-purple-500 text-white border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
-                                        : 'bg-white/5 text-[var(--text-tertiary)] border-white/10 hover:border-purple-500/50 hover:text-purple-300'
-                                    }`}
-                                >
-                                    <Brain size={14} className={isThoughtStreamOpen ? 'animate-pulse' : ''} />
-                                    <span>Mapa Mental 3D</span>
-                                </motion.button>
-
                                 {/* Model Dropdown */}
                                 {showModelPicker && (
                                     <div className="absolute bottom-full mb-2 w-72 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 z-50">
@@ -235,30 +217,6 @@ export function ChatContainer({ userId, initialMessage }: ChatContainerProps) {
                     <ArtifactPanel />
                 </Suspense>
             )}
-
-            {/* 3D Thought Stream Overlay */}
-            <AnimatePresence>
-                {isThoughtStreamOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed inset-4 md:inset-10 z-[1000] rounded-3xl overflow-hidden border border-purple-500/30 bg-black/80 backdrop-blur-3xl shadow-[0_0_50px_rgba(168,85,247,0.2)]"
-                    >
-                        <div className="absolute top-6 right-6 z-[1010]">
-                            <button
-                                onClick={() => setThoughtStreamOpen(false)}
-                                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all border border-white/10"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <Suspense fallback={<div className="flex items-center justify-center h-full text-purple-400">INICIALIZANDO FLUJO COGNITIVO...</div>}>
-                            <ThoughtStream />
-                        </Suspense>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     )
 }

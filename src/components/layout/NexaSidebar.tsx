@@ -130,7 +130,7 @@ export default function NexaSidebar() {
                         {isSidebarOpen ? (
                             <div className="flex items-center gap-3">
                                 <NexaAvatar state={avatarState} size={32} />
-                                <span className="font-bold text-xl tracking-tight text-[var(--text-primary)]">ANTIGRAVITY</span>
+                                <span className="font-bold text-xl tracking-tight text-[var(--text-primary)]">NEXA</span>
                             </div>
                         ) : (
                             <NexaAvatar state={avatarState} size={32} />
@@ -306,7 +306,7 @@ export default function NexaSidebar() {
                         {isSidebarOpen && (
                             <>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] text-[var(--text-muted)] truncate uppercase tracking-wider font-bold">{isGuest ? 'SESIÓN TEMPORAL' : 'ANTIGRAVITY UNLIMITED'}</p>
+                                    <p className="text-[10px] text-[var(--text-muted)] truncate uppercase tracking-wider font-bold">{isGuest ? 'SESIÓN TEMPORAL' : 'NEXA UNLIMITED'}</p>
                                 </div>
                                 <ChevronRight size={14} className={`text-[var(--text-muted)] transition-transform ${showUserMenu ? 'rotate-90' : ''}`} />
                             </>

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import styles from './StudioLayout.module.css';
 import {
     PenTool, Save, FileUp, Book, Layout, Mic, Settings,
-    FileText, ImageIcon, Share2, Sparkles, Box, ShoppingBag, Zap
+    FileText, ImageIcon, Sparkles, Box, ShoppingBag, Zap
 } from 'lucide-react';
 
 import { useProjectStore } from '@/store/projectStore';
@@ -13,7 +13,6 @@ import { Editor } from '@/components/writing/Editor';
 import { VoiceStudio } from '@/components/voice/VoiceStudio';
 import { BookWizard } from '@/components/writing/BookWizard';
 import { DirectorMode } from '@/features/studio/modes/DirectorMode';
-import { ThoughtStream } from '@/components/thought/ThoughtStream';
 import { SandboxLab } from '@/components/sandbox/SandboxLab';
 import { ToolMarketplace } from '@/components/marketplace/ToolMarketplace';
 import { QuickStart } from '@/components/writing/QuickStart';
@@ -39,13 +38,12 @@ const LibraryViewMock = () => (
     </div>
 );
 
-type StudioView = 'editor' | 'library' | 'templates' | 'voice' | 'settings' | 'wizard' | 'vision' | 'cognition' | 'lab' | 'marketplace';
+type StudioView = 'editor' | 'library' | 'templates' | 'voice' | 'settings' | 'wizard' | 'vision' | 'lab' | 'marketplace';
 
 export function ModernStudio() {
     const { projectData, updateProjectContent } = useProjectStore();
     const { isListening } = useVoiceStore();
     const [activeView, setActiveView] = useState<StudioView>('editor');
-    const [neuralOverlay, setNeuralOverlay] = useState(false);
     const [zenMode, setZenMode] = useState(false);
 
     useNeuralBridge();
@@ -88,13 +86,6 @@ export function ModernStudio() {
                             </span>
                         </div>
                         <button
-                            onClick={() => setNeuralOverlay(!neuralOverlay)}
-                            className={`p-2 rounded-lg border transition-all ${neuralOverlay ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white/5 border-white/10 text-gray-500'}`}
-                            title="Neural Overlay Mode"
-                        >
-                            <Share2 size={16} />
-                        </button>
-                        <button
                             onClick={() => setZenMode(!zenMode)}
                             className={`p-2 rounded-lg border transition-all ${zenMode ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/10 text-gray-500'}`}
                             title="Zen Mode"
@@ -115,7 +106,6 @@ export function ModernStudio() {
                                 {[
                                     { id: 'editor', icon: PenTool, label: 'Editor' },
                                     { id: 'vision', icon: ImageIcon, label: 'Vision Board' },
-                                    { id: 'cognition', icon: Share2, label: 'Cognition 3D' },
                                     { id: 'lab', icon: Box, label: 'Sandbox Lab' },
                                     { id: 'marketplace', icon: ShoppingBag, label: 'Marketplace' },
                                     { id: 'library', icon: Book, label: 'Biblioteca' },
@@ -146,11 +136,6 @@ export function ModernStudio() {
                     )}
 
                     <main className={styles.editorSection + " relative"}>
-                        {neuralOverlay && activeView === 'editor' && (
-                            <div className="absolute inset-0 opacity-20 pointer-events-none grayscale blur-[2px]">
-                                <ThoughtStream />
-                            </div>
-                        )}
                         {activeView === 'editor' && (
                             <div className="h-full pt-6 px-5 overflow-hidden">
                                 <Editor
@@ -161,7 +146,6 @@ export function ModernStudio() {
                             </div>
                         )}
                         {activeView === 'vision' && <DirectorMode />}
-                        {activeView === 'cognition' && <ThoughtStream />}
                         {activeView === 'lab' && <SandboxLab />}
                         {activeView === 'marketplace' && <ToolMarketplace />}
                         {activeView === 'voice' && <VoiceStudio />}

@@ -141,3 +141,55 @@ CREATE INDEX IF NOT EXISTS idx_cognitive_cycles_type ON public.cognitive_cycles(
 ALTER TABLE public.cognitive_cycles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can view cognitive cycles" ON public.cognitive_cycles FOR SELECT TO authenticated USING (true);
 
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 9. INFERENCE METRICS (Analytics)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS public.inference_metrics (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  model TEXT NOT NULL,
+  action TEXT NOT NULL CHECK (action IN ('chat', 'embedding', 'image_generation')),
+  tokens_used INT DEFAULT 0,
+  latency_ms INT NOT NULL,
+  cost_usd NUMERIC(10, 8) DEFAULT 0,
+  success BOOLEAN DEFAULT true,
+  error_message TEXT,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  conversation_id UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_inference_metrics_model ON public.inference_metrics(model);
+CREATE INDEX IF NOT EXISTS idx_inference_metrics_user_id ON public.inference_metrics(user_id);
+CREATE INDEX IF NOT EXISTS idx_inference_metrics_created_at ON public.inference_metrics(created_at);
+CREATE INDEX IF NOT EXISTS idx_inference_metrics_success ON public.inference_metrics(success);
+
+ALTER TABLE public.inference_metrics ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view their own metrics" ON public.inference_metrics FOR SELECT USING (auth.uid() = user_id OR auth.uid() IS NULL);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 10. ACTIVITY LOGS (Structured Logging)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS public.activity_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  level TEXT NOT NULL CHECK (level IN ('debug', 'info', 'warn', 'error')),
+  context TEXT NOT NULL,
+  action TEXT NOT NULL,
+  data JSONB DEFAULT '{}'::jsonb,
+  error TEXT,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  conversation_id UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_logs_level ON public.activity_logs(level);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_context ON public.activity_logs(context);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON public.activity_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON public.activity_logs(created_at);
+
+ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+-- Log access: only admins can see certain logs, users see their own
+CREATE POLICY "Users can view their own activity logs" ON public.activity_logs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Service role can view all logs" ON public.activity_logs FOR SELECT USING (auth.role() = 'service_role');
+

@@ -8,14 +8,12 @@ interface EditorProps {
     onContentChange?: (content: string) => void;
 }
 
-export function Editor({ initialContent = '', bookId, onContentChange }: EditorProps) {
+export function Editor({ initialContent = '', onContentChange }: EditorProps) {
     const [content, setContent] = useState(initialContent);
     const editorRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
-        if (initialContent !== content) {
-            setContent(initialContent);
-        }
+        setContent(prev => prev !== initialContent ? initialContent : prev);
     }, [initialContent]);
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
